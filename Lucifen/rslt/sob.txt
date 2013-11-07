@@ -1,0 +1,41 @@
+main.sob
+
+u32 init_var_count;
+struct InitVar{
+	u32 code_offset; //在code中的偏移
+	u32 var_index; //UserVar的idx
+}; //将idx在UserVar.sob中的地址写入code中的指定位置
+InitVar init_vars[init_var_count];
+
+u32 func_addr_count;
+struct InitAddr{
+	u32 code_offset;
+	u32 func_tbl_idx; //exe函数地址表偏移
+}; //相当于PE文件导入表，将code指定位置填入exe中的地址
+InitAddr init_addrs[func_addr_count];
+
+u32 unk_count;
+struct UnkReloc{
+	u32 code_offset;
+	u32 unk_idx;
+};
+UnkReloc unk_reloc[unk_count];
+
+u32 unk_count; //似乎是从func_lib.sob导入的函数（in VM）
+struct UnkReloc1{
+	u32 code_offset;
+	u32 unk_offset;
+};
+UnkReloc1 unk_reloc[unk_count];
+
+u32 main_reloc_count;
+struct MainRelocEntry{
+	u32 code_offset_dest;
+	u32 code_offset_src; //这是相对code+res段的偏移，运行时计算出绝对地址填入指定位置
+};
+MainRelocEntry main_relocs[main_reloc_count];
+
+u32 code_len;
+u32 code_and_res_len;
+u8 code[code_len];
+u8 res[code_and_res_len-code_len];[/code]

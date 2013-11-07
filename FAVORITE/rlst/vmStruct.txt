@@ -1,0 +1,25 @@
+47f5a0为指令处理函数跳转表，共约40条指令
+
+该处的esi指向ScriptObject对象
+
+#pragma pack(4)
+struct StackEntry{
+	u8 type; //0--bool0 1--bool1 2--int 3--float 4--str
+	u8 type?;
+	u16 stackBase;
+	u32 value;
+};
+
+struct ScriptObject{
+	int unk1;
+	int scriptBuffer;
+	StackEntry st[0x100];
+	int unk;
+	int unk;
+	int bEnd; //in 0x810
+	StackEntry temp;
+	...
+	int scriptPos;
+	int stackDepth;	//栈深度 in 0x820
+	int curStackBase; //当前过程的栈底(?)
+}

@@ -1,0 +1,55 @@
+class C1
+0	VT in 4783a8
+		0:Release(bool IsSelfRelease);
+
+class C2
+0	VT in 476564
+		10:clear();//释放pObj3
+4	C3* pObj3;
+	
+class C3
+0	VT in 478b14
+		0c:
+		10://莫名其妙
+		30:IsFileOpen();
+4	VT2 in 477b18
+		8:OpenFile(LPCSTR lpFileName);
+		0c:clear();//释放m_File对象
+		14:ReadFile(LPVOID lpBuffer,int nLen);
+		20:GetCurFilePos();
+		24:IsFileOpen();
+8	C7* m_File;
+20	int nFilePos;
+
+class CFile:C7	//size=130
+0	VT in 478c50 after 477b40
+		0:Release(bool);
+		0c:CloseFile();
+		10:CreateSameCFileObj();//另创建一个CFile，并打开相同文件。
+		14:ReadFile(LPVOID lpBuffer,int nReadLen);
+		18:SetFilePtr(int nPos);
+		24:IsOpen();
+4	HANDLE m_hFile;
+8	bool m_bIsOpen;
+0c	int nCurrentPos;
+10	char m_szName[??];
+114	C6 obj6;
+
+class C6
+0	VT in 4773a0
+4	CRITICAL_SECTION cs;
+
+class C7
+0	VT in 478ca8 after 477b40
+		14:ReadFile(LPVOID lpBuffer,int nReadLen);
+		20:GetCurPos();
+		24:IsOpen();
+4	C7* m_pFile;
+8	int nCurrentPos;
+0c	int nCurPos;
+10	int nFileSize;
+14	C6 obj6;
+
+class C8
+0	VT in 47739c
+4	LPCRITICAL_SECTION m_pcs;

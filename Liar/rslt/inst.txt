@@ -1,0 +1,63 @@
+SIdx ScriptIndex
+TIdx TextIndex
+PIdx PictureIndex
+BIdx BgmIndex
+SEIdx SoundEffectIdx
+
+48ab90 short[100]
+485054 void*[100]
+
+4a2e80 short tabelA[]
+4853b0 short *tableB[]
+表起始4a2e80
+1000	//dest=src1=src2;
+2000	//dest=(src1||src2);
+3000	//dest=(src1&&src2);
+4000	//dest=(src1==src2);
+5000	//dest=(src1>=src2);
+6000	//dest=(src1>src2);
+7000	//dest=(src1<=src2);
+8000	//dest=(src1<src2);
+9000	//dest=(src1!=src2);
+A000	//dest=src1+src2;
+B000	//dest=src1-src2;
+C000	//dest=src1*src2;
+D000	//dest=src1/src2;
+E000	//dest=src1%src2;
+F000	//dest=src2
+
+
+3		4		GotoIf(SIdx);//如果tableA[0]为0则跳转
+4		4		GotoIf(SIdx);//如果tableA[0]不为0则跳转
+5		4		Goto(SIdx);
+9		4		Rand(Idx);//随机数放到TableA[Idx]中
+c		8		ReadScript?(SIdx n1,TIdx n2);
+e		58		Select(short nSelCount,TIdx,int offset[5],TIdx[5],int nVoiceIdx,int,int);
+f		48		CallScript();
+10		4		Return(int);
+11		0
+12		8		ReadFromData(int TableIdx,int DataIdx);
+14		8		ReadBG(PIdx,int unk);
+15		4
+1a		0		SetValue();//485330置1
+1c		12		ShowDC(int[3]);
+1e		24		func(int,PIdx,int x,int y,int[2]);
+24		8
+26		16		func(int[4]);
+28		8
+29		8
+2f		8
+31		8
+38		20		func(int[5]);
+3c		12		ReadBgm(BIdx n,int unk,int unk);
+3d		8		Play?(nRepeat?,int);
+3e		4		ReadSE(SEIdx);
+3f		12		PlaySE(int nRepeatCount,int[2]);
+46		16		
+47		16
+49		12		WaitUser?(int[3])
+4b		20		ReadPic(int,PIdx,int x,int y,int);
+51		28		Text(int,VIdx,int,int,TIdx,TIdx displayed,int);
+79		8		func(int unk,TIdx n);
+84		8
+c8		44		Call...(int Offset,int[10])

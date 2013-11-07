@@ -1,0 +1,1754 @@
+System4.0 AIN format
+
+0. はじめに
+
+  これはSystem4.0のシナリオデータ *.ain についての分析メモです。
+
+  目次
+    1. 復号化
+    2. データ種類
+    3. 変数型(引数?返り値)
+    4. CODE部解説
+     4.1 アセンブラコード一覧
+     4.2 アセンブラコード解説
+     4.3 System4.0言語とアセンブラコード
+
+
+1. 復号化
+
+  ainファイルは簡単な符号化を行っているのでまずそれを解きます。
+  キーは 0x5D3E3 で初期化した後、XOR、シフト等の演算をおこなっています。
+  
+2. データ種類
+
+  VERS: AIN バージョン情報 (0,1,4)
+  CODE: シナリオ制御コード
+  FUNC: シナリオ関数ラベルと引数
+  GLOB: グローバル変数
+  GSET: グローバル変数の初期値
+  STRT: 構造体
+  MSG0: ゲームメッセージ
+  MAIN: main関数番号
+  MSGF: message関数番号
+  HLL0: DLL情報
+  SWI0: switch/case用データ
+  GVER: ゲームのバージョン
+  SLBL: ? (VERS=1のみ)
+  STR0: 文字列変数 (VERS>=1)
+  FNAM: コンパイル前のシナリオファイル名 (VERS>=1)
+  OJMP: onjump関数番号 (VERS>=1)
+  FNCT: 関数型定義 (VERS>=1)
+  KEYC: ? (VERS>=4)
+
+
+  char  ID1[4]; /* VERS */
+  int32 rsv;    /* AINのバージョン */
+
+  char  ID2[4]; /* CODE */
+  int32 len2;   /* CODE の長さ */
+
+  char  ID3[4];   /* FUNC */
+  int32 func_num; /* FUNC の個数 */
+    int32  func_adr;   /* 関数のアドレス */
+    char  *func_name;  /* 関数名 (class@func, class@0, class@1) */
+    int32  func_type;  /* 0: 通常関数, 1:シナリオ関数 (VERS>=4のときのみ) */
+    int32  func_ret0;  /* 関数返値の主型 */
+    int32  func_ret1;  /* 関数返値の副型 */
+    int32  func_argc1; /* 参数个数*/
+    int32  func_argc2; /* 参数+局部变量の個数 */
+    int32  func_rsv;   /* ? (VERS>=4のときのみ) */
+      char *func_argv_name; /* 引数の名前 */
+      int32 func_argv_t0;   /* 引数の主型 */
+      int32 func_argv_t1;   /* 引数の副型1 */
+      int32 func_argv_t2;   /* 引数の副型2 */
+
+ //  func_argc1 が 0 の時と, func_argc1=func_argc2はどう違うのか？
+
+ // func_name == NULL (mainのコンストラクタ? (startup))
+ // func_name == "\0x30"   (mainのデストラクタ? (exit))
+
+  char  ID4[4];   /* GLOB */
+  int32 glob_num; /* GLOB の個数 */
+    char *glob_name; /* 変数名 */
+    int32 glob_t0;   /* 主型   */
+    int32 glob_t1;   /* 副型１ */
+    int32 glob_t2;   /* 副型２ */
+
+  char  ID5[4];   /* GSET */
+  int32 gset_len; /* GSETの個数 */
+    int32 gset_var; /* GLOB番号 */
+    int32 gset_t0;  /* 主型 */
+    {int32|char *} gset_value; /* 値 */
+
+  char  ID6[4];   /* STRT */
+  int32 strt_len; /* STRTの個数 */
+    char *strt_name;    /* 名前 */
+    int32 strt_fncnst;  /* コンストラクタ FUNC番号 (なしの時は-1) */
+    int32 strt_fndest;  /* デストラクタ   FUNC番号 (なしの時は-1) */
+    int32 strt_numelem; /* 要素数 */
+      char *strt_elem_name; /* 名前 */
+      int32 strt_elem_t0;   /* 主型 */
+      int32 strt_elem_t1;   /* 副型1 */
+      int32 strt_elem_t2;   /* 副型2 */
+
+  char  ID7[4];   /* MSG0 */
+  int32 msg0_len; /* MSG0 の個数 */
+    char *msg0_name; /* メッセージ文字列 */
+
+  char  ID8[4];   /* MAIN */
+  int32 main_len; /* メイン関数番号 */
+
+  char  ID9[4];    /* MSGF */
+  int32 msgf_fno;  /* message 関数番号 -1の時は未定義 */
+
+  char  ID10[4]; /* HLL0 */
+  int32 hll_num; /* HLLの個数 */
+    char *hll_name;  /* HLLのファイル名 */
+    int32 func_num;  /* HLL内部の関数の数 */
+      char *func_name; /* 関数名 */
+      int32 func_ret;  /* 返値の種類 */
+      int32 func_argc; /* 引数の数 */
+        char *argv_name;  /* 引数の種類名 */
+        int32 argv_t0;    /* 引数の種類 
+			   0: void
+			   10: int
+			   11: float
+			   12: string (IString*)
+                           13: struct (IMVStruct3 *)
+                           14: array@int (IVMArray2 *)
+                           18: intp/ref int (int *)
+                           19: floatp/ref float (float *)
+			   20: stringp/ref string (IString *)
+			   21: ref xxxx (IVMSTruct3 *)
+			   26: IMainSystem (IMainSystem *)
+                           47: bool (bool)
+ 	                */
+
+  char  ID11[4]; /* SWI0 */
+  int32 swi_num; /* SWI0の個数 */
+    int32 rsv1;  /* 2=int/ 4=string */
+    int32 rsv2;  /* default時のアドレス(-1の時はdefaultなし) */
+    int32 num2;  /* caseの個数 */
+      int32 index; /* 事例式 */
+      int32 data;  /* アドレス */
+
+  char ID12[4]; /* GVER */
+  int32 gver_id; /* ゲームバージョン */
+
+  char ID13[4]; /* STR0 */
+  int32 str0_num;
+    char *srt0_str;
+
+  char ID14[4]; /* FNAM */
+  int32 fnam_num;
+    char *fnam_str;
+
+  char ID15[4]; /* OJMP */
+  int32 ojmp_rsv0; /* onjump関数番号 -1の時は未定義 */
+
+  char ID15[4]; /* FNCT */
+  int32 fnct_bytes;  /* バイト数 */
+  int32 fnct_num;    /* 個数 */
+    char *fnct_name;  /* 関数名 */
+    int32 fnct_ret0;  /* 返り値主型 */
+    int32 fnct_ret1;  /* 返り値副型 */
+    int32 fnct_argc0;  /* ??? */
+    int32 fnct_argc1;  /* 関数の引数の個数 */
+      char *name;         /* 引数の名前(ほとんどはダミー) */
+      int32 fnct_argv_t0; /* 引数主型  */
+      int32 fnct_argv_t1; /* 引数副型1 */
+      int32 fnct_argv_t2; /* 引数副型2 */
+
+  char ID16[4]; /* SLBL */
+  int32 slbl_num;
+   char *slbl_name;
+   int32 slbl_rsv0;
+
+  char ID17[4]; /* KEYC */
+
+
+3. 変数型(引数?返り値)
+  void:       0, -1, 0
+  int:        10, -1, 0
+  float:      11, -1, 0
+  string:     12, -1, 0
+  STRT:       13, STRT番号, 0
+  array@int:  14, -1, 次元数
+  array@float:  15, -1, 次元数
+  array@string: 16, -1, 次元数
+  array@STRT: 17, STRT番号, 次元数
+  ref int:    18, -1, 0
+  ref float:  19, -1, 0
+  ref string: 20, -1, 0
+  ref STRT:   21, STRT番号, 0
+  ref array@int:     22, -1, 次元数
+  ref array@float:   23, -1, 次元数
+  ref array@string:  24, -1, 次元数
+  ref array@STRT:    25, STRT番号, 次元数
+  IMaingSystem:      26, -1, 0
+  関数型:            27, -1, 0
+  bool:              47, -1, 0
+
+
+4. CODE部解説
+
+4.1 アセンブラコード一覧
+
+コードは16bit、数値は32ビット。
+
+0x00,n: PUSH n
+0x01: POP
+0x02: REF
+0x03: REFREF
+0x04: PUSHGLOBALPAGE
+0x05: PUSHLOCALPAGE
+0x06: INV
+0x07: NOT
+0x08: COMPL
+0x09: ADD
+0x0A: SUB
+0x0B: MUL
+0x0C: DIV
+0x0D: MOD
+0x0E: AND
+0x0F: OR
+0x10: XOR
+0x11: LSHIFT
+0x12: RSHIFT
+0x13: LT
+0x14: GT
+0x15: LTE
+0x16: GTE
+0x17: NOTE
+0x18: EQUALE
+0x19: ASSIGN
+0x1A: PLUSA
+0x1B: MINUSA
+0x1C: MULA
+0x1D: DIVA
+0x1E: MODA
+0x1F: ANDA
+0x20: ORA
+0x21: XORA
+0x22: LSHIFTA
+0x23: RSHIFTA
+0x24: F_ASSIGN
+0x25: F_PLUSA
+0x26: F_MINUSA
+0x27: F_MULA
+0x28: F_DIVA
+0x29: DUP2
+0x2A: DUP_X2
+0x2C,n: JUMP n
+0x2D,n: IFZ n
+0x2E,n: IFNZ n
+0x2F: RETURN
+0x30,n: CALLFUNC n
+0x31: INC
+0x32: DEC
+0x33: FTOI
+0x34: ITOF
+0x35: F_INV
+0x36: F_ADD
+0x37: F_SUB
+0x38: F_MUL
+0x39: F_DIV
+0x3A: F_LT
+0x3B: F_GT
+0x3C: F_LTE
+0x3D: F_GTE
+0x3E: F_NOTE
+0x3F: F_EQUALE
+0x40,n: F_PUSH n
+0x41,n: S_PUSH n
+0x42: S_POP
+0x43: S_ADD
+0x44: S_ASSIGN
+0x45: S_PLUSA
+0x46: S_REF
+0x47: S_REFREF
+0x48: S_NOTE
+0x49: S_EQUALE
+0x4A: SF_CREATE
+0x4B: SF_CREATEPIXEL
+0x4C: SF_CREATEALPHA
+0x4D: SR_POP
+0x4E: SR_ASSIGN
+0x4F,n: SR_REF n
+0x50: SR_REFREF
+0x51: A_ALLOC
+0x52: A_REALLOC
+0x53: A_FREE
+0x54: A_NUMOF
+0x55: A_COPY
+0x56: A_FILL
+0x57: C_REF
+0x58: C_ASSIGN
+0x59,n: MES n
+0x5A,m,n: CALLHLL m n
+0x5B: PUSHSTRUCTPAGE
+0x5C,n: CALLMETHOD n
+0x5D,n: SH_GLOBALREF n
+0x5E,n SH_LOCALREF n
+0x5F,n SWITCH n
+0x60,n STRSWITCH n
+0x61,n <FUNC %d>
+0x62,n <EOF %d>
+0x63,n: CALLSYS n
+0x64: SJUMP
+0x65: CALLONJUMP
+0x66: SWAP
+0x67,n: SH_STRUCTREF n
+0x68: S_LENGTH
+0x69: S_LENGTHBYTE
+0x6A: I_STRING
+0x6B: CALLFUNC2
+0x6C: CMD_DUP2_X1
+0x6D: R_ASSIGN
+0x6E: FT_ASSIGN
+0x6F: ASSERT
+0x70: S_LT
+0x71: S_GT
+0x72: S_LTE
+0x73: S_GTE
+0x74: S_LENGTH2
+0x75: S_LENGTHBYTE2
+0x76: NEW
+0x77: DELETE
+0x78: CHECKUDO
+0x79: A_REF
+0x7A: DUP
+0x7B: DUP_U2
+0x7C: SP_INC
+0x7D: SP_DEC
+0x7E,n <ENDFUNC>
+0x7F: R_EQUALE
+0x80: R_NOTE
+0x81,m,n: SH_LOCALCREATE m,n
+0x82 n: SH_LOCALDELETE n
+0x83: STOI
+0x84: A_PUSHBACK
+0x85: A_POPBACK
+0x86: S_EMPTY
+0x87: A_EMPTY
+0x88: A_ERASE
+0x89: A_INSERT
+0x8A,n: SH_LOCALINC n
+0x8B,n: SH_LOCALDEC n
+0x8C,m,n: SH_LOCALASSIGN m,n
+0x8D: ITOB
+0x8E: S_FIND
+0x8F: S_GETPART
+0x90: A_SORT
+0x91: S_PUSHBACK
+0x92: S_POPBACK
+0x93: FTOS
+0x94: S_MOD
+0x95: S_PLUSA2
+0x96: OBJSWAP
+0x97: S_ERASE
+
+0x98 n: SR_REF2
+0x99: S_ERASE2
+0x9A: S_PUSHBACK2
+0X9B: S_POPBACK2
+0X9C: ITOLI
+0X9D: LI_ADD
+0X9E: LI_SUB
+0X9F: LI_MUL
+0XA0: LI_DIV
+0XA1: LI_MOD
+0XA2: LI_ASSIGN
+0XA3: LI_PLUSA
+0XA4: LI_MINUSA
+0XA5: LI_MULA
+0xA6: LI_DIVA
+0XA7: LI_MODA
+0XA8: LI_ANDA
+0XA9: LI_ORA
+0XAA: LI_XORA
+0XAB: LI_LSHIFTA
+0XAC: LI_RSHIFTA
+0XAD: LI_INC
+0XAE: LI_DEC
+0XAF: A_FIND
+0XB0: A_REVERSE
+0XB1: SH_SR_ASSIGN
+0XB2 m n: SH_MEM_ASSIGN_LOCAL
+0xB3 n: A_NUMOF_GLOB_1
+0XB4 n: A_NUMOF_STRUCT_1
+0XB5 m n: SH_MEM_ASSIGN_IMM
+0xB6 n: SH_LOCALREFREF
+0xB7 m n: SH_LOCAL_ASSIGN_SUM_IMM
+0XB8 m n p: SH_IF_LOC_LT_IMM
+0XB9 m n p: SH_IF_LOC_GE_IMM
+0XBA m n: SH_LOCALREF_ASSIGN_MEM
+0XBB m: PAGE_REF
+0XBC m n: SH_GLOBAL_ASSIGN_LOCAL
+0XBD m n: SH_STRUCTREF_GT_IMM
+0xBE m n: SH_STRUCT_ASSIGN_LOCALREF_ITOB
+0xBF m n: SH_LOCAL_ASSIGN_STRUCTREF
+0XC0 m n p: SH_IF_STRUCTREF_NE_LOCALREF
+0XC1 m n p: SH_IF_STRUCTREF_GT_IMM
+0XC2 m n: SH_STRUCTREF_CALLMETHOD_NO_PARAM
+0XC3 m n: SH_STRUCTREF2
+0XC4 m n: SH_REF_STRUCTREF2
+0XC5 m n p: SH_STRUCTREF3
+0XC6 m n p: SH_STRUCTREF2_CALLMETHOD_NO_PARAM
+0XC7 m n: SH_IF_STRUCTREF_Z
+0XC8 m n: SH_IF_STRUCT_A_NOT_EMPTY
+0XC9 m n p: SH_IF_LOC_GT_IMM
+0XCA m n p: SH_IF_STRUCTREF_NE_IMM
+0XCB m: THISCALLMETHOD_NOPARAM
+0XCC m n p: SH_IF_LOC_NE_IMM
+0XCD m n p: SH_IF_STRUCTREF_EQ_IMM
+0XCE m n: SH_GLOBAL_ASSIGN_IMM
+0XCF m n p: SH_LOCALSTRUCT_ASSIGN_IMM
+0XD0 m n: SH_STRUCT_A_PUSHBACK_LOCAL_STRUCT
+0XD1 m n: SH_GLOBAL_A_PUSHBACK_LOCAL_STRUCT
+0XD2 m n: SH_LOCAL_A_PUSHBACK_LOCAL_STRUCT
+0XD3 m n: SH_IF_SREF_NE_STR0
+0XD4: SH_S_ASSIGN_REF
+0XD5: SH_A_FIND_SREF
+0XD6: SH_SREF_EMPTY
+0XD7 m n: SH_STRUCTSREF_EQ_LOCALSREF
+0XD8 m n: SH_LOCALSREF_EQ_STR0
+0XD9 m n: SH_STRUCTSREF_NE_LOCALSREF
+0XDA m n: SH_LOCALSREF_NE_STR0
+0XDB m n: SH_STRUCT_SR_REF
+0XDC n: SH_STRUCT_S_REF
+0XDD n: S_REF2
+0XDE m n p: SH_REF_LOCAL_ASSIGN_STRUCTREF2
+0XDF m: SH_GLOBAL_S_REF
+0XE0 m: SH_LOCAL_S_REF
+0XE1 m n: SH_LOCALREF_SASSIGN_LOCALSREF
+0XE2 m n: SH_LOCAL_APUSHBACK_LOCALSREF
+0XE3: SH_S_ASSIGN_CALLSYS19
+0XE4 m: SH_S_ASSIGN_STR0
+0XE5 m: SH_SASSIGN_LOCALSREF
+0XE6 m n: SH_STRUCTREF_SASSIGN_LOCALSREF
+0XE7 m: SH_LOCALSREF_EMPTY
+0XE8 m n: SH_GLOBAL_APUSHBACK_LOCALSREF
+0XE9 m n: SH_STRUCT_APUSHBACK_LOCALSREF
+0XEA m: SH_STRUCTSREF_EMPTY
+0XEB m: SH_GLOBALSREF_EMPTY
+0XEC m: SH_SASSIGN_STRUCTSREF
+0XED m: SH_SASSIGN_GLOBALSREF
+0XEE m: SH_STRUCTSREF_NE_STR0  ??
+0XEF m n: SH_GLOBALSREF_NE_STR0
+0XF0 m n p: SH_LOC_LT_IMM_OR_LOC_GE_IMM
+
+4.2 アセンブラコード解説
+
+JAMコード: PUSH n
+code: 0x00, n(32)
+機能: int型数値 n をスタックに積む
+
+JAMコード: POP
+code: 0x01
+機能: スタックから32ビット値を取り出す
+
+JAMコード: REF
+code: 0x02
+機能: スタックにある変数をポインタとして参照先の値を取り出す (???)
+
+JAMコード: REFREF
+code: 0x03
+機能: (???)
+
+JAMコード: PUSHGLOBALPAGE
+code: 0x04
+機能: グローバル変数を示すページ番号をスタックに積む。グローバル変数の
+プレフィックスとして使用し、直後に変数番号をPUSH n: で積む。
+
+JAMコード: PUSHLOCALPAGE
+code: 0x05
+機能: ローカル変数を示すページ番号をスタックに積む。ローカル変数の
+プレフィックスとして使用し、直後に変数番号をPUSH n: で積む。
+
+JAMコード: INV
+code: 0x06
+機能: int型負記号演算(-)
+      スタックにある数値を取り出し、負の数値に変換して結果をスタックに積む。
+
+JAMコード: NOT
+code: 0x07
+機能: 否定演算(!)
+      スタックにある数値を取り出し、否定演算を行い結果をスタックに積む。
+
+JAMコード: COMPL
+code: 0x08
+機能: 補数演算(~)
+      スタックにある数値を取り出し、否定演算を行い結果をスタックに積む。
+
+JAMコード: ADD
+code: 0x09
+機能: int型加算 (+)
+      スタックにある数値を２つ取り出し、int型として加算し結果をスタックに積む。
+      a = pop, b = pop, c = b + a, push(c)
+
+JAMコード: SUB
+code: 0x0A
+機能: int型減算 (-)
+      スタックにある数値を２つ取り出し、int型として減算し結果をスタックに積む。
+      最初に取り出す方が引く数。
+      a = pop, b = pop, c = b - a, push(c)
+
+JAMコード: MUL
+code: 0x0B
+機能: int型乗算 (*)
+      スタックにある数値を２つ取り出し、int型として乗算し結果をスタックに積む。
+      a = pop, b = pop, c = b * a, push(c)
+
+JAMコード: DIV
+code: 0x0C
+機能: int型除算 (/)
+      スタックにある数値を２つ取り出し、int型として除算し結果をスタックに積む。
+      最初に取り出す方が割る数。
+      a = pop, b = pop, c = b / a, push(c)
+
+JAMコード: MOD
+code: 0x0D
+機能: int型剰余 (%)
+      スタックにある数値を２つ取り出し、int型として剰余を計算し結果をスタック
+      に積む。最初に取り出す方が割る数。
+      a = pop, b = pop, c = b % a, push(c)
+
+JAMコード: AND
+code: 0x0E
+機能: ビット積 (&)
+      スタックにある数値を２つ取り出し、ビット積を計算し結果をスタックに積む。
+      a = pop, b = pop, c = b & a, push(c)
+
+JAMコード: OR 
+code: 0x0F
+機能: ビット積 (|)
+      スタックにある数値を２つ取り出し、ビット和を計算し結果をスタックに積む。
+      a = pop, b = pop, c = b | a, push(c)
+
+JAMコード: XOR
+code: 0x10
+機能: ビット差 (^)
+      スタックにある数値を２つ取り出し、ビット差(排他論理和)を計算し結果を
+      スタックに積む。
+      a = pop, b = pop, c = b ^ a, push(c)
+
+JAMコード: LSHIFT
+code: 0x11
+機能: 左シフト (<<)
+      スタックにある数値を２つ取り出し、後から取り出した数値を、始めに取り出
+      した数値のぶんだけ左シフト計算し結果をスタックに積む。
+      a = pop, b = pop, c = b << a, push(c)
+
+JAMコード: RSHIFT
+code: 0x12
+機能: 右シフト (>>)
+      スタックにある数値を２つ取り出し、後から取り出した数値を、始めに取り出
+      した数値のぶんだけ右シフト計算し結果をスタックに積む。
+      a = pop, b = pop, c = b >> a, push(c)
+
+JAMコード: LT
+code: 0x13
+機能: 小なり(int型) (<)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)よりも小さい場合1、大きいか等しい場合0をスタックに積む。
+      a = pop, b = pop, push(b < a ? 1 : 0)
+
+JAMコード: GT
+code: 0x14
+機能: 大なり(int型) (<)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)よりも大きい場合1、小さいか等しい場合0をスタックに積む。
+      a = pop, b = pop, push(b > a ? 1 : 0)
+
+JAMコード: LTE
+code: 0x15
+機能: 以下 (int型) (<=)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)以上の場合1、小さい場合0をスタックに積む。
+      a = pop, b = pop, push(b <= a ? 1 : 0)
+
+JAMコード: GTE
+code: 0x16
+機能: 以下 (int型) (>=)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)以下の場合1、大きい場合0をスタックに積む。
+      a = pop, b = pop, push(b >= a ? 1 : 0)
+
+JAMコード: NOTE
+code: 0x17
+機能: 非等 (int型) (!=)
+      スタックにある数値を２つ取り出し、２つが等しくない場合1、等しい場合0を
+      スタックに積む。
+      a = pop, b = pop, push(b != a ? 1 : 0)
+
+JAMコード: EQUALE
+code: 0x18
+機能: 等価 (int型) (!=)
+      スタックにある数値を２つ取り出し、２つが等しい場合1、等しくない場合0を
+      スタックに積む。
+      a = pop, b = pop, push(b == a ? 1 : 0)
+
+JAMコード: ASSIGN
+code: 0x19
+機能: 変数にint型数値を代入 (=)
+      スタックにある数値と変数を取り出し、数値をint型として変数に代入。また
+      演算結果をスタックに積む。
+      a = pop; b = popvar, b = a, push(a)
+
+JAMコード: PLUSA
+code: 0x1A
+機能: 加算代入 (int型) (+=)
+      スタックにある数値と変数を取り出し、数値をint型として変数に加算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b + a, push(b)
+
+JAMコード: MINUSA
+code: 0x1B
+機能: 減算代入 (int型) (-=)
+      スタックにある数値と変数を取り出し、数値をint型として数値に減算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b - a, push(b)
+
+
+JAMコード: MULA
+code: 0x1C
+機能: 乗算代入 (int型) (*=)
+      スタックにある数値と変数を取り出し、数値をint型として変数に乗算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b * a, push(b)
+
+JAMコード: DIVA
+code: 0x1D
+機能: 除算代入 (int型) (/=)
+      スタックにある数値と変数を取り出し、数値をint型として変数に除算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b / a, push(b)
+
+JAMコード: MODA
+code: 0x1E
+機能: 剰余代入 (int型) (%=)
+      スタックにある数値と変数を取り出し、変数に数値を剰余代入。また、演算結果
+      をスタックに積む。
+      a = pop; b = popvar, b = b % a, push(b)
+
+JAMコード: ANDA
+code: 0x1F
+機能: ビット積代入 (&=)
+      スタックにある数値と変数を取り出し、変数の値と数値のビット積を計算し、
+      結果を変数に代入。また、演算結果をスタックに積む。
+      a = pop; b = popvar, b = b & a, push(b)
+
+JAMコード: ORA
+code: 0x20
+機能: ビット和代入 (|=)
+      スタックにある数値と変数を取り出し、変数の値と数値のビット和を計算し、
+      結果を変数に代入。また、演算結果をスタックに積む。
+      a = pop; b = popvar, b = b | a, push(b)
+
+JAMコード: XORA
+code: 0x21
+機能: ビット差代入 (^=)
+      スタックにある数値と変数を取り出し、変数の値と数値のビット差を計算し、
+      結果を変数に代入。また、演算結果をスタックに積む。
+      a = pop; b = popvar, b = b ^ a, push(b)
+
+JAMコード: LSHIFTA
+code: 0x22
+機能: 左シフト代入 (<<=)
+      スタックにある数値と変数を取り出し、変数の値を数値の分だけ左シフトし、
+      結果を変数に代入。また、演算結果をスタックに積む。
+      a = pop; b = popvar, b = b << a, push(b)
+
+JAMコード: RSHIFTA
+code: 0x23
+機能: 右シフト代入 (<<=)
+      スタックにある数値と変数を取り出し、変数の値を数値の分だけ右シフトし、
+      結果を変数に代入。また、演算結果をスタックに積む。
+      a = pop; b = popvar, b = b >> a, push(b)
+
+JAMコード: F_ASSIGN
+code: 0x24
+機能: 変数にfloat型数値を代入 (=)
+      スタックにある数値と変数を取り出し、数値をfloat型として変数に代入。また
+      演算結果をスタックに積む。
+      a = pop; b = popvar, b = a, push(a)
+
+JAMコード: F_PLUSA
+code: 0x25
+機能: 加算代入 (float型) (+=)
+      スタックにある数値と変数を取り出し、数値をfloat型として変数に加算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b + a, push(b)
+
+JAMコード: F_MINUSA
+code: 0x26
+機能: 減算代入 (float型) (-=)
+      スタックにある数値と変数を取り出し、数値をfloat型として変数に減算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b - a, push(b)
+
+JAMコード: F_MULA
+code: 0x27
+機能: 乗算代入 (float型) (*=)
+      スタックにある数値と変数を取り出し、数値をfloat型として変数に乗算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b * a, push(b)
+
+JAMコード: F_DIVA
+code: 0x28
+機能: 除算代入 (float型) (/=)
+      スタックにある数値と変数を取り出し、数値をfloat型として変数に除算代入。
+      また演算結果をスタックに積む。
+      a = pop; b = popvar, b = b / a, push(b)
+
+JAMコード: DUP2
+code: 0x29
+機能: スタックにある変数を複製してスタックに積む (???)
+
+JAMコード: DUP_X2
+code: 0x2A
+機能: (???)
+
+JAMコード: JUMP n
+code: 0x2C, n
+機能: 無条件ジャンプ
+      無条件で指定のアドレス n にジャンプする。
+
+JAMコード: IFZ n
+code: 0x2D, n
+機能: 真条件ジャンプ
+      スタックから値を取り出し、真の場合(0以外の時)に指定のアドレス n に
+      ジャンプする。
+      a = pop, if (a) goto n;
+
+JAMコード: IFNZ n
+code: 0x2E, n
+機能: 偽条件ジャンプ
+      スタックから値を取り出し、偽の場合(0の時)に指定のアドレス n に
+      ジャンプする。
+      a = pop, if (a==0) goto n;
+
+JAMコード: RETURN
+code: 0x2F
+機能: 関数リターン
+      スタックに値が残っていれば、それを関数の値として呼び出し元に返し、
+      関数から復帰する。関数から復帰するときに次の処理を行う。
+      1) ローカル変数の破棄
+      2) ...
+
+JAMコード: CALLFUNC n
+code: 0x30, n
+機能: 関数呼び出し
+      番号n番の関数を呼び出す。関数のアドレスや引数の数と種類はFUNCタグの領域
+      に記述されている。関数の引数はスタックに積まれている。
+
+JAMコード: INC
+code: 0x31
+機能: 増分(++)
+      スタックに積まれている数値または変数を取り出して１増やし、結果を
+      スタックに積む。
+
+JAMコード: DEC
+code: 0x32
+機能: 減分(--)
+      スタックに積まれている数値または変数を取り出して１減らし、結果を
+      スタックに積む。
+
+JAMコード: FTOI
+code: 0x33
+機能: float->int変換
+      スタックに積まれている数値を取り出してfloat型からint型に変換し、
+      結果をスタックに積む。
+
+JAMコード: ITOF
+code: 0x34
+機能: int->float変換
+      スタックに積まれている数値を取り出してint型からfloat型に変換し、
+      結果をスタックに積む。
+
+JAMコード: F_INV
+code: 0x35
+機能: float型負記号演算 (-)
+      スタックにある数値を取り出し、負の数値に変換して再度スタックに積む。
+
+JAMコード: F_ADD
+code: 0x36
+機能: float型加算 (+)
+      スタックにある数値を２つ取り出し、float型として加算し結果をスタック
+      に積む。
+      a = pop, b = pop, c = b + a, push(c)
+
+JAMコード: F_SUB
+code: 0x37
+機能: float型減算 (-)
+      スタックにある数値を２つ取り出し、float型として減算し結果をスタック
+      に積む。最初に取り出す方が引く数。
+      a = pop, b = pop, c = b - a, push(c)
+
+JAMコード: F_MUL
+code: 0x38
+機能: float型乗算 (*)
+      スタックにある数値を２つ取り出し、float型として乗算し結果をスタック
+      に積む。
+      a = pop, b = pop, c = b * a, push(c)
+
+JAMコード: F_DIV
+code: 0x39
+機能: float型除算 (/)
+      スタックにある数値を２つ取り出し、float型として除算し結果をスタック
+      に積む。最初に取り出す方が割る数。
+      a = pop, b = pop, c = b / a, push(c)
+
+JAMコード: F_LT
+code: 0x3A
+機能: 小なり(float型) (<)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)よりも小さい場合1、大きいか等しい場合0をスタックに積む。
+      a = pop, b = pop, push(b < a ? 1 : 0)
+
+
+JAMコード: F_GT
+code: 0x3B
+機能: 大なり(float型) (<)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)よりも大きい場合1、小さいか等しい場合0をスタックに積む。
+      a = pop, b = pop, push(b > a ? 1 : 0)
+
+JAMコード: F_LTE
+code: 0x3C
+機能: 以下 (float型) (<=)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)以上の場合1、小さい場合0をスタックに積む。
+      a = pop, b = pop, push(b <= a ? 1 : 0)
+
+JAMコード: F_GTE
+code: 0x3D
+機能: 以下 (float型) (>=)
+      スタックにある数値を２つ取り出し、後から取り出した数値(b)が始めに取り出
+      した数値(a)以下の場合1、大きい場合0をスタックに積む。
+      a = pop, b = pop, push(b >= a ? 1 : 0)
+
+JAMコード: F_NOTE
+code: 0x3E
+機能: 非等 (float型) (!=)
+      スタックにある数値を２つ取り出し、２つが等しくない場合1、等しい場合0を
+      スタックに積む。
+      a = pop, b = pop, push(b != a ? 1 : 0)
+
+JAMコード: F_EQUALE
+code: 0x3F
+機能: 等価 (float型) (!=)
+      スタックにある数値を２つ取り出し、２つが等しい場合1、等しくない場合0を
+      スタックに積む。
+      a = pop, b = pop, push(b == a ? 1 : 0)
+
+JAMコード: F_PUSH n
+code: 0x40, n(32)
+機能: float型数値 n をスタックに積む
+
+JAMコード: S_PUSH n
+code: 0x41, n(32)
+機能: string番号 n をスタックに積む
+
+JAMコード: S_POP
+code: 0x42
+機能: スタックからstringオブジェクトを取り出す。
+
+JAMコード: S_ADD
+code: 0x43
+機能: スタックから２つのstringオブジェクトを取り出し、結合して結果をスタックに
+      積む。
+
+JAMコード: S_ASSIGN
+code: 0x44
+機能: スタックから 変数とstringオブジェクトを取り出し、変数に文字列を代入して
+      結果をスタックに積む。
+
+JAMコード: S_PLUSA
+code: 0x45
+機能: 旧文字列結合 (+) -> 現在は S_PLUSA2 コードに変更されている。
+
+JAMコード: S_REF
+code: 0x46
+機能: スタックにある変数をポインタとして参照先のstringオブジェクトを取り出す。
+      (???)
+
+JAMコード: S_REFRRF
+code: 0x47
+機能: (???)
+
+JAMコード: S_NOTE
+code: 0x48
+機能: 非等 (string型)(!=)
+      スタックにある文字列を２つ取り出し、２つが等しくない場合1、等しい場合0を
+      スタックに積む。
+      a = pop, b = pop, push(strcmp(b,a) ? 1 : 0)
+
+JAMコード: S_EQUALE
+code: 0x49
+機能: 等価 (string型)(==)
+      スタックにある文字列を２つ取り出し、２つが等しい場合1、等しくない場合0を
+      スタックに積む。
+      a = pop, b = pop, push(strcmp(b,a) == 0 ? 1 : 0)
+
+JAMコード: SR_POP
+code: 0x4D
+機能: スタックから構造体オブジェクトを取り出す。
+
+JAMコード: SR_ASSIGN
+code: 0x4E
+機能: スタックから変数と構造体オブジェクトを取り出し、変数に構造体を代入。
+
+JAMコード: SR_REF, n
+code: 0x4F, n
+機能: スタックから変数を取り出し、構造体の番号 n を参照するように指定。
+
+JAMコード: SR_REFREF
+code: 0x50
+機能: (???)
+
+JAMコード: A_ALLOC
+code: 0x51
+機能: 配列オブジェクトのメモリ確保 (array::Alloc)
+      変数と次元数と要素数をスタックから取り出し、変数に配列オブジェクトを
+      を割り当て。
+      N = pop, b1 = pop, b2 = pop, ... , bN=pop, var = popvar
+      N: 次元数, b1～bN: 各次元の要素数, var: 割り当てる変数
+
+JAMコード: A_REALLOC
+code: 0x52
+機能: 配列オブジェクトの再メモリ確保 (array::Realloc)
+      変数と次元数と要素数をスタックから取り出し、変数に配列オブジェクトを
+      を再割り当て。
+      N = pop, b1 = pop, b2 = pop, ... , bN=pop, var = popvar
+      N: 次元数, b1～bN: 各次元の要素数, var: 割り当てる変数
+
+JAMコード: A_FREE
+code: 0x53
+機能: 配列オブジェクトのメモリ開放 (array::Free)
+      変数をスタックから取り出して、割り当てられた配列を開放。
+
+JAMコード: A_NUMOF
+code: 0x54
+機能: 配列の指定の次元の要素数の取得 (array::Numof)
+      変数と要素数を取得する次元の番号をスタックから取り出し、要素数をスタック
+      に積む。
+
+JAMコード: A_COPY
+code: 0x55
+機能: 配列のコピー (array::Copy)
+      変数とコピー元、コピー先等をスタックから取り出してコピーを実行後、
+      実際にコピーした数をスタックに積む。
+      var1.Copy(i,var2,j,num);
+      num = pop, j = pop, var2 = popvar, i = pop, var1 = popvar;
+
+JAMコード: A_FILL
+code: 0x56
+機能: 配列の塗りつぶし (array::Fill)
+      変数と転送先インデックス、塗りつぶす個数と要素をスタックから取り出して
+      塗りつぶしを実行後、実際に塗りつぶした数をスタックに積む。
+      var1.Fill(index,val,num);
+      num = pop, val = pop, index = pop, var1 = popvar;
+
+JAMコード: C_REF
+code: 0x57
+機能: char定数の参照 
+      文字列をchar型の配列として見たときの index参照 (???)
+
+JAMコード: C_ASSIGN
+code: 0x58
+機能: char定数の代入 
+      文字列をchar型の配列として見たときの代入 (???)
+
+JAMコード: MES n
+code: 0x59, n
+機能: メッセージ表示。n: メッセージ番号。
+      メッセージ番号は MSG0 タグ内の番号。
+
+JAMコード: CALLHLL m n
+code: 0x5A, m, n
+機能: HLL呼び出し。m: HLL番号, n:HLL内関数番号。
+      引数はスタックから順に取り出す。呼び出し後、HLLの返り値をスタックに積む。
+
+JAMコード: PUSHSTRUCTPAGE
+code: 0x5B
+機能: 構造体を示すページ番号をスタックに積む。構造体の変数をコンストラクタ内で
+       初期化する時に使用。(????)
+
+JAMコード: CALLMETHOD n
+code: 0x5C, n
+機能: 構造体/クラスの関数呼び出し、 n: FUNCタグ内の番号
+
+JAMコード: SH_GLOBALREF n
+code: 0x5D, n
+機能: グローバル変数の変数の中身を取り出してスタックに積む。
+
+JAMコード: SH_LOCALREF n
+code: 0x5E, n
+機能: ローカル変数の変数の中身を取り出してスタックに積む。
+
+JAMコード: SWITCH n
+code: 0x5F, n
+機能: int型 switch/case 実行。n: SWI0の番号
+
+JAMコード: STRSWITCH n
+code: 0x60, n
+機能: string型 switch/case 実行。n: SWI0の番号
+
+JAMコード: <FUNC n>
+code: 0x61, n
+機能: 関数開始宣言。n: 関数(FUNC)番号
+
+JAMコード: <EOF n>
+code: 0x62, n
+機能: ファイルの終わり。n: ファイル番号
+
+JAMコード: CALLSYS n
+code: 0x63, n
+機能: system関数呼び出し。n: System関数番号
+
+JAMコード: SJUMP
+code: 0x64
+機能: シナリオ関数呼び出し(jump シナリオ関数) (???)
+
+JAMコード: CALLONJUMP
+code: 0x65
+機能: SJUMP前に呼ばれる (???)
+
+JAMコード: SWAP
+code: 0x66
+機能: 関数呼び出し時に使用 (???)
+
+JAMコード: SH_STRUCTREF n
+code: 0x67, n
+機能: n番のSTRT型として構造体を参照する
+
+JAMコード: S_LENGTH
+code: 0x68
+機能: 文字列の長さを取得(string::Length()) 
+      stringオブジェクトをスタックから取り出して、文字列の長さをスタックに
+      積む。
+
+JAMコード: S_LENGTHBYTE
+code: 0x69
+機能: 文字列の長さを取得(string::LengthByte()) 
+      stringオブジェクトをスタックから取り出して、文字列の長さをスタックに
+      積む。
+
+JAMコード: I_STRING
+code: 0x6A
+機能: int型数値->文字列変換 (var.String())
+      スタックから数値を取り出して、文字列に変換し、stringオブジェクトを
+      スタックに積む。
+
+JAMコード: CALLFUNC2
+code: 0x6B
+機能: 関数型オブジェクトの呼び出し
+
+JAMコード: CMD_DUP2_X1
+code: 0x6C
+機能: (???)
+
+JAMコード: R_ASSIGN
+code: 0x6D
+機能: 参照代入 (???)
+
+JAMコード: FT_ASSIGN
+code: 0x6E
+機能: 関数型代入 (???)
+
+JAMコード: ASSERT
+code: 0x6F
+機能: assert (???)
+
+JAMコード: S_LT
+code: 0x70
+機能: 小なり(string型) (<)
+      スタックにある文字列を２つ取り出し、後から取り出した文字列(b)が始めに
+      取り出した文字列(a)よりも辞書順的に小さい場合1、大きいか等しい場合0を
+      スタックに積む。
+      a = pop, b = pop, push(b < a ? 1 : 0)
+
+JAMコード: S_GT
+code: 0x71
+機能: 大なり(string型) (<)
+      スタックにある文字列を２つ取り出し、後から取り出した文字列(b)が始めに
+      取り出した文字列(a)よりも辞書順的に大きい場合1、小さいか等しい場合0を
+      スタックに積む。
+      a = pop, b = pop, push(b > a ? 1 : 0)
+
+JAMコード: S_LTE
+code: 0x72
+機能: 以下 (string型) (<=)
+      スタックにある文字列を２つ取り出し、後から取り出した文字列(b)が始めに
+      取り出した文字列(a)以上の場合1、小さい場合0をスタックに積む。
+      a = pop, b = pop, push(b <= a ? 1 : 0)
+
+JAMコード: S_GTE
+code: 0x73
+機能: 以下 (string型) (>=)
+      スタックにある文字列を２つ取り出し、後から取り出した文字列(b)が始めに
+      取り出した文字列(a)以下の場合1、大きい場合0をスタックに積む。
+      a = pop, b = pop, push(b >= a ? 1 : 0)
+
+JAMコード: S_LENGTH2
+code: 0x74
+機能: (???)
+      nTextLength += mm.GetString(i).Length();
+
+JAMコード: DELETE
+code: 0x77
+機能: (???) ref
+
+JAMコード: ?????
+code: 0x79
+機能: (???)
+
+JAMコード: ?????
+code: 0x7A
+機能: (???)
+
+JAMコード: DUP_U2
+code: 0x7B
+機能: (???) ref
+
+JAMコード: SP_INC
+code: 0x7C
+機能: (???) ref
+
+JAMコード: SP_DEC
+code: 0x7D
+機能: (???)
+
+JAMコード: R_EQUALE
+code: 0x7F
+機能: 参照先の同一性チェック(===)
+      同一の時 1, 同一出ないとき 0
+
+JAMコード: R_NOTE
+code: 0x80
+機能: 参照先の同一性チェック(!==)
+      同一の時 1, 同一出ないとき 0
+
+JAMコード: SH_LOCALCREATE m, n
+code: 0x81, m, n
+機能: 構造体を変数にバインド
+      m: 変数番号, n: 構造体番号
+
+JAMコード: SH_LOCALDELETE n
+code: 0x82, n
+機能: 変数にバインドした構造体情報を削除
+      n: 変数番号
+
+JAMコード: STOI
+code: 0x83
+機能: stringをintに変換 (string::Int())
+      スタックから文字列を取り出し、int型数値に変換し、結果をスタックに積む。
+
+JAMコード: A_PUSHBACK
+code: 0x84
+機能: 配列の最後に値を追加 (array::PushBack())
+      スタックから値(a)と配列変数を取り出し、配列変数の最後にa個追加する。
+      a = pop, var = popvar, var.pushback(a)
+
+JAMコード: A_POPBACK
+code: 0x85
+機能: 配列の再後尾から削除 (array::PopBack())
+      スタックから配列変数を取り出し、再後尾を削除。
+
+JAMコード: S_EMPTY
+code: 0x86
+機能: 文字列が空なら1、そうでないなら0を返す(string::Empty())
+
+JAMコード: A_EMPTY
+code: 0x87
+機能: 配列が空なら1、そうでないなら0を返す(array::Empty())
+
+JAMコード: A_ERASE
+code: 0x88
+機能: 指定されたインデックスのオブジェクトを削除。(array::Erase())
+
+JAMコード: A_INSERT
+code: 0x89
+機能: 指定されたインデックスにオブジェクトを挿入。(array::Insert())
+
+JAMコード: SH_LOCALINC n
+code: 0x8A, n
+機能: 後置増分演算子 (++)
+      nを変数番号として１加算する。
+
+JAMコード: SH_LOCALDEC n
+code: 0x8B, n
+機能: 後置減分演算子 (--)
+      nを変数番号として１減算する。
+
+JAMコード: SH_LOCALASSIGN m, n
+code: 0x8C, m, n
+機能: int型ローカル変数の宣言と代入
+      m: 変数番号, n:値
+
+JAMコード: ITOB
+code: 0x8D
+機能: int型からbool型に変換。
+
+JAMコード: S_FIND
+code: 0x8E
+機能: 文字列からszKeyがあるか調べる。(string::Find())
+
+JAMコード: S_GETPART
+code: 0x8F
+機能: 文字列の一部を取り出す。(string::GetPart())
+
+JAMコード: A_SORT
+code: 0x90
+機能: 配列のソート。(array::GetPart())
+
+JAMコード: S_PUSHBACK
+code: 0x91
+機能: 文字列の最後尾にnCharaの文字を追加。(string::PushBackt())
+
+JAMコード: S_POPBACK
+code: 0x92
+機能: 文字列の最後尾の文字を削除。(string::PopBackt())
+
+JAMコード: FTOS
+code: 0x93
+機能: floatをstringに変換 (float::String())
+
+JAMコード: S_MOD
+code: 0x94
+機能: floatをstringに変換 (float::String())
+
+JAMコード: S_PLUSA2
+code: 0x95
+機能: 文字列連結
+
+JAMコード: OBJSWAP
+code: 0x96
+機能: オブジェクト同士の交換
+
+JAMコード: S_ERASE
+code: 0x97
+機能: 文字列の指定位置の文字を削除 (string::Erase())
+
+
+
+4.3 System4.0言語とアセンブラコード
+
+マニュアルの記述順に生成されるアセンブラコードを記述
+変数は基本的にローカル変数。()内はビット数。
+
+変数オブジェクト
+int var: 0x8c(16),var(32),num(32) // int var=整数も同じ
+float var: 5(16),0(16),var(32),0x40(16),実数(32),0x24(16),1(16) // int var=実数も同じ
+bool var: 0x8c(16),var(32),整数(32) // int varと同じ
+String var: 0x5e(16),var(32),0x41(16),strnum(32),0x44(16),0x42(16)
+  // strnumは文字列定数が格納されたインデクス、0の場合はNULL)
+
+配列オブジェクト
+array@int var: 5(16),0(16),var(32),0x53(16) // var.Free()と同じ
+array@int@num var: 5(16),0(16),var(32),0x53(16) 
+var.Alloc(num): 5(16),0(16),var(32),0(16),num(32),0(16),次元数=1(32),0x51 // array@int var[num)と同じ
+var.Alloc(i,j): 5(16),0(16),var(32),0(16),i(32),0(16),j(32),0,次元数=2(32),0x51
+var[i]=j: 0x5e,var(32),0(16),i(32),0(16),j(32),0x19(16),1(16)
+var[i][j]=k: 0x5e,var(32),0(16),i(32),2(16),0(16),j(32),0(16),k(32),0x19(16),1(16)
+var[i][j][k]=l: 0x5e,var(32),0(16),i(32),2(16),0(16),j(32),2(2),0(16),k(32),0(16),l(32),0x19(16),1(16)
+
+参照オブジェクト
+ 宣言: 
+   ref int rVar:     5,0,rVar,0x63,3(32),1,0x29,3,1,0x77,0x63,4(32),1,0,-1(32),0,0,0,       0x6D,1,1
+   ref int rVar=var: 5,0,rVar,0x63,3,    1,0x29,3,1,0x77,0x63,4,    1,0x29,5,0,var,0x63,3,1,0x6D,1,1,2,0x7C,0x63,4,1:
+ 参照先の変更
+   rVar<-var:        5,0,rVar,0x63,3,    1,0x29,3,1,0x77,                  5,0,var,0x7B,0x7C,0x6D,1,1,0x63,4,1
+
+ 参照先の同一性チェック
+   if (rVar1 === rVar2): // 5,0,rVar1,3,5,0,rVar2,3,0x7F,0x2D,adr
+   if (rVar1 !== rVar2): // 5,0,rVar1,3,5,0,rVar2,3,0x80,0x2D,adr
+
+ アクセス:
+   rVar = var: 5,0,rVar,3,0x5E,var,0x19,1
+   rVar = val: 5,0,rVar,3,0,val,0x19,1
+
+定数オブジェクト
+  コンパイル時に評価されるのでコードには出現しない
+
+構造体?クラス
+  構造体宣言:  STRTタグ部分に格納される。
+  構造体オブジェクト宣言:
+    0x82,varno: 構造体用変数宣言
+    0x81,varno,strtno: 変数を構造体にマップ
+      struct sVar; 0x82,sVar,0x81,sVar,STRT番号
+  構造体オブジェクト使用
+    構造体オブジェクト番号の後に変数のインデックスを追加
+      sVar.member=val; 0x5E(16),sVar,0(16),member(32),0(16),val(32),0x19,1
+  構造体オブジェクト同士のコピー
+    0x4F,strno;
+	sVar1=sVar2; 0x5E,sVar1,5,0,sVar2,0x4F(16),STRTnum,0,STRTnum,0x4E,0x4D
+
+
+
+アクセス指定
+  TODO
+
+関数
+  関数定義
+    0x61(16),funcno(32),文,(帰り値の式),0x2F(16),0(16),0(16),0x2F(16),0x7E(16),funcno(32)
+    関数引数->ローカル変数の順に変数番号が割り当てられる
+
+メソッド
+  var = sVar.method(arg1,arg2):
+  5(16),0(16),varno(32),0x5E(16),sVar(32),0(16),arg1(32),0(16),arg2(32),0x5C(16),methodno(32),0x19(16),1(16)
+
+シナリオ関数
+  jump シナリオ関数: 0x41,strno(32),0x65(16),0x64(16)
+
+コンストラクタ
+  hoge@0 という関数が宣言される
+
+デストラクタ
+  hoge@1 という関数が宣言される
+
+???
+  hoge@2 という関数が宣言される
+
+デフォルト引数
+  コンパイラがエンコード時に、デフォルト引数を関数呼び出しの引数の値として追加
+
+関数型
+  呼び出し時
+    0x5E,var,0,arg1,0x66,0,arg2,0x66,0(16),fnctno,0x6B,1
+
+  文字列検索代入
+   ftVar = "function"
+   5,0,funcno,0x41,strno,0(16),0(32),0x6E,0x42
+
+ラベル
+事前定義マクロ
+this参照オブジェクト
+NULLオブジェクト
+引数増加関数マクロ
+ TODO
+
+
+intオブジェクト関数
+str=var.String(): 0x5E(16),str(32),0x5E(16),var(32),0x6A(16),0x44(16),0x42(16)
+
+floatオブジェクト関数
+str=fVar.String(): 0x5E(16),str(32),0x5E(16),fVar(32),0(16),-1(32),0x93(16),0x44(16),0x42(16)
+str=fVar.String(n): 0x5E(16),str(32),0x5E(16),fVar(32),0(16),n(32),0x93(16),0x44(16),0x42(16)
+
+文字列オブジェクト関数
+var=str.Int(): 5(16),0(16),var(32),5(16),0(16),str(32),0x46(16),0x83(16),0x19(16),1(16)
+var=str.Length(): 5(16),0(16),var(32),5(16),0(16),str(32),0x68(16),0x19(16),1(16)
+var=str.LengthByte(): 5(16),0(16),var(32),5(16),0(16),str(32),0x69(16),0x19(16),1(16)
+var=str.Empty():5(16),0(16),var(32),5(16),0(16),str(32),0x46(16),0x86(16),0x19(16),1(16)
+var=str.Find(str1): 5,0,var,5,0,str,0x46,0x41,str1num,0x8E,0x19,1
+str1=str2.GetPart(index,length): 0x5E,str1,5,0,str2,0x46,0,index,0,length,0x8F,0x44,0x42
+str.PushBack(char): 5,0,str,0,char,0x91
+str.PopBack(): 5,0,str,0x92
+
+配列オブジェクト関数
+var.Alloc(): 
+var.Realloc(val): 5,0,var,0,val(32),0(16),次元数=1(32),0x52(16)
+var.Free(): 5,0,var,0x53
+var1=var2.Numof(): 5,0,var1,5,var2,0,次元数=1(32),0x54,0x19,1
+var1.Copy(i,var2,j,num): 5,0,var1,0,i,0x5E,var2,0,j,0,num,0x55,1
+var.Fill(index,val,num):    5,0,var,    0,index,0,val,0,num,0x56,1
+var[i].Fill(index,val,num); 5,0,var,0,i,0,index,0,val,0,num,0x56,1
+var.PushBack(num): 5,0,var,0,num,0x84
+var.PopBack(): 5,0,var,0x85
+var1=var2.Empty(): 5,0,var1,5,0,var2,0x87,0x19,1
+var.Erase(index): 5,0,var,0,index,0x88,1
+var.Insert(index,val): 5,0,var,0,index,0,val,0x89
+var.Sort(): 5,0,var,0(16),0=NULL?(32), 0x90
+
+int定数値
+ 0(16),value(32)
+
+float定数値
+ 0x40(16),value(32) // value: i386 float(4byte)形式
+
+string定数
+ 0x41(16),strno(32) // STR0に格納された文字列
+
+char定数
+ int定数と同じ
+
+メッセージ
+ 0x59(16),msgno(32) // MSG0に格納された文字列
+
+式
+
+if
+  if (制御式1) {真文1} else if (制御式2) {真文2} else {真文3}  
+
+  制御式1,0x2d(16),制御式2のアドレス,真文1,0x2c(16),次の文のアドレス,
+   制御式2,0x2d(16),真文3のアドレス,真文2,0x2c(16),次の文のアドレス, 真文3;
+
+ 0x2C(16),adr(32): 無条件ジャンプ
+ op,0x2D(16),adr(32): 条件ジャンプ(条件を満たさないとき)
+
+while
+ while(制御式) { 文 }
+   制御式,0x2d,次の文のアドレス,文,0x2c,文の先頭アドレス
+
+for
+ for(初期設定;継続条件;再設定式) { 文 }
+   初期設定,継続条件,0x2d,次の文のアドレス,0x2c,文のアドレス,
+   再設定式,0x2c,継続条件のアドレス,文,0x2c,再設定式のアドレス
+
+switch
+ 0x5F(16),no(32): 事例式がint型
+ 0x60(16),no(32): 事例式がstring型
+
+  switch(分岐式) { case 事例式1: 文１; case 事例式2: 文2; default: 文3}
+    分岐式(int): 0x5f(16),SWI0のインデクス,0x2c,次の文のアドレス,文1,文2,文3;
+    分岐式(string): 0x60(16),SWI0のインデクス,0x2c,次の文のアドレス,文1,文2,文3;
+
+break
+  0x2c,アドレス  // 無条件ジャンプで脱出
+
+continue
+  0x2c,アドレス  // 無条件ジャンプで指定の場所へ
+
+return
+  0x2f           // 返り値があるときはスタックから取り出す
+
+goto
+  0x2c,アドレス
+
+jump
+ jump シナリオ関数
+ 0x41, "シナリオ関数"のSTR0番号, 0x65,0x64
+
+jumps
+ TODO
+
+assert
+ assert(式): 式,0x41(16),strno1(32),0x41(16),strno2(32),0(16),5(16),0(16),0x6F(16)
+
+  strno1: "式"
+  strno2: "関数の名前"
+
+シナリオコメント
+ifdef
+  TODO
+
+関数呼び出し
+  0x30(16),funcno(32)
+
+   c=function():  5,0,var,0x30,funcno,0x19(16),1(16),
+   function(): 0x30,funcno,1(16)
+   function(arg1,arg2): arg1,arg2,0x30,funno,1(16)
+
+配列添字演算子
+   op1[op2][op3]: op1,op2,2(16),op3
+  
+   var[i]=val:  0x5E,var,0(16),i(32),0(16),val(32),0x19(16),1(16);
+   var[i][j]=k: 0x5E,var,0(16),i(32),2(16),0(16),j(32),0(16),val(32),0x19(16),1(16);
+   var[i][j][k]=l: 0x5E,var,0(16),i,2(16),0,j,2(16),0,k,0,val,0x19(16),1(16);
+
+直接メンバ演算子
+  TODO
+
+
+後置増分演算子
+  var++: 0x8A(16),var
+  var1=var2++: 5,0,var1,5,0,var2,0x29(16),2(16),0x2A(16),1(16),0x31(16),0x19(16),1(16)
+  グローバル変数の場合
+    gVar++: 4,0,gVar,0x29,2,0x2A,1,0x31,1
+
+後置源分演算子
+  var--: 0x8B(16),var
+  var1=var2--: 5,0,var1,5,0,var2,0x29(16),2(16),0x2A(16),1(16),0x32(16),0x19(16),1(16)
+  グローバル変数の場合
+    gVar--: 4,0,gVar,0x29,2,0x2A,1,0x32,1
+
+前置増分演算子
+  ++var: 0x8A(16),var
+  var1=++var2: 5,0,var1,5,0,var2,0x29(16),0x31(16),0x02(16),0x19(16),1(16)
+  グローバル変数の場合
+    ++gVar: 4,0,gVar,0x29,0x31,1,1
+
+前置減分演算子
+  --var: 0x8B(16),var
+  var1=--var2: 5,0,var1,5,0,var2,0x29(16),0x32(16),0x02(16),0x19(16),1(16)
+  グローバル変数の場合
+    --gVar: 4,0,gVar,0x29,0x32,1,1
+
+アドレス
+ TODO
+
+正符号
+  なにもしない
+
+負符号
+  0x06(16) int型
+  var1=-var2: 5,0,var1,0x5E,var2,6(16),0x19,0x01;
+
+  0x35(16) float型
+  var1=-var2: 5,0,var1,0x5E,var2,0x35(16),0x24,0x01;
+
+補数
+  0x08(16)
+  var1=~var2: 5,0,var1,0x5E,var2,8(16),0x19,0x01;
+
+否定
+  0x07(16)
+  var1=!var2; 5,0,var1,0x5E,var2,7(16),0x19,0x01;
+
+キャスト
+  int(int): なし
+  int(float): 0x33
+  int(bool): なし
+  float(int): 0x34
+  float(float): なし
+  bool(int): なし
+  bool(bool): なし
+
+  var1=int(fVar1); 5,0,var1,0x5E,fVar1,0x33(16),0x19(16),1(16)
+  fVar=float(var); 5,0,fVar,0x5E,var,0x34(16),0x24(16),1(16)
+
+new
+情報取得
+引数増加関数マクロ
+ TODO
+
+乗算
+  0x0B: int型
+    var1=var2*val: 5,0,var1,0x5E,var2,0,val,0x0B(16),0x19(16),1(16); 
+  0x38: float型
+    fvar1=fvar2*fval: 5,0,fvar1,0x5E,fvar2,0x40,fval,0x38(16),0x24(16),1(16)
+
+除算
+  0x0C: int型
+   var1 = var2/val: 5,0,var1,0x5E,var2,0,val,0x0C(16),0x19(16),1(16); 
+  0x39: float型
+   fvar1 = fvar2/fval: 5,0,fvar1,0x5E,fvar2,0x40,fval,0x39(16),0x24(16),1(16)
+
+剰余
+  0x0D
+   var1=var2%val: 5,0,var1,0x5E,var2,0,val,0x0D(16),0x19(16),1(16); 
+
+出力変換
+ TODO
+
+加算
+  0x09: int型
+   op1,op2,9
+   var1=var2+val: 5,0,var1,0x5E,var2,0(16),val,9(16),0x19(16),1(16);
+  
+  0x36: float型
+   op1,op2,0x36
+   fvar1=fvar2+fval: 5,0,fvar1,0x5E,fvar2,0x40,fval,0x36(16),0x24(16),1(16)
+  
+  0x43: string型
+   str0=str1+"str": 0x5E,str0,5(16),0(16),str1,0x46(16),0x41(16),strno,0x43(16),0x44(16),0x42(16)
+
+減算
+  0x0A: int型
+   op1,op2,0x0A
+   var1=var2-val: 5,0,var1,0x5E,var2,0,val,0x0A(16),0x19(16),1(16); 
+
+  0x37: float型
+   op1,op2,0x0B
+   fvar1=fvar2-val: 5,0,fvar1,0x5E,fvar2,0x40,val,0x37(16),0x24(16),1(16)
+
+左シフト
+  0x11: int型
+   var1=var2<<val: 5,0,var1,0x5E,var2,0,val,0x11(16),0x19,1;
+  
+  float型の場合、一旦int型に変換した後、シフトして、再度float型に変換
+   fvar1=fvar2<<val: 5,0,fvar1,0x5E,fvar2,0x33(16),0(16),val,0x11,0x34,0x24,1
+
+右シフト
+  0x12: 
+   var1=var2>>val: 5,0,var1,0x5E,var2,0,val,0x12(16),0x19,1; 
+
+小なり
+  0x13: int型
+  0x3A: float型
+  0x70: string型
+   op1<op2:  op1,op2,0x13
+
+以下
+  0x15: int型
+  0x3C: float型
+  0x72: string型
+   op1<=op2: op1,op2,0x15
+
+大なり
+  0x14: int型
+  0x3B: float型
+  0x71: string型
+   op1>op2:  op1,op2,0x14
+
+以上
+  0x16: int型
+  0x3D: floar型
+  0x73: int型
+   op1>=op2: op1,op2,0x16
+
+等価
+  0x18: int型
+  0x3F: float型
+  0x49: string型
+   op1==op2: op1,op2,0x18
+
+非等
+  0x17: int型
+  0x3E: float型
+  0x48: string型
+   op1!=op2: op1,op2,0x17
+
+参照等価
+  0x7F:
+   op1===op2: op1,op2,0x7F
+
+参照非等
+  0x80:
+   op1!==op2: op1,op2,0x80
+
+ビット積
+  0x0E:
+   op1&op2: op1,op2,0x0E
+   var1=var2&val: 5,0,var1,0x5E,var2,0,val,0x0E(16),0x19,1;
+
+ビット差
+  0x10:
+   op1^op2: op1,op2,0x10
+   var1=var2^val: 5,0,var1,0x5e,var2,0,val,0x10(16),0x19,1;
+
+ヒット和
+  0x0F:
+   op1|op2: op1,op2,0x0F
+   var1=var2|val; 5,0,var1,0x5E,var2,0,val,0x0F(16),0x19,1;
+
+積結合
+   op1&&op2
+   op1,0x2D,偽の場合の文のアドレス,op2,0x2D,偽の場合の文のアドレス,
+    真の場合の文,0x2C,式の最後のアドレス,偽の場合の文,0x19,1
+
+   var3=var1&&var2; 5,0,var3,0x5E,var1,0x2D(16),adr(32),0x5E,var2,0x2D(16),adr(32),0(16),val=1(32),0x2C(16),adr(32),0(16),val=0(32),0x19,1
+
+和結合
+   op1||op2
+   op1,0x2E,真の場合の文のアドレス,op2,0x2E,真の場合の文のアドレス,
+    偽の場合の文,0x2C,式の最後のアドレス,真の場合の文,0x19,1
+
+   var3=var1||var2; 5,0,var3,0x5E,var1,0x2E(16),adr(32),0x5E,var2,0x2E(16),adr(32),0(16),val=0,0x2C(16),adr(32),0(16),val=1,0x19,1
+
+条件
+  op1 ? op2 : op3
+  op1,0x2D,op3のアドレス,op2,0x2C,式の最後のアドレス,op3,0x19,1
+   var = (cond)?(op1):(op2); 5,0,var,(cond),0x2D,adr1,(op1),0x2C,adr2,(op2),0x19,1
+
+代入
+  0x05,0,var,op2,0x19,0x01: int型
+    var1 = var2;   5(16),0(16),var1,0x5E,var2,0x19,0x01;
+
+  0x05,0,var,op2,0x24,0x01: float型
+    fvar = val:  5,0,fvar,0x40,val, 0x24(16), 1(16); //float表現
+
+  0x05,0,var,op2,0x8d,0x19,0x01: bool型
+    bVar = val; 5,0,bVar,0,val(32),0x8D(16),0x19(16),1(16)
+
+  0x5e,var,0x41,strno,0x44,0x42: String型
+    var = "hoge"; 0x5E,var,0x41(16),strnum(32),0x44(16),0x42(16);
+
+加算代入
+  0x1A: int型
+    var+=val: 5,0,var,0,val,0x1A,1
+  0x25: float型
+    fvar+=val: 5,0,fvar,0x40,val,0x25,1
+  0x95: string型
+    str+="str": 0x5e,str,0x41(16),strno,0x95(16),0x42(16)
+
+減算代入
+  0x1B: int型
+    var-=val: 5,0,var,0,val,0x1B,1
+  0x26: float型
+    fvar-=fval: 5,0,fvar,0x40,fval,0x26,1
+
+乗算代入
+  0x1C: int型
+    var*=val: 5,0,var,0,val,0x1C,1
+  0x27: float型
+    fvar*=fval: 5,0,fvar,0x40,fval,0x27,1
+
+除算代入
+  0x1D: int型
+    var/=val: 5,0,var,0,val,0x1D,1
+  0x28: float型
+    fvar/=fval: 5,0,fvar,0x40,fval,0x28,1
+
+剰余代入
+  0x1E: int型
+    var%=val: 5,0,var,0,val,0x1E,1
+
+左シフト代入
+  0x22
+    var1<<=val: 5,0,var1,0,val,0x22,1
+
+右シフト代入
+  0x23
+    var1<<=val: 5,0,var1,0,val,0x23,1
+
+ビット積代入
+  0x1F
+    var1&=val: 5,0,var1,0,val,0x1F,1
+
+ビット差代入
+  0x21
+    var1^=val; 5,0,var1,0,val,0x21(16),1(16);
+
+ビット和代入
+  0x20
+    var1|=val; 5,0,var1,0,val,0x20(16),1(16);
+
+参照代入
+ TODO
+
+スワップ(???)
+  0x96:
+  var1<=>var2; 5,0,var1,5,0,var2,0(16),0x0A(16),0(16),0x96(16)
+
+順次
+ TODO
+
+main関数
+ MAINタグにmain関数の関数番号が書かれている
+
+message関数
+ MSGFタグにmessage関数の関数番号が書かれている
+
+onjump関数
+ OJMPタグにonjump関数の関数番号がかかれている
+
+System.XXX関数
+ 0x63,funcnum
+
+   Exit: 0x00
+   Reset: 0x05
+   IsDebugMode: 0x11
+   GlobalSave: 0x01
+   GlobalLoad: 0x02
+   ResumeSave: 0x08
+   ResumeLoad: 0x09
+   LockPeek: 0x03
+   UnlockPeek: 0x04
+   Peek: 0x14
+   Sleep: 0x15
+   Output: 0x06
+   MsgBox: 0x07
+   MsgBoxOkCancel: 0x12
+   Error: 0x0F
+   ExistFile: 0x0A
+   ExistSaveFile: 0x10
+   OpenWeb: 0x0B
+   GetSaveFolderName: 0x0C
+   GetGameName: 0x0E
+   GetTime: 0x0D
+   GetFuncStackName: 0x13
+

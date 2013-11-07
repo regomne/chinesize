@@ -1,0 +1,50 @@
+op
+06		cmdSetReg
+07		cmdCalcReg
+08		=06
+0A		=06
+0B		Action(type,p2,p3)
+	match type with
+		0 LoadUserDefinedEntry
+		1 LoadUserDefinedEntry2
+		2 ?
+		3 restart
+		8 config
+		17 setSystemFlag
+		19 openURL
+		1A poweredByRetouch
+		1B skipCancel
+		1C autoCancel
+		1D ?
+		1E ?
+		1F subAction...
+		20 createWordSurface
+		21 experienceCg
+		22 ?
+		23 createSoundFilenameEngine
+		24 defLoadPageOverride
+		25 isExistSaveData
+		26 setLocalFlag
+		27 experienceXX(Scene/Sound/Cg)
+		28 isExperienceXX
+		29 ?
+		2A liteDrawXX(Characters/Dlt/Events/Movie/Video)
+		2B userDialog
+		2C setSystemFlag2
+		2D readDvd??
+		...
+0C		cmdSetBlockMessage
+11		cmdChangeScenario
+12		cmdFrameView
+14		cmdCtrlView
+1C		cmdMessage
+1D		cmdRetMessage
+1E		cmdClearMessage
+20		cmdEnterCharacters
+21		?
+22		cmdPrepareMoveCharacters
+23		cmdExecMoveCharacters
+32		cmdPlayMusic
+4A		cmdDraw
+5E		cmdBillboard
+CB		cmdPrepareView

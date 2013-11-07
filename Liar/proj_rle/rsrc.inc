@@ -1,0 +1,14 @@
+MANIFEST                equ 24
+IDD_DLG1                equ 1000
+IDC_CMPR                equ 1001
+IDC_CMPRDIR             equ 1002
+IDC_OVERWRITE           equ 1003
+IDD_DLG2                equ 1100
+IDC_GRP1                equ 1101
+IDC_GRP2                equ 1102
+IDC_EDIT1               equ 1103
+IDC_BROWSE1             equ 1104
+IDC_EDIT2               equ 1105
+IDC_BROWSE2             equ 1106
+IDC_START               equ 1107
+IDR_XPMANIFEST1         equ 1

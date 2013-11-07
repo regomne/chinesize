@@ -1,0 +1,56 @@
+struct scHeader{
+	char dbMagic;	//0xff
+	int nUnk;
+	int nControlStreamSize;
+	int nStringSize;
+};
+
+class script{
+	...
+	LPVOID nunk;//0x800
+	LPVOID lpControlStream;//0x808
+	LPVOID lpCurrentPos;//0x80c
+	LPVOID lpString;//0x810
+	int nCurrentPos;//0x814，在
+	
+	LPVOID nLine;//0x878
+};
+
+指令信息：
+inst		size		def
+00		0		End;
+01		4		call(int nFuncStringOffset);//调用函数
+
+02		4		push(int);
+03		4		push(pInt);
+04		4		push(ppInt);
+
+05		8		push?(para1,int nStringOffset);//
+
+//stack操作
+06		0		unk
+07		0		Add
+08		0		Sub
+09		0		Imul
+0a		0		Div
+0b		0		Mod
+0c		0		And
+0d		0		Or
+0e		0		Xor
+0f		0		IsZero
+10		0		Neg
+11		0		IsEqual;//s>--s?1:0
+12		0		IsNotEqual
+13		0		IsGreater
+14		0		IsGE
+15		0		IsLittle
+16		0		IsLE
+17		0		CondAnd
+18		0		CondOr
+19		0		pop;//s--
+
+1a		4		jump(int nOffset);
+1b		4		jne(int nOffset);
+1c		4		je(int nOffset);//if s==0: jump
+1d		4		unk(int);//script.[0x87c]=para1
+1e		4		SetLineNumber(int nLine);//script.nLine=nLine

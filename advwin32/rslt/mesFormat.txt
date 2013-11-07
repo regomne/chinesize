@@ -1,0 +1,34 @@
+一个控制单元分为指令与参数两部分。
+指令占1个字节，范围为0x10~0x7b（暂定）
+随后是参数（可能没有），参数分为以下几种type
+ParaType	说明		type值		后接内容
+0x4			参数终止or某参数		5			none
+0x5			参数终止or某参数		6			none
+0x13		unk			同0xe1		同0xe1
+0xe1		unk			7?			循环读取子指令
+	子指令
+	e2-e4 e5 e6-e8:同ParaType，b0-d5:1byte，1终结
+0xe2		int			4			byte
+0xe3		int			4			word
+0xe4		int			4			dword
+0xe6		unk			2			word
+0xe7		unk			1			word
+0xe8		unk			7			word
+0xe5		string		5			a string end with zero
+其中paratype占用1字节。
+
+引擎处理一个控制单元分为三步：
+1 读取指令（暂只记录）
+2 获取参数个数及内容
+3 调用指令对应的处理函数
+
+其中第一步算法如下：
+while 下一字节属于参数指示符
+	读取参数
+
+参数在内存中的存储结构如下：
+struct Paras{
+	ParaType type; //占用一个dword
+	dword val;
+	Paras* next;
+};

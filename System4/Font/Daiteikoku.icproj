@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="gb2312"?>
+<VisualStudioProject
+	ProjectType="Intel C++ Project"
+	Version="11.1"
+	Name="Daiteikoku"
+	ProjectGUID="{BA007F52-0E5B-4912-9EB4-9AC155AC3504}"
+	VCNestedProjectGUID="{0D972479-0A82-41A7-9C66-072F10B1F20D}"
+	VCNestedProjectFileName="Daiteikoku.vcproj">
+	<Configurations>
+		<Configuration
+			Name="Release|Win32">
+			<Tool
+				Name="CppCmplrTool"
+				Optimization="1000"
+				GlobalOptimizations="true"
+				InterproceduralOptimization="1"/>
+		</Configuration>
+	</Configurations>
+	<Files/>
+</VisualStudioProject>

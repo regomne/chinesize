@@ -1,0 +1,9 @@
+DLG_MAIN                equ 1000
+IDC_GRP1                equ 1001
+IDC_DIRORS              equ 1002
+IDC_BROWSEORS           equ 1003
+IDC_GRP2                equ 1004
+IDC_DIRTXT              equ 1005
+IDC_BROWSETXT           equ 1006
+IDC_TOTXT               equ 1007
+IDC_TOORS               equ 1008

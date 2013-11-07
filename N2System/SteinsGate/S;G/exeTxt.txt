@@ -1,0 +1,27 @@
+rdata seg base:401200
+
+/**************name******************/
+struct AddressUnit{
+	char* lpszID;
+	char* lpszName;
+	char* lpszNumber;
+};
+621C28开始，共13组，直接替换	seg.data.base: 401800
+
+/**************info******************/
+char* lpsz;
+621d08开始，共82组，直接替换
+
+/**************mail******************/
+struct MailUnit{
+	char* lpszID;
+	u32 unk[12];
+	char* lpszSubject;
+	char* lpszNameTo;
+	char* lpszText;
+}
+6220f0开始，共0x27e组
+643d68开始，共0x27e组
+完全相同
+
+exe文本范围：1b5f64~1dfcc0 in rdata seg

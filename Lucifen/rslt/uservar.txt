@@ -1,0 +1,17 @@
+user_var.sob
+
+struct UserVarSobHeader{
+	char magic[4]; //"SOB0"
+	int var_table_len;
+};
+UserVarSobHeader hdr;
+BYTE var_table[hdr.var_table_len];
+
+struct VarIndex{
+	u8 unk;
+	u8 var_type; //2-int 1-str 0-?
+	u32 var_offset; //from var_table
+	u32 var_len; //in bytes
+};
+u32 var_index_table_count;
+VarIndex var_type_table[count];

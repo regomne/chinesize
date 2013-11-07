@@ -1,0 +1,146 @@
+594cc0为全局数组基址
+
+
+每个指令结尾都额外有一个'\0'，若结尾为str，则只有一个'\0'
+
+01		9		goto_if(u8 flag, i16 idx1, i16 val2, u32 dist)
+				若flag:bit4为1，val2为数组索引，否则val2为立即数。
+				flag:bit0-3为if关系指代符：1:< 2:> 3:!= 4:== 5:<= 6:>=
+				若关系成立则跳转。跳转从本条指令之后计算相对偏移
+02		?		select()
+				u8 count,u8 resv
+				repeat count:
+					u16 num, str, u8, i16, u8 flag
+					switch flag:
+						3: u8, i16, u8, i16, u8
+						6: u32 offset, u8
+						7: str
+03		6		operator(u8 type, i16 idx1, u8 flag, i16 mne2)
+				若flag==1，mne2为数组索引，否则为立即数
+				对idx1和mne2运算，结果保存到idx1中
+				type:  0:unk 1:= 2:+ 3:- 4:= flag为1则mne2双重索引，否则单索引 5:% 6:%?
+04		-1
+05		1
+06		4		jmp(u32 offset)
+07		str		call(name)
+08		0
+09		str
+0a		0?
+0b		1
+0c		2
+0d		6
+0e		1
+21		10+str
+22		3		(u8,u16)
+23		9+str
+24		0
+25		11+str		Play(u8,u8,u8,u8,u16,u8,u16,str)
+26		1		(u8)
+27		9+str
+28		4
+29		3
+30		3
+31		1
+32		1
+33		6
+41		4+str		Msg(u16,u8,str)
+42		5+2*str		(u16,u8,u8,str)
+43		6+str		Show?(u8 idx,i16 val1,i16 val2,u8 flag,str)
+44		3
+45		3
+46		9+str		Show(u16 xval, u16 yval, u16 unk1, u16 unk2, u8 flag, char* name) flag:0->xval flag:1->yval
+47		1
+48		11+str ShowChipX		**
+49		2		(u8 mne1, u8 mne2); d ptr [53c3e0+108h*mne1*mne1]=(mne2!=0)
+4a		5		(u8, u16, u16)
+4b		19
+4c		7
+4d		12
+4e		3
+4f		3
+50		str
+51		4
+52		1
+53		5+str
+54		str		show?
+55		0
+56		0
+57		8
+58		7
+59		str
+60		0
+61		1+str
+62		0
+63		2
+64		7
+65		4
+66		21
+67		7
+68		8		(u16 unk1, u16 cx, u16 cy, u16 XX)
+69		1
+70		7
+71		1+str
+72		0
+73		9+str		Show?
+74		1		(u8 mne1); d ptr [4883e0]=(mne1!=0)
+75		8
+76		16
+77		8
+78		7
+79		0
+81		1
+82		2		Wait??(u16 unk)
+83		0
+84		0
+85		1
+86		1		u8 resv
+87		2
+88		2
+89		0
+8a		0
+8b		0
+8c		2		u16 arg1
+8d		0
+8e		0
+a0		5
+a1		6
+a2		5
+a3		5
+a4		5
+a5		1
+a6		0
+a7		0
+a8		15
+a9		0
+aa		2
+ab		0
+ac		0
+ad		9
+ae		0
+b1		4
+b2		2+str
+b3		1
+b4		11
+b5		6
+b6		2+str		Msg2(u16,str)
+b7		5+str
+b8		2		(u8 mne1, u8 mne2); d ptr [596e28+40*mne1]=(mne2!=0)
+b9		2
+ba		11+str
+bb		0
+bc		3
+bd		1
+be		0
+bf		7
+e0		str
+e2		0
+e3		0
+e4		1
+e5		0
+e6		1
+e7		2
+e8		str
+e9		0
+ea		1+str
+eb		0
+ff		?

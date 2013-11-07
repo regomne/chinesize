@@ -1,0 +1,28 @@
+每4个u16为一个指令。第一个u16为指令操作码，接下来3个为操作数。
+每个指令可能附带n个指令（作为参数）。附带指令的操作码范围为2-9。
+
+struct Op{
+	u16 opcode;	//not(2~9)
+	u16 arg_count;	//其后跟随相应的Arg
+	u16 unk1;
+	u16 unk2;
+};
+
+struct Arg{
+	u16 arg_type;	//2~9
+	u16 unk1;
+	u32 unk2;
+}
+
+Arg type
+3 双u32(in res)，offset=unk2
+4 整数?，val=unk2
+5 字符串(in res)，len=unk1,offset=unk2
+
+OP
+1 在textbox中显示文本。num_of_str_to_display=unk1
+	arg1指示编号和声音idx，之后为连续的字符串
+3c 在textbox和name框中显示文本。num_of_str=unk1
+	arg1指示编号和声音idx，arg2为在name框中显示的名字，之后为连续的字符串
+64 显示选项。num=unk1
+	

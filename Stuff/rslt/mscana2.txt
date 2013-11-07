@@ -1,0 +1,140 @@
+/*
+Header:
+	0x00 0x00
+	u32 HeaderSize
+	u32 lTable1=nEntry*9
+	0x00
+Table1[lTable1/9]:
+	u32 Index
+	u32	Offset(ofCodeData)
+	0x00
+u32 lTable2
+Table2[(HeaderSize-lTable1-10)/9]:
+	u32 Index
+	u32	Offset(ofCodeData)
+	0x00
+0x00 0x00 0x00
+*/
+:CodeData
+//MSCOP	{u32=unsigned dword, str=(u32 strLength, byte[strLength]), val=(u8 mode, u32 value)}
+0x00	//流程控制
+	0x00	u8, u32, u8, val;
+	0x01	val, u8, val, u8, val;
+	0x02	val;
+	0x03	JumpToOffTable(val);
+	0x04	;
+	0x05	val, u8;
+	0x08	val, u8;
+	0x06	return();
+	0x07	LoadScriptNo(u8); //but not enter it
+	0x08	ProcessScript(str);//StartNewStory
+	0x09	;//YesNoDialog(Yes),End
+	0x0A	u8;//YesNoDialog(Exit)
+	0x0B	;//No^
+	0x0C	;//HideMsgWin
+	0x0D	EnterAutoMode();
+	0x0E	;//CtrlSkip
+	0x0F	;
+	0x10	val;//Dialog"Save?"
+	0x11	val;//PressLoad
+	0x12	;//Yes^^
+	0x13	;
+	0x16	u8;
+	0x17	val;
+	0x1D	u8, val[2]; //DestoryWindow
+	0x20	val[2], u8[2];
+	0x30	;//PressJUMP
+	0x32	;
+	0x33	val;
+	0x34	val;
+	0x37	u8, val[2];
+0x01	//系统相关
+	0x00	SetWinCapText(str);
+	0x01	JumpSetScriptNo(u8, str); //for LoadScriptNo()
+	0x02	val;
+	0x03	AddNameInfo(str Name, str Text, str Voice);
+	0x04	LoadOGV(u8, str);
+	0x05	val[2];
+	0x06	val[2];
+	0x07	val[2];
+	0x08	val[7];
+	0x09	str[3], u8;
+	0x0A	val[2];
+	0x0B	val[2], str;
+	0x0C	u8, val;
+	0x0D	val, str[2];
+	0x0E	u8 mode, val[4];//Menu "Load"
+	0x0F	val, u8;
+	0x10	u8 mode, val[3];
+	0x11	val; //"Load" Page 2
+	0x12	val[7]; //EnterHistory
+	0x13	val[5]; //^
+	0x14	val;//HistoryPrev
+	0x15	SysDirSetup(u8, str);
+	0x17	AddPackIfDirNotExist(str[2]);
+	0x18	str;
+	0x1A	u8[2];
+	0x1B	u8, val;
+	0x1C	u8 mode, val[2];//Press OK Button
+	0x1D	u8,val,val
+	0x1E	str[2];
+0x02	//菜单？
+	0x00	SetFileNo(val, str FileName); //for ReadFileNo()
+	0x01	SetDispPos(val[3]);
+	0x02	val, u8;
+	0x03	val[5];
+	0x04	val[2];
+	0x05	val[3];
+	0x06	val[2];
+	0x07	val[2];
+	0x08	val[4];
+	0x09	val[6];
+	0x0A	val[3];
+	0x0B	val[4];
+	0x0C	val[4], u8;
+	0x0D	val[2];
+	0x0E	val[2];
+	0x0F	val[2];
+	0x10	val[3];
+	0x11	val[3];
+	0x12	val[5],str
+	0x13	val[2];
+	0x14	val, str, val[3], u8;
+	0x15	val[4];
+	0x16	val, str, val[4];
+	0x17	val, u8;
+0x03	//显示相关?
+	0x00	ReadFileNo(val, str, val, u8)
+	0x01	val[2], u8;
+	0x02	val;
+	0x03	PlayVideo(str, u8);
+0x04
+	0x00	val, u8, val;
+	0x01	val, u8;
+	0x02	val, u8;
+	0x03	val[2];
+	0x04	val[2];//History
+0x05	//文字相关
+	0x00	ShowText(val, str);
+	0x01	val[8];
+	0x02	val[7];
+	0x03	val[2];
+	0x04	val[2];
+	0x05	u8;0
+	0x06	;
+	0x07	u8,u8;
+0x06	//声音相关
+	0x00	str, u8, val;
+	0x01	val;
+	0x02	PlayVoice(str);
+	0x03	;
+	0x04	PlaySe(val, str FileName);
+	0x05	val, u8;
+	0x06	val;
+	0x07	ReplayVoice();
+	0x08	History.ReplayVoice(val);
+	0x09	val;
+	0x0A	str;
+	0x0B	u8, val, val;
+	0x0C	val[4];
+	0x0D	;

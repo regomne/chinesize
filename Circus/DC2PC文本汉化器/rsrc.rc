@@ -1,0 +1,18 @@
+500 ICON MOVEABLE PURE LOADONCALL DISCARDABLE "Project.ico"
+
+600	MENUEX MOVEABLE IMPURE LOADONCALL DISCARDABLE
+BEGIN
+    POPUP "文件", , , 0
+    BEGIN
+        MENUITEM "打开mes文件", 1001
+        MENUITEM "", , 0x0800 /*MFT_SEPARATOR*/
+        MENUITEM "保存到原始文件", 1002
+        MENUITEM "", , 0x0800 /*MFT_SEPARATOR*/
+        MENUITEM "退出", 1010
+    END
+    POPUP "帮助", , , 0
+    BEGIN
+        MENUITEM "关于", 1900
+    END
+END
+

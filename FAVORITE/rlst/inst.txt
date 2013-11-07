@@ -1,0 +1,42 @@
+op		len
+01		2		InitStack(u8 num,u8 unk);//为一个过程预分配栈空间(?)，push (num<<8)&unk，(push 0)*num
+02		4		call(u32 offset); //push (x.stackBase,x.curPos);jmp offset
+03		2		callSys(i16 num); //调用系统函数
+04		0		ret; //释放栈数据，返回
+05		0		ret1; //scriptObject.temp=pop; ret
+06		4		jmp(u32 offset);
+07		4		jz(u32 offset); //如果栈顶为0则跳转 s--
+08		0		push0();
+09		0		push1();
+0A		4		pushInt32(i32);
+0B		2		pushInt16(i16);
+0C		1		pushInt8(i8);
+0D		4		pushFloat(f32);
+0E		?		pushStr(i8 nLen,char str[nLen]); //push &str
+0F		2		pushGlobal(i16 num); //push Global[num]
+10		1		pushStack(i8 num); //将当前栈底+num处的栈内容提出来入栈，s++
+11		2
+12		1
+13		0		pushtop(); // push top; s++
+14		0		pushtemp(); //push scriptObject.temp; scriptObject.temp=0; s++
+15		2		PopGlobal(i16 num); //Global[num]=pop
+16		1		stackcpy(i8 num); //与i10相反，s--
+17		2		//s-=2
+18		1		//s-=2
+19		0		neg()
+1A		0		add; //a=pop;b=pop;push a+b
+1B		0		sub; //a=pop;b=pop;push a-b
+1C		0		mul;
+1D		0		div;
+1E		0		mod;
+1F		0		bitTest; //a=pop;b=pop;push a&(1<<b)?1:0
+20		0		CondAnd; //a=pop.type;b=pop.type;push x.type(1or0)
+21		0		CondOr;
+22		0		SetE; //a=pop;b=pop;push x.type(a==b?1:0)
+23		0		SetNE;
+24		0		SetG;
+25		0		SetLE;
+26		0		SetL;
+27		0		SetGE;
+
+

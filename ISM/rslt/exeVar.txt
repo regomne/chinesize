@@ -1,0 +1,9 @@
+BaseAddress:0x10000000
+
+100a28d8	Table	g_InstFuncTable
+10061f84	dword	g_pCurScirptPos
+10065f98	dword	g_pCurStack
+100b70f8	dword	g_CurFileNumber
+
+1001b990	func	DisplayChar
+1001a6a1	code	尼玛，真没见过这样的字符边界检查！好吧，它好像只是想存储下已经显示过的字符……然后计算地址的时候和sjis的字符边界搭上边了

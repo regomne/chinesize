@@ -1,0 +1,140 @@
+buf	db+str[db]或0xff+dword+str[dword]
+
+以下以ism.dll的BaseAddress为0x10000000计算
+
+inst	len	
+00	0	pushRandom?(); //取了实际栈里面的遗留值压入虚拟机栈
+05	0	PopStack()
+06	0	=5
+09	0	Death();死循环
+0b	0	Shl(); //a=pop;b=pop;c=abs(a)>20 ? 0 : shl(abs(b),a);push c
+0c	0	CondAnd(); //push a&&b
+0d	0	CondOr(); //push a||b
+0e	0	Xor();
+0f	8	Switch(int nOffsetOfJumpTable,int nElem); //取栈顶为跳转表索引值
+10	0	SetVar(); //a=pop;b=pop;GVar[b]=a;push a
+11	0	Add(); //push b+a，字符串则为串联
+12	0	Sub();
+13	0	Imul();
+14	0	Idiv(); //如果除数为零，则pushRandom
+15	0	Mod(); //同上
+16	0	SetE(); //字符串亦可比较
+17	0	SetG(); //push (b>a?1:0)
+18	0	SetL();
+19	0	SetNE(); //字符串亦可
+1a	0	SetGE();
+1b	0	SetLE();
+1c	0	And();
+1d	0	Or();
+
+1e	0	SetIfZero(); //a=pop;push a==0?1:0
+1f	0	Neg();
+
+20	4	Goto(int nDist);
+21	4	jz(int nDist); //若栈顶为0则跳转
+22	4	=00
+23	4	call?(dword FuncNumber?);
+24	4	Goto(int nDist);
+25	0	jmp?(); //出栈较多
+28	0	CreateThead();
+29	0	KillThread();
+2a	0	SetThreadState();
+2b	0	pushSth(); //push [100b70f4]
+2c	0	???
+2d	0	???
+2e	0	NewIsmFile?
+2f	0	Exit(); //退出本次虚拟机循环
+
+30	4	PushInt(int nInteger);
+31	4	PushInt(int nMul); //push nMul*[10033044]
+32	8	PushDouble(double f);
+33	buf	PushStr(buf str);
+34	0	=09
+35	0	nop();
+36	0	nop();
+37	0	refVar(); //引用栈顶值指示的变量
+38	4	refVar(int);
+39	5	refVar(byte nPopStack,int);
+3a	4	pushFunc?(dword);
+3b	5	AddVar(byte nPopStack,int nVar); //s-=nPopStack/2;a=pop;push (a+nVar)
+3c	4	SearchVar(int nIndex); //push result;
+3d	5	SearchVar(byte nPopStack,int nIndex);
+3e	4	=3a
+3f	5	=3b
+40	0	IsInt(); //a=pop;push (a is int?1:0)
+41	0	IsStr();
+42	0	IsFloat();
+43	0	StrLen(); //a=pop;push strlen(a)
+44	0	SubString(); //abcd=pop; a:type,b:string,c:index,d:num
+45	4	pushFarString(uint nOffset);
+46	0	sprintf(); //a=pop;b=pop;push sprint(b,a)
+47	0	???从栈里面取出了nOffset
+
+50	0	PushPop(); //a=pop;push a
+51	0	=00
+52	0	pushDebugInfo(); //push str(sp: ip:)
+
+60	0	call?(); //跳转位置与栈有关
+61	0	call?(); //跳转位置与栈有关
+
+80	0	Display();
+81	0
+82	0
+83	0	GetPic?();
+84	0
+85	0
+86	0	pop3(); //a,b,c,d=pop;push 0
+87	0	=86
+88	0
+89	0	Func(); //pop;do sth;push 0
+8a	0
+8b	0
+8c	0	Pic();
+8d	0
+8e	0	Audio();
+8f	0	Pic();
+90	0	Pic();
+91	0
+92	0
+93	0
+94	0
+95	0
+
+a0	0
+a1	0
+
+b0	0 DisplayChar();
+b1	0
+b2	0
+b3	0
+
+c0	0
+c1	0	Cursor();
+
+d0	0	Display();
+d2	0
+d3	0
+
+e0	0
+e1	0
+e2	0
+e3	0
+e4	0
+e5	0
+e6	0	PostMessage();
+
+f0	0
+f1	0	Sleep?
+f2	0
+f3	1
+f4	0	SetSystemVar?();
+f5	0
+f6	0
+f7	0	pushTime();
+f8	0	; //do sth;push 0
+Fa	0	push2(); //a=pop;push a;push a
+Fb	0	nop();
+Fc	0
+Fd	0
+Fe	0	nop();
+FF	0	callVar(); //call [100bdbb8];push 0

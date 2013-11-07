@@ -1,0 +1,3 @@
+EXPORTS
+    SHGetFolderPathA = MySHGetFolderPathA
+    ShellExecuteA    = SHELL32.ShellExecuteA

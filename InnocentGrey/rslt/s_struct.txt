@@ -1,0 +1,6 @@
+struct Op{
+	u8 op_code;
+	u8 op_len; //包含Op自身
+	u8 unk; //和指令自身有关
+	u8 str_len;
+};

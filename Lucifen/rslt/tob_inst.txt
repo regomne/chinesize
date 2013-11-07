@@ -1,0 +1,22 @@
+
+5b--
+	20--
+		func:dword, t1:byte
+			match t1 with
+				0 dd1:dword in jmp 1@t1
+				1 dd1=1 in dd2=func
+					in len:dword //本指令剩余长度，包括len自身
+					in if (dd2 ^^ dd1)==0 then stm+=len in return
+					in repeat count:byte //arguments
+						match t3:byte with
+						0 0 //0,0
+						1 match t4:byte with
+							0-x:stm->int //1,x
+							1-x:stm->str //1?|2,x
+							2-x:stm->int in y:stm->int //好像是取个数组元素 1,int?
+							3-x:stm->str in stm+=1 in y:stm->str
+						2 stm->int //0,int
+				2 dd1:dword in dd2:dword in jmp 1@t1
+				3 x:stm->str in stm+=1 in x:stm->str
+					in dd1=? dd2=? in jmp1@t1
+		

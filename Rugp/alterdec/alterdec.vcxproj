@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{18655336-42FF-49F8-B97D-C674C36215E8}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>alterdec</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OmitFramePointers>true</OmitFramePointers>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="src2\common.h" />
+    <ClInclude Include="src2\core.h" />
+    <ClInclude Include="src2\fade.h" />
+    <ClInclude Include="src2\imagewriter.h" />
+    <ClInclude Include="src2\objectlist.h" />
+    <ClInclude Include="src2\stream.h" />
+    <ClInclude Include="src2\textwriter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src2\acspos.cpp" />
+    <ClCompile Include="src2\bg2d.cpp" />
+    <ClCompile Include="src2\boxocean.cpp" />
+    <ClCompile Include="src2\charbox.cpp" />
+    <ClCompile Include="src2\common.cpp" />
+    <ClCompile Include="src2\cpsnamedlane.cpp" />
+    <ClCompile Include="src2\fade.cpp" />
+    <ClCompile Include="src2\flashlayereffect.cpp" />
+    <ClCompile Include="src2\imagewriter.cpp" />
+    <ClCompile Include="src2\imgsel.cpp" />
+    <ClCompile Include="src2\layoutTextImg.cpp" />
+    <ClCompile Include="src2\main.cpp" />
+    <ClCompile Include="src2\mntime2g.cpp" />
+    <ClCompile Include="src2\mntimebezier.cpp" />
+    <ClCompile Include="src2\moveacsongen.cpp" />
+    <ClCompile Include="src2\normalcamera.cpp" />
+    <ClCompile Include="src2\objectlist.cpp" />
+    <ClCompile Include="src2\pmbgm.cpp" />
+    <ClCompile Include="src2\pmeffect.cpp" />
+    <ClCompile Include="src2\pmvideoref.cpp" />
+    <ClCompile Include="src2\posturemoment.cpp" />
+    <ClCompile Include="src2\processocean.cpp" />
+    <ClCompile Include="src2\r6ti.cpp" />
+    <ClCompile Include="src2\rbx.cpp" />
+    <ClCompile Include="src2\relicunitedgameproject.cpp" />
+    <ClCompile Include="src2\rip.cpp" />
+    <ClCompile Include="src2\rsa.cpp" />
+    <ClCompile Include="src2\rsa2.cpp" />
+    <ClCompile Include="src2\rsa2OM.cpp" />
+    <ClCompile Include="src2\rsi.cpp" />
+    <ClCompile Include="src2\stream.cpp" />
+    <ClCompile Include="src2\textwriter.cpp" />
+    <ClCompile Include="src2\twfgaugebox.cpp" />
+    <ClCompile Include="src2\twfremainderbox.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

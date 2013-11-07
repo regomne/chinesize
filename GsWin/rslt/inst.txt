@@ -1,0 +1,17 @@
+struct Element{
+	u32		type;	//1为整数，10、100为字符串（value为索引）
+	u32		value;
+};
+
+struct Value{
+	u16		control_id;	//0xff00表示参数，fff0表示跳过
+	u16		element_count;
+	Element		values[element_count];
+};
+
+op		paras
+1b4		DisplayIcon(str name); //显示头像
+1a8		DisplayText(str text,str unk=null); //显示无语音对白
+1a9		DisplayTextWithVoice(int,str text,str voicename,int[4]); //显示对白并播放语音
+1b8		DisplayText(str text); //同1a8
+1ce		DisplaySelect(str text,str branch_name,...);

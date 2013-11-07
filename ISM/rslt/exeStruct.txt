@@ -1,0 +1,32 @@
+SEType:
+	0	??
+	1	int
+	2	lpszString
+	4	double
+	20	nFuncTableIndex?
+
+struct StackEntry{
+	SEType Type;
+	DWORD value;
+};
+
+
+EJTType
+	0xff000000	自动索引跳转表
+	0xfe000000	匹配索引跳转表
+
+struct EntryOfMatchTable{
+	uint nIndex;
+	uint nDistance;
+};
+struct EntryOfJumpTable{
+	EJTType Type; //0xff000000
+	uint nDefaultDistance;
+	int nMinIndex;
+	uint nDistTable[];
+};
+struct EntryOfJumpTable2{
+	EJTType Type; //0xfe000000
+	uint nDefaultDistance;
+	EntryOfMatchTable mt[];
+};

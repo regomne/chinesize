@@ -1,0 +1,9 @@
+/ipch/
+
+*.ilk
+*.obj
+*.pyc
+*.exp
+*.aps
+*.sdf
+

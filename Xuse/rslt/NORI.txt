@@ -1,0 +1,32 @@
+struct NoriHeader{
+	char szMagic[4]; //"NORI"
+	int nVer; //0x10000
+	int nNumberOfFunc; //struc1
+	int nFuncTableLen;
+	int nUnk;
+	int nUnkLen;
+	int nNumberOfFunc2; //struc2
+	int nFunc2Len;
+	int nCodeLen;
+	int nStringLen;
+};
+
+struct struc1_entry{
+	int nOffset;
+	int nNameLen; //crypted
+	char sName[nNameLen]; //crypted
+};
+#define struc2_entry struc1_entry
+
+NoriHeader hdr;
+u16 crc;
+struc1_entry s1[hdr.nNumberOfFunc];
+u16 crc;
+Unk;
+u16 crc;
+struc2_entry s2[hdr.nNumberOfFunc2];
+u16 crc;
+u8 code[hdr.nCodeLen];
+u16 crc;
+u8 str[hdr.nStringLen]; //crypted
+u16 crc;

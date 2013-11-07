@@ -1,0 +1,16 @@
+wipf
+struct header{
+	dword magic;//"WIPF"
+	u16 pic_count;//似乎一个wip可以封装复数图片
+	u16 bitCount;//色深
+};
+struct header_pic_entry{
+	int width;
+	int height;
+	int x;
+	int y;
+	int unk;
+	int data_len; //LZSS算法
+};
+
+malloc_size=data_len+7

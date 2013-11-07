@@ -1,0 +1,48 @@
+op		len		
+00		0		exit();
+01		0		ret(); //栈顶读取返回地址
+02		4		retval(val); //返回并设置返回值
+03		4		getRetval(*dest);
+04		4		call(addr); //下一条指令地址入栈
+05		C		callsys(addr,*arg,*ret); //立即返回脚本
+06		4		jmp(off);
+07		var		jmpTable(idx,offTable[]); //jmp offTable[idx]
+08		4		push(val);
+09		4		pushRef(*addr);
+0A		4		pop(*dest);
+0B		4		allocStack(nbyte);
+0C		4		freeStack(nByte);
+0D		12		add(n1,n2,*ret);
+0E		12		sub(n1,n2,*ret);
+0F		12		imul(n1,n2,*ret);
+10		12		idiv(n1,n2,*ret);
+11		12		imod(n1,n2,*ret);
+12		12		imod2(n1,n2,*ret); //*ret=n1%n2;if(*ret<0) *ret+=n2;
+13		12		and(n1,n2,*ret);
+14		12		or(n1,n2,*ret);
+15		12		xor(n1,n2,*ret);
+16		8		not(n,*ret);
+17		8		bnot(n,*ret);
+18		12		sar(n,count,*ret);
+19		12		shl(n,count,*ret);
+1A		4		inc(*val);
+1B		4		dec(*val);
+1C		4		incStack(sptr);
+1D		4		decStack(sptr);
+1E		8		jz(var,off);
+1F		8		mov(src,*dest);
+20		8		mov(*src,*dest);
+21		8		mov(*dest,*src);
+22		8		mov(src,sptr); //s[sptr]=src
+23		8		mov(sptr,*dest);
+24		8		mov(*src,sptr);
+25		8		mov(sptr_src,sptr_dest);
+26		8		mov(*sptr,*dest);
+27		8		mov(**src,*dest);
+28		8		movAddr(sptr,*dest); //*dest=&s[sptr]
+29		12		ifL(n1,n2,*ret); //if(n1<n2) *ret=1; else *ret=0;
+2A		12		ifLE(n1,n2,*ret);
+2B		12		ifG(n1,n2,*ret);
+2C		12		ifGE(n1,n2,*ret);
+2D		12		ifE(n1,n2,*ret);
+2E		12		ifNE(n1,n2,*ret);
