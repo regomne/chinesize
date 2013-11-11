@@ -31,7 +31,7 @@ Options g_options;
 
 DWORD WINAPI waitReady(LPVOID param)
 {
-	for(int i=0;i<30;i++)
+	while(TRUE)
 	{
 		if(g_ready)
 		{
@@ -41,7 +41,8 @@ DWORD WINAPI waitReady(LPVOID param)
             {
                 MessageBox(g_hwndMain,L"Can't find the function address! Please restart fxckBGI and specify it manually.",
                     L"fxckBGI",MB_ICONASTERISK);
-                EndDialog(g_hwndMain,0);
+                SetWindowText(g_hwndMain,L"fxckBGI - failed");
+                //EndDialog(g_hwndMain,0);
             }
 			break;
 		}
@@ -124,10 +125,10 @@ BOOL CALLBACK MainWndProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
 							arcList->push_back(path);
 							CoTaskMemFree(path);
 						}
-						CoTaskMemFree(item);
+						item->Release();
 					}
 				}
-				CoTaskMemFree(items);
+				items->Release();
 
 				g_workingThread=CreateThread(0,0,ExtractThread,arcList,0,0);
 				if(g_workingThread==0)
@@ -268,6 +269,7 @@ DWORD WINAPI MainWnd(LPVOID param)
 	wsprintf(pipeName,PIPE_NAME,GetCurrentProcessId());
 	CoInitialize(0);
 
+#ifndef DBG
 	HANDLE pipe=CreateFile(pipeName,GENERIC_READ|GENERIC_WRITE,0,0,OPEN_EXISTING,0,0);
 	if(pipe==INVALID_HANDLE_VALUE)
 	{
@@ -299,6 +301,9 @@ DWORD WINAPI MainWnd(LPVOID param)
 	DWORD message='OVER';
 	WriteFile(pipe,&message,4,&readBytes,0);
 	CloseHandle(pipe);
+#else
+    g_DecompressFile=0;
+#endif
 
 	HMODULE thisMod=GetModuleHandle(L"extractor.dll");
 	DialogBoxParam(thisMod,(LPCWSTR)IDD_MAIN,0,MainWndProc,0);

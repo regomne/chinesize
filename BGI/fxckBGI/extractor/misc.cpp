@@ -476,19 +476,36 @@ int AlphaBlend1(BYTE* dib,int width,int height)
 	return 0;
 }
 
+int MemcmpWithMask(const void* m1,const void* m2,const void* mask,unsigned length)
+{
+    
+    for(int i=0;i<length;i++)
+    {
+        if(((BYTE*)mask)[i])
+        {
+            if(((BYTE*)m1)[i]!=((BYTE*)m2)[i])
+                return ((BYTE*)m1)[i]-((BYTE*)m2)[i];
+        }
+    }
+    return 0;
+}
+
 BYTE* SearchCode(BYTE* start,int length)
 {
     static const BYTE chCode[]={0x8B, 0x43, 0x14, 0x8D, 0x73, 0x14, 0x3D, 0x00, 0x00, 0x00, 0x04};
+    static const BYTE chMask[]={1,0,1,1,0,1,1,1,1,1,1};
 
     BYTE* p=start;
     for(;p<start+length-sizeof(chCode);p++)
     {
-        if(!memcmp(p,chCode,sizeof(chCode)))
+        if(!MemcmpWithMask(p,chCode,chMask,sizeof(chCode)))
         {
             for(int i=3;i<(200>p-start?p-start:200);i++)
             {
                 if(!memcmp(p-i,"\x90\x6a\xff",3))
                     return p-i+1;
+                if(!memcmp(p-i,"\x55\x8b\xec",3))
+                    return p-i;
             }
         }
     }
