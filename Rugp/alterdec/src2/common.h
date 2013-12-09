@@ -1,6 +1,15 @@
 
 #pragma once
 
+/*
+ *  this solution support 2 versions of rugp.
+ *
+ *  version 1: rugp 6.10.09D
+ *    muvluv win7 & muvluv alternative win7 
+ *  version 2: rugp 5.91.04
+ *    muvluv chronicles 01
+ */
+#define RUGP_VERSION 2
 
 
 #include	"stream.h"

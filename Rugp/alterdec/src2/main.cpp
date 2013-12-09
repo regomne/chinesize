@@ -1,4 +1,11 @@
-
+ï»¿/*
+ *  this solution support 2 versions of rugp.
+ *
+ *  version 1: rugp 6.10.09D
+ *    muvluv win7 & muvluv alternative win7 
+ *  version 2: rugp 5.91.04
+ *    muvluv chronicles 01
+ */
 #include	"common.h"
 #include	"fade.h"
 #include	<time.h>
@@ -32,12 +39,15 @@ void	ReadRip007( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void	ReadCpsNamedLane( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void    ReadLayoutTextImg(CStream *s, vector<CLASS> *cache, const OBJECT *object );
 
-void	Decode( const char *filename );
+typedef FILE* (*OpenFileRoutine)( const char *filename, dword offset );
+void	Decode( const char *filename , dword,OpenFileRoutine);
 FILE *	OpenRio( const char *filename, dword offset );
+FILE *	OpenRio2( const char *filename, dword offset );
 void	ReadNull( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 
 void InitOMFuncTable();
 void InitClassFuncTable();
+
 
 FILE* gfp;
 typedef void (*ClassFunction)(CStream *s, vector<CLASS> *cache, const OBJECT *object);
@@ -58,8 +68,13 @@ int main( int argc, char **argv )
 		if(gfp==0)
 			throw "Error000!";
 
-		Decode( "D:\\Program Files\\¥Ş¥Ö¥é¥ô14\\muvluv14.rio" );
-		//Decode( "D:\\Program Files\\¥Ş¥Ö¥é¥ô¥ª¥ë¥¿¥Í¥¤¥Æ¥£¥ô14\\alternative14.rio" );
+        //rioä¸­æŸ¥æ‰¾0x1edb927cï¼Œè¯¥ä½ç½®ä¸ºæ ¹å¯¹è±¡æ‰€åœ¨åœ°
+        Decode("D:\\Program Files\\ãƒãƒ–ãƒ©ãƒ´ã‚ªãƒ«ã‚¿ãƒã‚¤ãƒ†ã‚£ãƒ´ã‚¯ãƒ­ãƒ‹ã‚¯ãƒ«ã‚º 01\\ã‚ªãƒ«ã‚¿ã‚¯ãƒ­ãƒ‹ã‚¯ãƒ«ã‚º01.rio",
+            0x20ecf,OpenRio);
+		//Decode( "D:\\Program Files\\ãƒãƒ–ãƒ©ãƒ´14\\muvluv14.rio",
+  //          0x335b6/2, OpenRio2);
+		//Decode( "D:\\Program Files\\ãƒãƒ–ãƒ©ãƒ´ã‚ªãƒ«ã‚¿ãƒã‚¤ãƒ†ã‚£ãƒ´14\\alternative14.rio",
+  //          0x53a98/2, OpenRio2);
 
 		FILE* fbb=fopen("a.b","wb");
 		for(int i=0;i<sOffsets.size();i++)
@@ -80,10 +95,9 @@ int main( int argc, char **argv )
 
 
 
-void Decode( const char *filename )
+void Decode( const char *filename , dword firstOffset, OpenFileRoutine openf)
 {
-	ObjectList.Add( "CrelicUnitedGameProject", 0, 0x000335b6/2, 100 );
-	//ObjectList.Add( "CrelicUnitedGameProject", 0, 0x00053a98/2, 100 );
+    ObjectList.Add( "CrelicUnitedGameProject", 0, firstOffset, 100 );
 	
 	for ( int i=0; i<ObjectList.GetNumber(); i++ )
 	{
@@ -96,7 +110,7 @@ void Decode( const char *filename )
 			int a=3;
 		}
 
-        FILE *f = OpenRio( filename, object.offset );
+        FILE *f = openf( filename, object.offset );
 
         CFileStream fs( f );
 		vector<CLASS> cache;
@@ -128,7 +142,7 @@ void ReadObject( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 	if(it==ClassFuncTable.end())
 	{
 		printf( "%s\n", object->name.c_str() );
-		throw "Î´Œê¤Î¥¯¥é¥¹¤¬ÒŠ¤Ä¤«¤ê¤Ş¤·¤¿¡£";
+		throw "æœªå¯¾å¿œã®ã‚¯ãƒ©ã‚¹ãŒè¦‹ã¤ã‹ã‚Šã¾ã—ãŸã€‚";
 	}
 	else
 	{
@@ -141,16 +155,16 @@ void ReadObject( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 
 /*
  *	OpenRio
- *		offset¤«¤éßmÇĞ¤Ê¥Õ¥¡¥¤¥ë¤òé_¤­¥·©`¥¯
+ *		offsetã‹ã‚‰é©åˆ‡ãªãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ãã‚·ãƒ¼ã‚¯
  */
-FILE *OpenRio( const char *filename, dword offset )
+FILE *OpenRio2( const char *filename, dword offset )
 {
 	static string name;
 	static vector<dword> filesize;
 
 	FILE *f;
 	
-	//	¥Õ¥¡¥¤¥ë¥µ¥¤¥º¤ÎÈ¡µÃ
+	//	ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºã®å–å¾—
 
 	if ( name != filename )
 	{
@@ -160,7 +174,7 @@ FILE *OpenRio( const char *filename, dword offset )
 
 		f = fopen( filename, "rb" );
 		if ( f == NULL )
-			throw "¥Õ¥¡¥¤¥ë¤òé_¤±¤Ş¤»¤ó¤Ç¤·¤¿¡£";
+			throw "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã‘ã¾ã›ã‚“ã§ã—ãŸã€‚";
 		fseek( f, 0, SEEK_END );
 		dword s = (dword)ftell( f );
 		filesize.push_back( s );
@@ -190,7 +204,7 @@ FILE *OpenRio( const char *filename, dword offset )
 	{
 		f = fopen( filename, "rb" );
 		if ( f == NULL )
-			throw "¥Õ¥¡¥¤¥ë¤òé_¤±¤Ş¤»¤ó¤Ç¤·¤¿¡£";
+			throw "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã‘ã¾ã›ã‚“ã§ã—ãŸã€‚";
 		fseek( f, offset*2, SEEK_SET );
 
 		return f;
@@ -201,7 +215,7 @@ FILE *OpenRio( const char *filename, dword offset )
 	for ( n=0; ; n++ )
 	{
 		if ( n >= (int)filesize.size() )
-			throw "¥ª¥Õ¥»¥Ã¥È¤¬´ó¤­¤¹¤®¤Ş¤¹¡£";
+			throw "ã‚ªãƒ•ã‚»ãƒƒãƒˆãŒå¤§ãã™ãã¾ã™ã€‚";
 		if ( offset < filesize[n] / 2 )
 			break;
 		offset -= filesize[n] / 2;
@@ -213,11 +227,89 @@ FILE *OpenRio( const char *filename, dword offset )
 
 	f = fopen( fn, "rb" );
 	if ( f == NULL )
-		throw "¥Õ¥¡¥¤¥ë¤òé_¤±¤Ş¤»¤ó¤Ç¤·¤¿¡£";
+		throw "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã‘ã¾ã›ã‚“ã§ã—ãŸã€‚";
 	fseek( f, offset*2, SEEK_SET );
 
 	delete[] fn;
 	
+    return f;
+}
+
+FILE *OpenRio( const char *filename, dword offset )
+{
+    static string name;
+    static vector<dword> filesize;
+
+    FILE *f;
+
+    //	ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºã®å–å¾—
+
+    if ( name != filename )
+    {
+        name = filename;
+
+        filesize.clear();
+
+        f = fopen( filename, "rb" );
+        if ( f == NULL )
+            throw "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã‘ã¾ã›ã‚“ã§ã—ãŸã€‚";
+        fseek( f, 0, SEEK_END );
+        dword s = (dword)ftell( f );
+        filesize.push_back( s );
+        fclose( f );
+
+        char *fn = new char[strlen(filename)+5];
+
+        for ( int i=2; ; i++ )
+        {
+            sprintf( fn, "%s.%03d", filename, i );
+
+            f = fopen( fn, "rb" );
+            if ( f == NULL )
+                break;
+            fseek( f, 0, SEEK_END );
+            s = (dword)ftell( f );
+            filesize.push_back( s );
+            fclose( f );
+        }
+
+        delete[] fn;
+    }
+
+    //
+
+    if ( offset < filesize[0] )
+    {
+        f = fopen( filename, "rb" );
+        if ( f == NULL )
+            throw "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã‘ã¾ã›ã‚“ã§ã—ãŸã€‚";
+        fseek( f, offset, SEEK_SET );
+
+        return f;
+    }
+
+    int n;
+
+    for ( n=0; ; n++ )
+    {
+        if ( n >= (int)filesize.size() )
+            throw "ã‚ªãƒ•ã‚»ãƒƒãƒˆãŒå¤§ãã™ãã¾ã™ã€‚";
+        if ( offset < filesize[n] )
+            break;
+        offset -= filesize[n];
+    }
+
+    char *fn = new char[strlen(filename)+5];
+
+    sprintf( fn, "%s.%03d", filename, n+1 );
+
+    f = fopen( fn, "rb" );
+    if ( f == NULL )
+        throw "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã‘ã¾ã›ã‚“ã§ã—ãŸã€‚";
+    fseek( f, offset, SEEK_SET );
+
+    delete[] fn;
+
     return f;
 }
 
@@ -280,15 +372,15 @@ void InitClassFuncTable()
 
 		{ "CObjectOcean", ReadNull },
 		{ "CStdb", ReadNull },
-		{ "’Z®”", ReadNull },
-		{ "³®”", ReadNull },
-		{ "F", ReadNull },
-		{ "®”", ReadNull },
+		{ "æŠæƒæ‚¢", ReadNull },
+		{ "æƒ“æƒæ‚¢", ReadNull },
+		{ "æ€“", ReadNull },
+		{ "æƒæ‚¢", ReadNull },
 		{ "CSbm", ReadNull },
-		{ "ƒoƒCƒg", ReadNull },
-		{ "F", ReadNull },
+		{ "åƒ¶åƒ€åƒ©", ReadNull },
+		{ "æ€“", ReadNull },
 		{ "CBox", ReadNull },
-		{ "’Z³®”", ReadNull },
+		{ "æŠæƒ“æƒæ‚¢", ReadNull },
 		{ "CGenericCamera", ReadNull },
 		{ "CDbBrowseBox", ReadNull },
 		{ "CFrameBuffer", ReadNull },
@@ -333,7 +425,7 @@ void InitClassFuncTable()
 
 /*
  *	ReadNull
- *		Î´Œê¥¯¥é¥¹ÓÃ¥À¥ß©`
+ *		æœªå¯¾å¿œã‚¯ãƒ©ã‚¹ç”¨ãƒ€ãƒŸãƒ¼
  */
 void ReadNull( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 {
