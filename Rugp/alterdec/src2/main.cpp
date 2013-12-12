@@ -38,6 +38,7 @@ void	ReadPmVideoRef( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void	ReadRip007( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void	ReadCpsNamedLane( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void    ReadLayoutTextImg(CStream *s, vector<CLASS> *cache, const OBJECT *object );
+void    ReadDcAgesModelQsT( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 
 typedef FILE* (*OpenFileRoutine)( const char *filename, dword offset );
 void	Decode( const char *filename , dword,OpenFileRoutine);
@@ -360,6 +361,7 @@ void InitClassFuncTable()
 		{ "CFadeTelevisionWipe", ReadFadeTelevisionWipe },
 		{ "CFadeXsOverStretchAnti", ReadFadeXsOverStretchAnti },
 		{ "CFadeMergeColor", ReadFadeMergeWhite },
+        { "CFadeHSV", ReadFadeNormal },
 		{ "CMN_Time_Bezier", ReadMN_Time_Bezier },
 		{ "CMN_Time_2G", ReadMN_Time_2G },
 		{ "CFadeXsMergeBlack", ReadFadeXsRatio },
@@ -369,6 +371,7 @@ void InitClassFuncTable()
 		{ "CRip007", ReadRip007},
 		{ "CCpsNamedLane", ReadCpsNamedLane},
         { "CLayoutTextImg", ReadLayoutTextImg },
+        { "CDcAgesModelQsT", ReadDcAgesModelQsT },
 
 		{ "CObjectOcean", ReadNull },
 		{ "CStdb", ReadNull },
