@@ -170,3 +170,9 @@ void ReadFadeXsOverStretchAnti( CStream *s, vector<CLASS> *cache, const OBJECT *
 	for ( int i=0; i<12; i++ )
 		s->readword();
 }
+
+void ReadFadeHSV( CStream *s, vector<CLASS> *cache, const OBJECT *object )
+{
+    ReadFadeNormal(s,cache,object);
+    s->seek(26);
+}

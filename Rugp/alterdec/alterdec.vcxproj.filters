@@ -143,5 +143,8 @@
     <ClCompile Include="src2\DcAgesModelQsT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src2\s5i.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

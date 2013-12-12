@@ -39,6 +39,7 @@ void	ReadRip007( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void	ReadCpsNamedLane( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void    ReadLayoutTextImg(CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void    ReadDcAgesModelQsT( CStream *s, vector<CLASS> *cache, const OBJECT *object );
+void    ReadS5i( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 
 typedef FILE* (*OpenFileRoutine)( const char *filename, dword offset );
 void	Decode( const char *filename , dword,OpenFileRoutine);
@@ -135,7 +136,7 @@ void Decode( const char *filename , dword firstOffset, OpenFileRoutine openf)
  */
 void ReadObject( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 {
-	
+	printf("--Reading object: %s\n",object->name.c_str());
 	if ( object->size <= 3 )
 		return;
 
@@ -329,6 +330,7 @@ void InitClassFuncTable()
 		{ "CFlashLayerEffect", ReadFlashLayerEffect },
 		{ "CTWFGaugeBox", ReadTWFGaugeBox },
 		{ "CCharBox", ReadCharBox },
+        { "CCharBox2", ReadCharBox },
 		{ "CTWFRemainderBox", ReadTWFRemainderBox },
 		{ "Cr6Ti", ReadR6Ti },
 		{ "CBg2d", ReadBg2d },
@@ -361,7 +363,7 @@ void InitClassFuncTable()
 		{ "CFadeTelevisionWipe", ReadFadeTelevisionWipe },
 		{ "CFadeXsOverStretchAnti", ReadFadeXsOverStretchAnti },
 		{ "CFadeMergeColor", ReadFadeMergeWhite },
-        { "CFadeHSV", ReadFadeNormal },
+        { "CFadeHSV", ReadFadeHSV },
 		{ "CMN_Time_Bezier", ReadMN_Time_Bezier },
 		{ "CMN_Time_2G", ReadMN_Time_2G },
 		{ "CFadeXsMergeBlack", ReadFadeXsRatio },
@@ -372,6 +374,7 @@ void InitClassFuncTable()
 		{ "CCpsNamedLane", ReadCpsNamedLane},
         { "CLayoutTextImg", ReadLayoutTextImg },
         { "CDcAgesModelQsT", ReadDcAgesModelQsT },
+        { "CS5i", ReadS5i },
 
 		{ "CObjectOcean", ReadNull },
 		{ "CStdb", ReadNull },
@@ -418,6 +421,8 @@ void InitClassFuncTable()
 		{ "CMimeFlat16LimitOne", ReadNull },
 		{ "CPmBgmSeq", ReadNull },
 		{ "CRmti", ReadNull },
+        { "CRimp", ReadNull },
+        { "CRMG0001Box", ReadNull },
 //		{ "", ReadNull },
 	};
 

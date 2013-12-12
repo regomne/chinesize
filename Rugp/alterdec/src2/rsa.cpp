@@ -451,6 +451,7 @@ void ReadVmImage( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 void Sub1( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 {
 	dword d = s->readdword();
+    dword t1;
 
 	switch ( d & 0x3 )
 	{
@@ -463,6 +464,10 @@ void Sub1( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 	case 2:
 		break;
 	default:
-		throw "Rsa.cpp Sub1";
+        t1=s->readdword();
+        if(t1==0x137)
+            s->readdword();
+        else if(t1!=0x138)
+            throw "VmCall sub0.1";
 	}
 }

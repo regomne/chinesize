@@ -118,6 +118,7 @@
     <ClCompile Include="src2\rsa2.cpp" />
     <ClCompile Include="src2\rsa2OM.cpp" />
     <ClCompile Include="src2\rsi.cpp" />
+    <ClCompile Include="src2\s5i.cpp" />
     <ClCompile Include="src2\stream.cpp" />
     <ClCompile Include="src2\textwriter.cpp" />
     <ClCompile Include="src2\twfgaugebox.cpp" />
