@@ -164,7 +164,7 @@ class HcbParser:
                 break
         return f
 
-    def ParseTxt(self):
+    def ParseTxt(self,exBlocks,textStart):
         self.codeBlockLen=self.hcb.readu32()
         self.hcb.seek(self.codeBlockLen)
         entry_point=self.hcb.readu32()
@@ -187,16 +187,12 @@ class HcbParser:
         print 'Parsing 0000...'
         while 1:
             if cur==self.func[func_it]:
-                if func_it==3751:
-                    #int3()
-                    func_it=3867
-                    cur=self.func[func_it]
-                    self.hcb.seek(cur)
-                elif func_it==3587:
-                    func_it=3591
-                    cur=self.func[func_it]
-                    self.hcb.seek(cur)
-                if func_it==4171:
+                for left,right in exBlocks:
+                    if func_it==left:
+                        func_it=right
+                        cur=self.func[func_it]
+                        self.hcb.seek(cur)
+                if func_it==textStart:
                     break
                 func_it+=1
             inst=self.hcb.readu8()

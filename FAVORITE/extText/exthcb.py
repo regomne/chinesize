@@ -19,34 +19,34 @@ fnt={
     0xeec:u'時雨',
     0xfc4:u'とおる',
     0x114d:u'蓮也',
-    0x1225:u'青空',
-    0x13a0:u'さやか',
-    0x14b3:u'静',
-    0x1606:u'女１',
-    0x164c:u'担任教師',
-    0x16a2:u'女の子',
-    0x171b:u'ハク',
-    0x17f3:u'レン',
-    0x18cb:u'看護師',
-    0x1948:u'祖母',
-    0x19e5:u'お母さん',
-    0x1a5e:u'お母さん',
-    0x1ad5:u'かみさま',
-    0x1b82:u'男の人',
-    0x1bfb:u'レン',
-    0x1c66:u'ユウマ',
-    0x1d99:u'悠馬',
+    0x1260:u'青空',
+    0x13db:u'さやか',
+    0x14ee:u'静',
+    0x1641:u'女１',
+    0x1687:u'担任教師',
+    0x16dd:u'女の子',
+    0x1756:u'ハク',
+    0x182e:u'レン',
+    0x1906:u'看護師',
+    0x1983:u'祖母',
+    0x1a20:u'お母さん',
+    0x1a99:u'お母さん',
+    0x1b10:u'かみさま',
+    0x1bbd:u'男の人',
+    0x1c36:u'レン',
+    0x1ca1:u'ユウマ',
+    0x1dd4:u'悠馬',
     
     }
 
-fs=open(ur'D:\Program Files\いろとりどりのヒカリ\hikari.hcb','rb')
+fs=open(ur'hikari.hcb','rb')
 stm=bytefile.ByteIO(fs.read())
 parser=hcbParser.HcbParser(stm)
 
 parser.SetFuncNameTable(fnt,'932')
-#txt=parser.Parse()
-#fs=open('world1.txt','wb')
-#fs.write(txt.decode('932').encode('U16'))
-#fs.close
+##txt=parser.Parse()
+##fs=open('world1.txt','wb')
+##fs.write(txt.decode('932').encode('U16'))
+##fs.close
 os.chdir('txt')
-parser.ParseTxt()
+parser.ParseTxt([(3587,3591),(3751,3867)],4171)
