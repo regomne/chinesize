@@ -128,9 +128,6 @@
     <ClCompile Include="src2\twfgaugebox.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src2\rsa2OM.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src2\pmvideoref.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -138,6 +135,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src2\layoutTextImg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src2\rsa2OM.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src2\DcAgesModelQsT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src2\s5i.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

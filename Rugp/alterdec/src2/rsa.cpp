@@ -31,7 +31,7 @@ dword CalcHash(byte* s,dword len)
 
 void ReadRsa( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 {
-	dword offset = object->offset + s->getreadbyte() / 2;
+	dword offset = object->offset + s->getreadbyte() ;
 
 	CTextWriter writer;
 	
@@ -87,7 +87,6 @@ void ReadRsa( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 
 	writer.write( offset ,blockHash);
 }
-
 
 
 void ReadVmSound( CStream *s, vector<CLASS> *cache, const OBJECT *object )
@@ -185,27 +184,24 @@ void ReadVmGenericMsg( CStream *s, vector<CLASS> *cache, const OBJECT *object, C
 			s->readdword();
 		if ( w2 == 0xffff )
 		{
-			if(0)
-			{
-				char paramname[256];
-				word len = s->readword();
-				if ( len >= 256 )
-					throw "¥Ñ¥é¥á¥¿Ãû¤¬éL¤¹¤®¤Þ¤¹¡£";
-				s->read( paramname, len );
-				paramname[len] = '\0';
-				printf( "%s\n", paramname );
+#if RUGP_VERSION==2
+            char paramname[256];
+            word len = s->readword();
+            if ( len >= 256 )
+                throw "¥Ñ¥é¥á¥¿Ãû¤¬éL¤¹¤®¤Þ¤¹¡£";
+            s->read( paramname, len );
+            paramname[len] = '\0';
+            printf( "%s\n", paramname );
 
-				CLASS cls;
-				cls.name = paramname;
-			
-				cache->push_back( cls );
-			}
-			else
-			{
-				CLASS cls;
-				s->readdword();
-				cache->push_back( cls );
-			}
+            CLASS cls;
+            cls.name = paramname;
+
+            cache->push_back( cls );
+#elif RUGP_VERSION==1
+			CLASS cls;
+			s->readdword();
+			cache->push_back( cls );
+#endif
 		}
 		
 		Sub1( s, cache, object );
@@ -215,6 +211,7 @@ void ReadVmGenericMsg( CStream *s, vector<CLASS> *cache, const OBJECT *object, C
 
 void ReadVmCall( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 {
+    int t1;
 	s->readdword();
 	s->readdword();
 	ReadClassList( s, cache, object );
@@ -263,8 +260,12 @@ void ReadVmCall( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 				break;
 			case 2:
 				break;
-			default:
-				throw "Rsa.cpp Sub1";
+			case 3:
+                t1=s->readdword();
+                if(t1==0x137)
+                    s->readdword();
+                else if(t1!=0x138)
+                    throw "VmCall sub0.1";
 			}
 		}
 	}
@@ -309,6 +310,7 @@ void ReadVmRet( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 	
 }
 
+#if RUGP_VERSION==1
 void ReadVmBlt( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 {
 	s->readdword();
@@ -328,6 +330,26 @@ void ReadVmBlt( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 	for(int i=0;i<4;i++)
 		Sub1( s, cache, object );
 }
+#elif RUGP_VERSION==2
+void ReadVmBlt( CStream *s, vector<CLASS> *cache, const OBJECT *object )
+{
+    s->readdword();
+    s->readdword();
+
+    CLASS cls;
+    if ( ReadClass( s, cache, &cls ) )
+    {
+        cache->push_back( cls );
+        OBJECT o( cls.name, cls.schema, object->offset, object->size );
+        ReadObject( s, cache, &o );
+    }
+
+    s->readword();
+    s->readbyte();
+    s->readbyte();
+    Sub1( s, cache, object );
+}
+#endif
 
 
 
@@ -429,6 +451,7 @@ void ReadVmImage( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 void Sub1( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 {
 	dword d = s->readdword();
+    dword t1;
 
 	switch ( d & 0x3 )
 	{
@@ -441,6 +464,10 @@ void Sub1( CStream *s, vector<CLASS> *cache, const OBJECT *object )
 	case 2:
 		break;
 	default:
-		throw "Rsa.cpp Sub1";
+        t1=s->readdword();
+        if(t1==0x137)
+            s->readdword();
+        else if(t1!=0x138)
+            throw "VmCall sub0.1";
 	}
 }

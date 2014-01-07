@@ -23,4 +23,5 @@ void	ReadFadeXsOverStretchAnti( CStream *s, vector<CLASS> *cache, const OBJECT *
 void	ReadFadeNormal( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void	ReadFadeMergeWhite( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 void	ReadFadeTelevisionWipe( CStream *s, vector<CLASS> *cache, const OBJECT *object );
+void	ReadFadeHSV( CStream *s, vector<CLASS> *cache, const OBJECT *object );
 
