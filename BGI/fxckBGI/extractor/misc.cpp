@@ -62,6 +62,32 @@ void Copy24To24(BYTE* dibDest,BYTE* dibSrc,int width,int height)
 	}
 }
 
+void Copy32To24(BYTE* dibDest,BYTE* dibSrc,int width,int height)
+{
+    if(height<0)
+        height=-height;
+
+    int stride=(width*3+3)&~3;
+    BYTE* lbegin=dibDest;
+    BYTE* src=dibSrc;
+
+    for(int i=0;i<height;i++)
+    {
+        BYTE* ld=lbegin;
+        BYTE* ls=src;
+        for(int j=0;j<width;j++)
+        {
+            ld[0]=ls[0];
+            ld[1]=ls[1];
+            ld[2]=ls[2];
+            ld+=3;
+            ls+=4;
+        }
+        lbegin+=stride;
+        src+=width*4;
+    }
+}
+
 int Log(const wchar_t* str)
 {
 	static HWND logWindow=GetDlgItem(g_hwndMain,IDC_LOGLIST);

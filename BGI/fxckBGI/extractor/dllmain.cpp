@@ -302,7 +302,7 @@ DWORD WINAPI MainWnd(LPVOID param)
 	WriteFile(pipe,&message,4,&readBytes,0);
 	CloseHandle(pipe);
 #else
-    g_DecompressFile=0;
+    g_DecompressFile=(DecoprFunc)0x44fd20;
 #endif
 
 	HMODULE thisMod=GetModuleHandle(L"extractor.dll");

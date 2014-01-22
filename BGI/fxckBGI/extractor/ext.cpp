@@ -156,11 +156,13 @@ DWORD WINAPI ExtArc(const wstring& fname)
 		ReadFile(hf,lpOri,itemSize,&temp,0);
 
 		BOOL isPic=FALSE;
+        int oldBpp;
 
 		if(!memcmp(lpOri,"CompressedBG___",0x10))
 		{
 			isPic=TRUE;
 			auto bgHdr=(BGI_COMPRESSED_BG_HEADER*)lpOri;
+            oldBpp=bgHdr->BitsPerPixel;
 			
 			int dibSize=((bgHdr->Width*(bgHdr->BitsPerPixel/8)+7)&~7)*bgHdr->Height;
 			int allocSize=bgHdr->Width*bgHdr->Height*4;
@@ -247,7 +249,7 @@ DWORD WINAPI ExtArc(const wstring& fname)
 		//if((grpHdr->BitsPerPixel==8) && grpHdr->Width%4!=0)
 		//	__asm int 3
 		if(isPic || ((grpHdr->BitsPerPixel==8 || grpHdr->BitsPerPixel==24 || grpHdr->BitsPerPixel==32) &&
-			grpHdr->Width*grpHdr->Height*(grpHdr->BitsPerPixel/8)+sizeof(*grpHdr)==newSize))
+			grpHdr->Width*grpHdr->Height*(grpHdr->BitsPerPixel/8)+sizeof(BGI_GRP_HEADER)==newSize))
 		{
 			auto tempBuff=lpNew;
 			lpNew=new BYTE[sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER)+newSize+0x400];
@@ -262,6 +264,12 @@ DWORD WINAPI ExtArc(const wstring& fname)
 				dibData=lpNew+sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER);
 				Copy24To24(dibData,(BYTE*)(grpHdr+1),grpHdr->Width,grpHdr->Height);
 			}
+            else if(grpHdr->BitsPerPixel==32 && isPic && oldBpp==24)
+            {
+                dibData=lpNew+sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER);
+                Copy32To24(dibData,(BYTE*)(grpHdr+1),grpHdr->Width,grpHdr->Height);
+                grpHdr->BitsPerPixel=24;
+            }
 			else
 			{
 				dibData=lpNew+sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER);
