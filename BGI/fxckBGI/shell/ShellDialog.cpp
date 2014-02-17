@@ -309,6 +309,7 @@ INT_PTR CALLBACK ShellProc(
 		g_hwnd=hwndDlg;
 		HICON icon=LoadIcon(g_hInstance,(LPCWSTR)IDI_ICON1);
 		SendMessage(hwndDlg,WM_SETICON,ICON_SMALL,(LPARAM)icon);
+		SetWindowText(hwndDlg,L"fxckBGI v" PRODUCT_VERSION);
 
         for(int i=0;i<g_gameCount;i++)
         {
