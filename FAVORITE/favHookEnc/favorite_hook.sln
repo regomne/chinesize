@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "favorite_hook", "favorite_hook.vcxproj", "{86854890-4FE2-40E2-8751-98785693CE54}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Loader", "Loader\Loader.vcxproj", "{45E8411E-9254-4FB5-87AA-7C4CF132174B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{86854890-4FE2-40E2-8751-98785693CE54}.Debug|Win32.ActiveCfg = Debug|Win32
+		{86854890-4FE2-40E2-8751-98785693CE54}.Debug|Win32.Build.0 = Debug|Win32
+		{86854890-4FE2-40E2-8751-98785693CE54}.Release|Win32.ActiveCfg = Release|Win32
+		{86854890-4FE2-40E2-8751-98785693CE54}.Release|Win32.Build.0 = Release|Win32
+		{45E8411E-9254-4FB5-87AA-7C4CF132174B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{45E8411E-9254-4FB5-87AA-7C4CF132174B}.Debug|Win32.Build.0 = Debug|Win32
+		{45E8411E-9254-4FB5-87AA-7C4CF132174B}.Release|Win32.ActiveCfg = Release|Win32
+		{45E8411E-9254-4FB5-87AA-7C4CF132174B}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
