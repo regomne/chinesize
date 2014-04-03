@@ -23,7 +23,7 @@ inst		size		def
 
 02		4		push(int);
 03		4		push(pInt);
-04		4		push(ppInt);
+04		4		pushGlobal(globalVarIdx);
 
 05		8		push?(para1,int nStringOffset);//
 
