@@ -422,7 +422,7 @@ DWORD WINAPI ExtractThread(LPVOID param)
 	SetDlgItemText(g_hwndMain,IDC_PAUSE,L"Pause");
 	SendDlgItemMessage(g_hwndMain,IDC_PROGRESS,PBM_SETPOS,0,0);
 	EnableWindow(GetDlgItem(g_hwndMain,IDC_STOP),FALSE);
-	SetWindowText(g_hwndMain,L"fxckBGI - ready");
+	SetWindowText(g_hwndMain,L"fxckBGI v" PRODUCT_VERSION);
 	delete arcList;
 	return 0;
 }

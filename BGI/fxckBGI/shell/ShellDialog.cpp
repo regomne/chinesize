@@ -17,9 +17,9 @@ HWND g_hwnd;
 HANDLE g_hProcessHeap;
 GameInfo g_gameList[]={
     {L"Auto Detect",0},
-	{L"大図書館の羊飼い",0x44f040},
-	{L"向日葵の教会と長い夏休み",0x44f550},
-    {L"大図書館の羊飼い～放課後しっぽデイズ～",0x451380},
+	//{L"大図書館の羊飼い",0x44f040},
+	//{L"向日葵の教会と長い夏休み",0x44f550},
+ //   {L"大図書館の羊飼い～放課後しっぽデイズ～",0x451380},
 };
 const int g_gameCount=sizeof(g_gameList)/sizeof(GameInfo);
 
@@ -147,6 +147,68 @@ HRESULT BasicFileOpen(PWSTR* filePath)
 	return hr;
 }
 
+BOOL Run(HWND hwndDlg,wchar_t* exePath,DWORD address)
+{
+    STARTUPINFO si;
+    memset1(&si,0,sizeof(si));
+    si.cb=sizeof(si);
+    PROCESS_INFORMATION pi;
+    if(!CreateProcess(0,exePath,0,0,FALSE,CREATE_SUSPENDED,0,0,&si,&pi))
+    {
+        MessageBox(hwndDlg,L"Can't start exe!",0,0);
+        return FALSE;
+    }
+
+    int pathLen=256;
+    wchar_t* dllPath=new wchar_t[pathLen];
+    int retlen=GetModuleFileName(0,dllPath,pathLen);
+    while(GetLastError()==ERROR_INSUFFICIENT_BUFFER)
+    {
+        delete[] dllPath;
+        pathLen*=2;
+        dllPath=new wchar_t[pathLen];
+        retlen=GetModuleFileName(0,dllPath,pathLen);
+    };
+    wchar_t* p=dllPath+retlen;
+    for(;p>dllPath;p--)
+        if(*p==L'\\')
+            break;
+    *(p+1)=L'\0';
+    lstrcat(dllPath,L"extractor.dll");
+
+    int rslt=InjectToProcess(pi.hProcess,pi.hThread,dllPath,(DecoprFunc)address);
+    delete[] dllPath;
+    if(rslt<0)
+    {
+        MessageBox(hwndDlg,L"Failed to inject process",0,0);
+        return FALSE;
+    }
+
+    //wchar_t pipeName[30];
+    //wsprintf(pipeName,PIPE_NAME,pi.dwProcessId);
+
+    //HANDLE pipe=CreateNamedPipe(pipeName,PIPE_ACCESS_DUPLEX,PIPE_TYPE_BYTE|PIPE_READMODE_BYTE|PIPE_WAIT,
+    //    PIPE_UNLIMITED_INSTANCES,256,256,0,0);
+
+    //if(pipe==INVALID_HANDLE_VALUE)
+    //{
+    //    MessageBox(hwndDlg,L"Faild to create pipe",0,0);
+    //    TerminateProcess(pi.hProcess,0);
+    //    return FALSE;
+    //}
+
+    ResumeThread(pi.hThread);
+
+    //rslt=PipeComm(pipe,address);
+    //CloseHandle(pipe);
+    //if(rslt<0)
+    //{
+    //    MessageBox(hwndDlg,L"Failed to communicated with sub process",0,0);
+    //    return FALSE;
+    //}
+    return TRUE;
+}
+
 INT_PTR CALLBACK ShellProc(
   _In_  HWND hwndDlg,
   _In_  UINT uMsg,
@@ -185,73 +247,17 @@ INT_PTR CALLBACK ShellProc(
 				exePath=new wchar_t[len+1];
 				if(exePath==0)
 				{
-					delete[] exePath;
 					MessageBox(hwndDlg,L"Not enough memory",0,0);
 					break;
 				}
 
 				GetDlgItemText(hwndDlg,IDC_EXEPATH,exePath,len+1);
 				
-				STARTUPINFO si;
-				memset1(&si,0,sizeof(si));
-				si.cb=sizeof(si);
-				PROCESS_INFORMATION pi;
-				if(!CreateProcess(0,exePath,0,0,FALSE,CREATE_SUSPENDED,0,0,&si,&pi))
-				{
-					delete[] exePath;
-					MessageBox(hwndDlg,L"Can't start exe!",0,0);
-					break;
-				}
-				delete[] exePath;
-
-				int pathLen=256;
-				wchar_t* dllPath=new wchar_t[pathLen];
-				int retlen=GetModuleFileName(0,dllPath,pathLen);
-				while(GetLastError()==ERROR_INSUFFICIENT_BUFFER)
-				{
-					delete[] dllPath;
-					pathLen*=2;
-					dllPath=new wchar_t[pathLen];
-					retlen=GetModuleFileName(0,dllPath,pathLen);
-				};
-				wchar_t* p=dllPath+retlen;
-				for(;p>dllPath;p--)
-					if(*p==L'\\')
-						break;
-				*(p+1)=L'\0';
-				lstrcat(dllPath,L"extractor.dll");
-
-				int rslt=InjectToProcess(pi.hProcess,pi.hThread,dllPath,(DecoprFunc)address);
-				delete[] dllPath;
-				if(rslt<0)
-				{
-					MessageBox(hwndDlg,L"Failed to inject process",0,0);
-					break;
-				}
-
-				wchar_t pipeName[30];
-				wsprintf(pipeName,PIPE_NAME,pi.dwProcessId);
-
-				HANDLE pipe=CreateNamedPipe(pipeName,PIPE_ACCESS_DUPLEX,PIPE_TYPE_BYTE|PIPE_READMODE_BYTE|PIPE_WAIT,
-					PIPE_UNLIMITED_INSTANCES,256,256,0,0);
-
-				if(pipe==INVALID_HANDLE_VALUE)
-				{
-					MessageBox(hwndDlg,L"Faild to create pipe",0,0);
-					TerminateProcess(pi.hProcess,0);
-					break;
-				}
-				
-				ResumeThread(pi.hThread);
-
-				rslt=PipeComm(pipe,address);
-				CloseHandle(pipe);
-				if(rslt<0)
-				{
-					MessageBox(hwndDlg,L"Failed to communicated with sub process",0,0);
-					break;
-				}
-
+                if(!Run(hwndDlg,exePath,address))
+                {
+                    delete[] exePath;
+                    break;
+                }
 			}
 			// Fall through. 
 
@@ -333,12 +339,30 @@ int main1()
 	return 0;
 }
 
+int main2(int argc,LPWSTR* argv)
+{
+    if(argc==2)
+        Run(0,argv[1],0);
+    return 0;
+}
+
 int main()
 {
 	g_hInstance=GetModuleHandle(0);
 	g_hProcessHeap=GetProcessHeap();
-	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-	main1();
-	CoUninitialize();
-	ExitProcess(0);
+    auto cmdstr=GetCommandLine();
+    int argc;
+    auto argv=CommandLineToArgvW(cmdstr,&argc);
+    int ret;
+    if(argc==1)
+    {
+	    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	    ret=main1();
+        CoUninitialize();
+    }
+    else
+    {
+        ret=main2(argc,argv);
+    }
+	ExitProcess(ret);
 }

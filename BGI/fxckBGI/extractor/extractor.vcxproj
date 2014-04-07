@@ -47,8 +47,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>E:\Program\lpng162;E:\Program\zlib-1.2.8;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\Program\lpng162\projects\vstudio\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>E:\Program\ilhook\src;E:\Program\lpng162;E:\Program\zlib-1.2.8;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\Program\lpng162\projects\vstudio\Release;D:\WinDDK\7600.16385.1\lib\win7\i386;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -82,6 +82,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <AdditionalDependencies>ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -91,7 +92,10 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\shell\inject.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="E:\Program\ilhook\src\asmhelper.cpp" />
+    <ClCompile Include="E:\Program\ilhook\src\ilhook.cpp" />
     <ClCompile Include="ext.cpp" />
     <ClCompile Include="misc.cpp" />
   </ItemGroup>

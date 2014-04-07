@@ -7,12 +7,14 @@
 #include "extractor.h"
 #include "resource.h"
 #include "misc.h"
+#include <ilhook.h>
 #include <vector>
 #include <string>
 
 //#pragma comment(linker,"/entry:MyDllMain")
 
 using namespace std;
+int InjectToProcess(HANDLE process,HANDLE thread,wchar_t* dllPath,DecoprFunc func);
 
 DecoprFunc g_DecompressFile;
 HANDLE g_hProcessHeap;
@@ -114,7 +116,7 @@ BOOL CALLBACK MainWndProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
 			{
 				items->GetCount(&itemCount);
 				arcList=new vector<wstring>();
-				for(int i=0;i<itemCount;i++)
+				for(DWORD i=0;i<itemCount;i++)
 				{
 					HRESULT hr=items->GetItemAt(i,&item);
 					if(SUCCEEDED(hr))
@@ -250,8 +252,9 @@ BOOL CALLBACK MainWndProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
 		g_hwndMain=hwndDlg;
 		g_needStop=CreateEvent(0,FALSE,FALSE,0);
 		g_paused=CreateEvent(0,TRUE,TRUE,0);
-		CreateThread(0,0,waitReady,0,0,0);
+		//CreateThread(0,0,waitReady,0,0,0);
 
+        SetWindowText(hwndDlg,L"fxckBGI v" PRODUCT_VERSION);
 		SendDlgItemMessage(hwndDlg,IDC_PICFORMAT,CB_ADDSTRING,0,(LPARAM)L"PNG");
 // 		SendDlgItemMessage(hwndDlg,IDC_PICFORMAT,CB_ADDSTRING,0,(LPARAM)L"JPEG");
 		SendDlgItemMessage(hwndDlg,IDC_PICFORMAT,CB_SETCURSEL,0,0);
@@ -265,44 +268,44 @@ BOOL CALLBACK MainWndProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
 }
 DWORD WINAPI MainWnd(LPVOID param)
 {
-	wchar_t pipeName[30];
-	wsprintf(pipeName,PIPE_NAME,GetCurrentProcessId());
+	//wchar_t pipeName[30];
+	//wsprintf(pipeName,PIPE_NAME,GetCurrentProcessId());
 	CoInitialize(0);
 
 #ifndef DBG
-	HANDLE pipe=CreateFile(pipeName,GENERIC_READ|GENERIC_WRITE,0,0,OPEN_EXISTING,0,0);
-	if(pipe==INVALID_HANDLE_VALUE)
-	{
-		MessageBox(0,pipeName,0,0);
-		return 0;
-	}
-	DWORD dwMode = PIPE_READMODE_BYTE; 
-
-	BOOL fSuccess = SetNamedPipeHandleState(pipe,&dwMode,NULL,NULL);
-	if ( ! fSuccess) 
-	{
-		CloseHandle(pipe);
-		MessageBox(0,L"Can't set pipe state",0,0);
-		return 0;
-	}
-
-	//MyDataStruct* mds;
-	DWORD readBytes;
-	ReadFile(pipe,(DWORD*)&g_DecompressFile,4,&readBytes,0);
-	if(readBytes!=4)
-	{
-		CloseHandle(pipe);
-		MessageBox(0,L"Receive error",0,0);
-		return 0;
-	}
-
-	//g_DecompressFile=mds->funcAddr;
-
-	DWORD message='OVER';
-	WriteFile(pipe,&message,4,&readBytes,0);
-	CloseHandle(pipe);
-#else
-    g_DecompressFile=(DecoprFunc)0x44fd20;
+//	HANDLE pipe=CreateFile(pipeName,GENERIC_READ|GENERIC_WRITE,0,0,OPEN_EXISTING,0,0);
+//	if(pipe==INVALID_HANDLE_VALUE)
+//	{
+//		MessageBox(0,pipeName,0,0);
+//		return 0;
+//	}
+//	DWORD dwMode = PIPE_READMODE_BYTE; 
+//
+//	BOOL fSuccess = SetNamedPipeHandleState(pipe,&dwMode,NULL,NULL);
+//	if ( ! fSuccess) 
+//	{
+//		CloseHandle(pipe);
+//		MessageBox(0,L"Can't set pipe state",0,0);
+//		return 0;
+//	}
+//
+//	//MyDataStruct* mds;
+//	DWORD readBytes;
+//	ReadFile(pipe,(DWORD*)&g_DecompressFile,4,&readBytes,0);
+//	if(readBytes!=4)
+//	{
+//		CloseHandle(pipe);
+//		MessageBox(0,L"Receive error",0,0);
+//		return 0;
+//	}
+//
+//	//g_DecompressFile=mds->funcAddr;
+//
+//	DWORD message='OVER';
+//	WriteFile(pipe,&message,4,&readBytes,0);
+//	CloseHandle(pipe);
+//#else
+//    g_DecompressFile=(DecoprFunc)0x44fd20;
 #endif
 
 	HMODULE thisMod=GetModuleHandle(L"extractor.dll");
@@ -312,18 +315,29 @@ DWORD WINAPI MainWnd(LPVOID param)
 	return 0;
 }
 
+DWORD WINAPI StartWindow()
+{
+    g_DecompressFile=(DecoprFunc)SearchDecompressFunc();
+    if(!g_DecompressFile)
+        MessageBox(0,L"This may not be a BGI exe.",0,0);
+    else
+    {
+        CreateThread(0,0,(LPTHREAD_START_ROUTINE)MainWnd,0,0,0);
+    }
+    return 0;
+}
+
 __declspec(naked) int SetWindowOnce()
 {
 	__asm
 	{
-        cmp g_DecompressFile,0
-        jnz _lbl1
         pushad
-        call SearchDecompressFunc
-        mov g_DecompressFile,eax
+//        call SearchDecompressFunc
+//        mov g_DecompressFile,eax
+        call StartWindow
         popad
-_lbl1:
-		mov g_ready,1
+
+        mov g_ready,1
 		lea ecx,g_stolenBytes
 		mov eax,[ecx]
 		mov edx,g_setWindowTextAddr
@@ -332,6 +346,121 @@ _lbl1:
 		mov [edx+4],al
 		jmp g_setWindowTextAddr
 	}
+}
+typedef BOOL (WINAPI *CreateProcessInternalWRoutine)(
+    HANDLE token,
+    _In_opt_     LPCTSTR lpApplicationName,
+    _Inout_opt_  LPTSTR lpCommandLine,
+    _In_opt_     LPSECURITY_ATTRIBUTES lpProcessAttributes,
+    _In_opt_     LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    _In_         BOOL bInheritHandles,
+    _In_         DWORD dwCreationFlags,
+    _In_opt_     LPVOID lpEnvironment,
+    _In_opt_     LPCTSTR lpCurrentDirectory,
+    _In_         LPSTARTUPINFO lpStartupInfo,
+    _Out_        LPPROCESS_INFORMATION lpProcessInformation,
+    PHANDLE pnewtoken
+    );
+
+BOOL WINAPI MyCreateProcessInternalW(
+    CreateProcessInternalWRoutine func,
+    HANDLE token,
+    _In_opt_     LPCTSTR lpApplicationName,
+    _Inout_opt_  LPTSTR lpCommandLine,
+    _In_opt_     LPSECURITY_ATTRIBUTES lpProcessAttributes,
+    _In_opt_     LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    _In_         BOOL bInheritHandles,
+    _In_         DWORD dwCreationFlags,
+    _In_opt_     LPVOID lpEnvironment,
+    _In_opt_     LPCTSTR lpCurrentDirectory,
+    _In_         LPSTARTUPINFO lpStartupInfo,
+    _Out_        LPPROCESS_INFORMATION lpProcessInformation,
+    PHANDLE pnewtoken
+   )
+{
+    int hasSus= (dwCreationFlags & CREATE_SUSPENDED);
+    dwCreationFlags |= CREATE_SUSPENDED;
+    BOOL ret=func(0,lpApplicationName,lpCommandLine,lpProcessAttributes,lpThreadAttributes,bInheritHandles,
+        dwCreationFlags,lpEnvironment,lpCurrentDirectory,lpStartupInfo,lpProcessInformation,0);
+    if(ret)
+    {
+        HMODULE hm=GetModuleHandle(L"extractor.dll");
+        if(hm)
+        {
+            int pathLen=256;
+            wchar_t* dllPath=new wchar_t[pathLen];
+            int retlen=GetModuleFileName(hm,dllPath,pathLen);
+            while(GetLastError()==ERROR_INSUFFICIENT_BUFFER)
+            {
+                delete[] dllPath;
+                pathLen*=2;
+                dllPath=new wchar_t[pathLen];
+                retlen=GetModuleFileName(0,dllPath,pathLen);
+            };
+            InjectToProcess(lpProcessInformation->hProcess,lpProcessInformation->hThread,dllPath,0);
+            delete[] dllPath;
+        }
+        if(!hasSus)
+            ResumeThread(lpProcessInformation->hThread);
+    }
+    return ret;
+}
+
+char CheckFileName[100];
+void WINAPI MyGetFileAttributesA(LPSTR name)
+{
+    int len0=strlen(CheckFileName);
+    int len1=strlen(name);
+    if(len1<len0 || len0==0)
+        return;
+    if(!_stricmp(name+(len1-len0),CheckFileName))
+        name[len1-len0]+=1;
+}
+
+void GetZeroBytesFile()
+{
+    HMODULE hm=GetModuleHandle(0);
+    int pathLen=256;
+    wchar_t* dllPath=new wchar_t[pathLen];
+    int retlen=GetModuleFileName(hm,dllPath,pathLen);
+    while(GetLastError()==ERROR_INSUFFICIENT_BUFFER)
+    {
+        delete[] dllPath;
+        pathLen*=2;
+        dllPath=new wchar_t[pathLen];
+        retlen=GetModuleFileName(0,dllPath,pathLen);
+    };
+    wchar_t* p=dllPath+retlen;
+    for(;p>dllPath;p--)
+        if(*p==L'\\')
+            break;
+    *(p+1)=L'\0';
+    wstring path0(dllPath);
+    *(p+1)=L'*';
+    *(p+2)=L'\0';
+
+    WIN32_FIND_DATA wfd;
+    auto hf=FindFirstFile(dllPath,&wfd);
+    if(hf!=INVALID_HANDLE_VALUE)
+    {
+        do 
+        {
+            auto hfile=CreateFile((path0+wfd.cFileName).c_str(),GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+                0,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,0);
+            if(hfile!=INVALID_HANDLE_VALUE)
+            {
+                DWORD fileSize=GetFileSize(hfile,0);
+                CloseHandle(hfile);
+                if(fileSize==0)
+                {
+                    WideCharToMultiByte(CP_ACP,0,wfd.cFileName,-1,CheckFileName,100,0,0);
+                    break;
+                }
+            }
+            
+        } while (FindNextFile(hf,&wfd));
+        FindClose(hf);
+    }
 }
 
 int WINAPI DllMain(_In_  HINSTANCE hinstDLL,
@@ -344,8 +473,8 @@ int WINAPI DllMain(_In_  HINSTANCE hinstDLL,
 		g_hProcessHeap=GetProcessHeap();
 		//g_extPath=new wstring(L"");
 
-		HMODULE hmod=LoadLibrary(L"user32.dll");
-		BYTE* stAddr=(BYTE*)GetProcAddress(hmod,"SetWindowTextA");
+		HMODULE hm=LoadLibrary(L"user32.dll");
+		BYTE* stAddr=(BYTE*)GetProcAddress(hm,"SetWindowTextA");
 		g_setWindowTextAddr=(DWORD)stAddr;
 		DWORD oldProtect;
 		if(!VirtualProtect(stAddr,5,PAGE_EXECUTE_READWRITE,&oldProtect))
@@ -358,7 +487,31 @@ int WINAPI DllMain(_In_  HINSTANCE hinstDLL,
 		*stAddr=0xe9;
 		*(DWORD*)(stAddr+1)=(DWORD)SetWindowOnce-(DWORD)stAddr-5;
 
-		CreateThread(0,0,MainWnd,0,0,0);
+        BYTE* buff=(BYTE*)VirtualAlloc(0,1000,MEM_COMMIT,PAGE_EXECUTE_READWRITE);
+        HookSrcObject src;
+        HookStubObject stub;
+        hm=LoadLibrary(L"kernel32.dll");
+        auto func=GetProcAddress(hm,"CreateProcessInternalW");
+        if(!InitializeHookSrcObject(&src,func) ||
+            !InitializeStubObject(&stub,buff,100,48,STUB_DIRECTLYRETURN|STUB_OVERRIDEEAX) ||
+            !Hook32(&src,0,&stub,MyCreateProcessInternalW,"f123456789ABC"))
+        {
+            MessageBox(0,L"Can't hook CreateProcessInternalW",0,0);
+            return FALSE;
+        }
+
+        func=GetProcAddress(hm,"GetFileAttributesA");
+        if(!InitializeHookSrcObject(&src,func) ||
+            !InitializeStubObject(&stub,buff+100,100) ||
+            !Hook32(&src,0,&stub,MyGetFileAttributesA,"1"))
+        {
+            MessageBox(0,L"Can't hook GetFileAttributesA",0,0);
+            return FALSE;
+        }
+
+        GetZeroBytesFile();
+
+//		CreateThread(0,0,MainWnd,0,0,0);
 	}
 	return TRUE;
 }

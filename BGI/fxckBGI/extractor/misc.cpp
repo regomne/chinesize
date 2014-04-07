@@ -519,7 +519,7 @@ int MemcmpWithMask(const void* m1,const void* m2,const void* mask,unsigned lengt
 BYTE* SearchCode(BYTE* start,int length)
 {
     static const BYTE chCode[]={0x8B, 0x43, 0x14, 0x8D, 0x73, 0x14, 0x3D, 0x00, 0x00, 0x00, 0x04};
-    static const BYTE chMask[]={1,0,1,1,0,1,1,1,1,1,1};
+    static const BYTE chMask[]={1,0,1,1,0,1,1,1,1,1,0};
 
     BYTE* p=start;
     for(;p<start+length-sizeof(chCode);p++)
@@ -532,6 +532,8 @@ BYTE* SearchCode(BYTE* start,int length)
                     return p-i+1;
                 if(!memcmp(p-i,"\x55\x8b\xec",3))
                     return p-i;
+                if(!memcmp(p-i,"\x90\x90\x83\xec",4))
+                    return p-i+2;
             }
         }
     }
