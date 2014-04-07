@@ -25,9 +25,11 @@ HANDLE g_paused;
 HANDLE g_needStop;
 wstring g_extPath;
 
-BYTE g_stolenBytes[8];
-BOOL g_ready=FALSE;
+BYTE g_stolenBytesSWT[8];
+BYTE g_stolenBytesMB[8];
 DWORD g_setWindowTextAddr;
+DWORD g_messageBoxAddr;
+BOOL g_ready=FALSE;
 
 Options g_options;
 
@@ -331,6 +333,8 @@ __declspec(naked) int SetWindowOnce()
 {
 	__asm
 	{
+        cmp g_ready,0
+        jnz _lbl
         pushad
 //        call SearchDecompressFunc
 //        mov g_DecompressFile,eax
@@ -338,7 +342,8 @@ __declspec(naked) int SetWindowOnce()
         popad
 
         mov g_ready,1
-		lea ecx,g_stolenBytes
+_lbl:
+		lea ecx,g_stolenBytesSWT
 		mov eax,[ecx]
 		mov edx,g_setWindowTextAddr
 		mov [edx],eax
@@ -346,6 +351,28 @@ __declspec(naked) int SetWindowOnce()
 		mov [edx+4],al
 		jmp g_setWindowTextAddr
 	}
+}
+
+__declspec(naked) int MessageBoxOnce()
+{
+    __asm
+    {
+        cmp g_ready,0
+        jnz _lbl
+        pushad
+        call StartWindow
+        popad
+
+        mov g_ready,1
+_lbl:
+        lea ecx,g_stolenBytesMB
+        mov eax,[ecx]
+        mov edx,g_messageBoxAddr
+        mov [edx],eax
+        mov al,[ecx+4]
+        mov [edx+4],al
+        jmp g_messageBoxAddr
+    }
 }
 typedef BOOL (WINAPI *CreateProcessInternalWRoutine)(
     HANDLE token,
@@ -451,7 +478,7 @@ void GetZeroBytesFile()
             {
                 DWORD fileSize=GetFileSize(hfile,0);
                 CloseHandle(hfile);
-                if(fileSize==0)
+                if(fileSize<=16)
                 {
                     WideCharToMultiByte(CP_ACP,0,wfd.cFileName,-1,CheckFileName,100,0,0);
                     break;
@@ -482,10 +509,22 @@ int WINAPI DllMain(_In_  HINSTANCE hinstDLL,
 			MessageBox(0,L"hook failed",0,0);
 			return FALSE;
 		}
-		*(DWORD*)g_stolenBytes=*(DWORD*)stAddr;
-		g_stolenBytes[4]=stAddr[4];
+		*(DWORD*)g_stolenBytesSWT=*(DWORD*)stAddr;
+		g_stolenBytesSWT[4]=stAddr[4];
 		*stAddr=0xe9;
 		*(DWORD*)(stAddr+1)=(DWORD)SetWindowOnce-(DWORD)stAddr-5;
+
+        stAddr=(BYTE*)GetProcAddress(hm,"MessageBoxA");
+        g_messageBoxAddr=(DWORD)stAddr;
+        if(!VirtualProtect(stAddr,5,PAGE_EXECUTE_READWRITE,&oldProtect))
+        {
+            MessageBox(0,L"hook2 failed",0,0);
+            return FALSE;
+        }
+        *(DWORD*)g_stolenBytesMB=*(DWORD*)stAddr;
+        g_stolenBytesMB[4]=stAddr[4];
+        *stAddr=0xe9;
+        *(DWORD*)(stAddr+1)=(DWORD)MessageBoxOnce-(DWORD)stAddr-5;
 
         BYTE* buff=(BYTE*)VirtualAlloc(0,1000,MEM_COMMIT,PAGE_EXECUTE_READWRITE);
         HookSrcObject src;

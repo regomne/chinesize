@@ -341,8 +341,22 @@ int main1()
 
 int main2(int argc,LPWSTR* argv)
 {
-    if(argc==2)
-        Run(0,argv[1],0);
+    if(argc>=2)
+    {
+        int len=0;
+        for(int i=1;i<argc;i++)
+            len+=wcslen(argv[i])+2;
+        auto cs=new wchar_t[len];
+        auto p=cs;
+        for(int i=1;i<argc;i++)
+        {
+            wcscpy(p,argv[i]);
+            p+=wcslen(argv[i])+1;
+            *(p-1)=L' ';
+        }
+        *p=L'\0';
+        Run(0,cs,0);
+    }
     return 0;
 }
 
