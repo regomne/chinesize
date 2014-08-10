@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -19,13 +19,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120_xp</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v120_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -47,8 +47,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>E:\Program\ilhook\src;E:\Program\lpng162;E:\Program\zlib-1.2.8;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\Program\lpng162\projects\vstudio\Release;D:\WinDDK\7600.16385.1\lib\win7\i386;$(LibraryPath)</LibraryPath>
+    <IncludePath>G:\Program\beaengine\include;g:\Program\ilhook\src;g:\Program\lpng162;g:\Program\zlib-1.2.8;$(IncludePath)</IncludePath>
+    <LibraryPath>G:\Program\beaengine\beaengine\Release;g:\Program\lpng162\projects\vstudio\Release;f:\WinDDK\7600.16385.1\lib\win7\i386;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -82,7 +82,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
-      <AdditionalDependencies>ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>beaengine.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -94,9 +94,9 @@
   <ItemGroup>
     <ClCompile Include="..\shell\inject.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="E:\Program\ilhook\src\asmhelper.cpp" />
-    <ClCompile Include="E:\Program\ilhook\src\ilhook.cpp" />
     <ClCompile Include="ext.cpp" />
+    <ClCompile Include="G:\Program\ilhook\src\asmhelper.cpp" />
+    <ClCompile Include="G:\Program\ilhook\src\ilhook.cpp" />
     <ClCompile Include="misc.cpp" />
   </ItemGroup>
   <ItemGroup>

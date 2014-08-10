@@ -4,7 +4,11 @@
 #include "..\shell\fxckBGI.h"
 #include <string>
 
+#define DECOMPTYPE_CDECL 1
+#define DECOMPTYPE_FASTCALL 2
+
 extern DecoprFunc g_DecompressFile;
+extern int g_DecompType;
 extern HWND g_hwndMain;
 
 extern HANDLE g_workingThread;
