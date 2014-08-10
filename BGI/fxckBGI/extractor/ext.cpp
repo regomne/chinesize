@@ -31,7 +31,8 @@ BOOL CallDecompressFunction(LPVOID dest, DWORD* dstSize, LPVOID src, DWORD srcSi
             push dest;
             mov ecx, src;
             call g_DecompressFile;
-            mov rslt, eax
+            add esp,14h
+            mov rslt, eax;
         }
 
     }
