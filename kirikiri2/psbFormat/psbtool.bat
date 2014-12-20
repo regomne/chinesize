@@ -99,6 +99,8 @@ def GetValByType(stream, type):
     elif type == 0x1C:
         return DibList[struct.unpack('I', stream.read(4))[0]]
     ################### float ###################
+    elif type == 0x1D:
+        return 0.0
     elif type == 0x1E:
         return struct.unpack('f', stream.read(4))[0]
     elif type == 0x1F:
