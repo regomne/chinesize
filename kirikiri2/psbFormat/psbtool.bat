@@ -2,7 +2,7 @@
 #::coding: UTF-8
 rem = '''
 rem set pypath="%~dp0python\python.exe"
-set pypath="E:\Software\Python27\python.exe"
+set pypath="D:\Program Files\Python27\python.exe"
 %pypath% -x "%~f0" %*
 goto :EOF
 rem '''

@@ -32,7 +32,7 @@ MyMain proc
 	LOCAL @lpTxt
 	LOCAL @szStr1[1024]:byte
 	LOCAL @lpAinInfo
-	invoke CreateFile,$CTA0("r22.ain"),GENERIC_READ,FILE_SHARE_READ,0,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,0
+	invoke CreateFile,$CTA0("r6.ain"),GENERIC_READ,FILE_SHARE_READ,0,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,0
 	mov @hFile,eax
 	
 	invoke GetFileSize,@hFile,0
@@ -54,8 +54,8 @@ MyMain proc
 	invoke VirtualAlloc,0,1000000,MEM_COMMIT,PAGE_READWRITE
 	mov @lpTxt,eax
 	
-	invoke CreateDirectory,$CTA0("Rance2"),0
-	invoke SetCurrentDirectory,$CTA0("Rance2")
+	invoke CreateDirectory,$CTA0("Rance6"),0
+	invoke SetCurrentDirectory,$CTA0("Rance6")
 	.if !eax
 		invoke MessageBox,0,$CTA0("无法访问目录！"),0,MB_ICONERROR
 		invoke ExitProcess,0
@@ -158,7 +158,7 @@ _ProcessCode proc uses esi edi ebx _lpAinInfo,_lpTxt
 			.if eax==NAMEFUNC && word ptr [esi-PUSHOFF]==0
 				mov eax,[esi-PUSHOFF+2]
 				.continue .if !eax
-				invoke _FindSwitchStringR2,_lpAinInfo,eax,@lpSwitches
+				invoke _FindSwitchStringR6,_lpAinInfo,eax,@lpSwitches
 				.if eax
 					lea ecx,@szStr1
 					invoke MultiByteToWideChar,932,0,eax,-1,ecx,512

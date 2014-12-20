@@ -6,6 +6,9 @@ include compcsx.inc
 
 DEBUG equ 1
 
+FILE_NAME equ $CTA0("script.csx")
+TXT_NAME equ $CTA0("haruka.txt")
+
 .code
 _memcpy proc
 	mov     eax, ecx
@@ -281,7 +284,7 @@ _j06BJT:
 	ret
 _MakeBackJumpTable endp
 
-start proc
+start2 proc
 	LOCAL @nCsxSize,@nTxtSize
 	LOCAL @pTxtEnd,@pCsxEnd
 	LOCAL @dbHdr[40h]:byte
@@ -344,6 +347,161 @@ start proc
 	
 	invoke ReadFile,hTxtFile,lpTxt,@nTxtSize,offset dwTemp,0
 	mov edi,lpTxt
+	add edi,2
+	mov esi,dword ptr dbBlockAddr
+	mov eax,dword ptr dbBlockSize
+	mov @pPosOri,esi
+	add eax,esi
+	mov @pCsxEnd,eax
+	mov eax,lpNewImage
+	mov @pPosNew,eax
+	mov @pJumpTable,0
+	.while esi<@pCsxEnd
+		xor eax,eax
+		lodsb
+		.if al>=0fh
+			int 3
+		.endif
+		xor ecx,ecx
+		call [eax*4+Jumptbl]
+		.if eax==-1 || eax>=100h
+			int 3
+		.endif
+		.if ecx==1
+			mov     ebx, esi
+			add     ebx, eax
+			dec     esi
+			push    edi
+			mov     ecx, esi
+			sub     ecx, @pPosOri
+			mov     esi, @pPosOri
+			mov     edi, @pPosNew
+			invoke _memcpy
+			mov     @pPosNew, edi
+			mov     @pPosOri, esi
+			pop     edi
+			add     esi, 3
+			lodsd
+			.if byte ptr [esi+1] && eax
+				mov eax,edi
+				.while word ptr [edi]!=0dh
+					add edi,2
+					.if edi>=@pTxtEnd
+						int 3
+					.endif
+				.endw
+				mov word ptr [edi],0
+				add edi,4
+				mov ecx,eax
+				invoke _ModifyString,addr @pPosNew,ecx,addr @pPosOri,addr @pJumpTable
+				mov esi,@pPosOri
+				.continue
+			.endif
+			mov esi,ebx
+		.elseif ecx==2
+_j06:
+			lodsd
+			test eax,080000000h
+			.continue .if !ZERO? || eax<=7
+			invoke _new,sizeof _JumpEntry
+			assert(eax)
+			mov ebx,eax
+			assume ebx:ptr _JumpEntry
+			lea ecx,[esi-4]
+			sub ecx,@pPosOri
+			add ecx,@pPosNew
+			sub ecx,lpNewImage
+			mov [ebx].nOffset,ecx
+			push @pJumpTable
+			mov @pJumpTable,ebx
+			pop [ebx].Flink
+			assume ebx:nothing
+		.elseif ecx==3
+			inc esi
+			jmp _j06
+		.else
+			add esi,eax
+		.endif
+	.endw
+	mov ecx,esi
+	sub ecx,@pPosOri
+	mov esi,@pPosOri
+	mov edi,@pPosNew
+	rep movsb
+	
+	sub edi,lpNewImage
+	mov dword ptr [dbBlockSize],edi
+	mov eax,lpNewImage
+	mov dword ptr [dbBlockAddr],eax
+	invoke CreateFile,$CTA0("haruka1.csx"),GENERIC_WRITE,FILE_SHARE_READ,0,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,0
+	.if eax==INVALID_HANDLE_VALUE
+		int 3
+	.endif
+	mov hNewCsxFile,eax
+	xor ecx,ecx
+	xor eax,eax
+	.while ecx<6
+		add eax,[ecx*4+offset dbBlockSize]
+		inc ecx
+	.endw
+	lea ecx,@dbHdr
+	mov [ecx+38h],eax
+	invoke WriteFile,hNewCsxFile,ecx,40h,offset dwTemp,0
+	lea esi,dbBlockAddr
+	lea edi,dbBlockSize
+	xor ebx,ebx
+	.repeat
+		lea eax,@dbBlockHdr
+		mov ecx,ebx
+		shl ecx,4
+		add ecx,eax
+		mov eax,[edi+ebx*4]
+		mov [ecx+8],eax
+		invoke WriteFile,hNewCsxFile,ecx,10h,offset dwTemp,0
+		invoke WriteFile,hNewCsxFile,[esi+ebx*4],[edi+ebx*4],offset dwTemp,0		
+		inc ebx
+	.until ebx>=6
+	
+	invoke MessageBox,0,$CTA0("封装成功！"),$CTA0("14=大便"),MB_OK
+	invoke ExitProcess,0
+	ret
+start2 endp
+
+start proc
+	LOCAL @nCsxSize,@nTxtSize
+	LOCAL @pTxtEnd,@pCsxEnd
+	LOCAL @dbHdr[40h]:byte
+	LOCAL @dbBlockHdr[60h]:byte
+	LOCAL @pPosOri,@pPosNew
+	LOCAL @pJumpTable
+	invoke GetProcessHeap
+	mov hProcessHeap,eax
+	invoke CreateFile,SCRIPT_NAME,GENERIC_READ,FILE_SHARE_READ,0,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,0
+;	assert((eax!=INVALID_HANDLE_VALUE))
+	.if !(eax!=INVALID_HANDLE_VALUE)
+		int 3
+	.endif
+	mov hCsxFile,eax
+	invoke CreateFile,TXT_NAME,GENERIC_READ or GENERIC_WRITE,FILE_SHARE_READ,0,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,0
+;	assert(eax!=INVALID_HANDLE_VALUE)
+	.if !(eax!=INVALID_HANDLE_VALUE)
+		int 3
+	.endif
+	mov hTxtFile,eax
+	invoke GetFileSize,hCsxFile,0
+	mov @nCsxSize,eax
+	
+	invoke VirtualAlloc,0,@nCsxSize,MEM_COMMIT,PAGE_READWRITE
+	assert(eax)
+	mov lpTxt,eax
+	
+	invoke ReadFile,hCsxFile,addr @dbHdr,40h,offset dwTemp,0
+	xor ebx,ebx
+	lea edi,dbBlockAddr
+	lea esi,dbBlockSize
+	
+	mov edi,lpTxt
+	mov word ptr [edi],0feffh
 	add edi,2
 	mov esi,dword ptr dbBlockAddr
 	mov eax,dword ptr dbBlockSize
