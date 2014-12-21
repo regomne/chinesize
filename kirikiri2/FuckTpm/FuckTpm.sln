@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Loader", "Loader\Loader.vcxproj", "{CC73C925-13F7-4024-9F65-7E1DE8FA1F8B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fucktpm", "fucktpm\fucktpm.vcxproj", "{36C26699-32BD-4C9F-845E-401AABB99227}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CC73C925-13F7-4024-9F65-7E1DE8FA1F8B} = {CC73C925-13F7-4024-9F65-7E1DE8FA1F8B}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CC73C925-13F7-4024-9F65-7E1DE8FA1F8B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CC73C925-13F7-4024-9F65-7E1DE8FA1F8B}.Debug|Win32.Build.0 = Debug|Win32
+		{CC73C925-13F7-4024-9F65-7E1DE8FA1F8B}.Release|Win32.ActiveCfg = Release|Win32
+		{CC73C925-13F7-4024-9F65-7E1DE8FA1F8B}.Release|Win32.Build.0 = Release|Win32
+		{36C26699-32BD-4C9F-845E-401AABB99227}.Debug|Win32.ActiveCfg = Debug|Win32
+		{36C26699-32BD-4C9F-845E-401AABB99227}.Debug|Win32.Build.0 = Debug|Win32
+		{36C26699-32BD-4C9F-845E-401AABB99227}.Release|Win32.ActiveCfg = Release|Win32
+		{36C26699-32BD-4C9F-845E-401AABB99227}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
