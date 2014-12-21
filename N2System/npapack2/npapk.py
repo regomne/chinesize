@@ -211,8 +211,10 @@ def packNpa(thedir,fname,is_compr,is_crypt):
     fs.close()
 
 InitEncTable()
-packNpa(ur'D:\Program Files\君と彼女と彼女の恋\nss1',\
-        ur'D:\Program Files\君と彼女と彼女の恋\nss-1.npa',1,1)
+packNpa(ur'D:\temp\nss',\
+        ur'D:\temp\nss.npa',0,0)
+##packNpa(ur'D:\Program Files\君と彼女と彼女の恋\nss1',\
+##        ur'D:\Program Files\君と彼女と彼女の恋\nss-1.npa',1,1)
 ##packNpa(ur'K:\Program Files\アザナエル\cg',\
 ##        ur'K:\Program Files\アザナエル\cg-1.npa',0,1)
 ##packNpa(u'K:\\Program Files\\kikokugai\\nss2',\
