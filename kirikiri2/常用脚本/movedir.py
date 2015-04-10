@@ -4,8 +4,8 @@ import shutil
 import zlib
 from pdb import set_trace as int3
 
-path1='voice'
-path2='patch2'
+path1='patch'
+path2='patch20'
 
 path1s=[#"arc\\image",
     #"sys_patch","sys_patch2",
@@ -59,7 +59,7 @@ def moveto(src,dest):
     fs.write(stm.encode('U16'))
     fs.close()
     
-exts1=['ks','txt','csv','tjs']
+exts1=['ks','txt','csv','tjs','ini','func']
 exts2=['anm','asd','pos','stage']
 
 ExtData=True
