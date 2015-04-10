@@ -15,9 +15,9 @@ def packTxtBlock(lines):
     return block
 
 def packTxt(stm,lines):
-    stm.seek(4)
+    #stm.seek(4)
     inst_count=stm.readu32()
-    stm.seek(inst_count*8+8)
+    stm.seek(inst_count*8+4)
     count=stm.readu32()
     pos1=stm.tell()
     for i in range(count):
