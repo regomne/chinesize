@@ -151,11 +151,6 @@ class HcbParser:
                 j+=1
         return '\r\n'.join(self.text)
 
-    def NeedExp(self,addr):
-        if (addr>=0x3334a and addr<=0x3370b) or\
-           (addr>=0x4326b and addr<=0x46a3c):
-            return False
-        return True
     def isFa(self,s):
         f=False
         for c in s:
@@ -198,7 +193,7 @@ class HcbParser:
             inst=self.hcb.readu8()
             if inst==0xe:
                 ss=self.readstr()
-                if self.isFa(ss) and self.NeedExp(cur):
+                if self.isFa(ss):
                     self.text.append(ss)
                     idx.append(pack('I',cur+1))
             else:
