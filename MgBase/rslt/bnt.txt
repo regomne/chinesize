@@ -1,0 +1,62 @@
+DEF VAL
+	DWORD TYPE
+	+SWITCH TYPE
+	-8000010:
+		STR:
+		DWORD LEN
+		STRING S[LEN]
+	-5000002:
+		DWORD
+	-5000004:
+		DWORD
+	-1000001:
+		NUL
+
+START:
+0xFA,0xFA
+DWORD='SQIR',
+DWORD=0x1,
+
+PART:
+	DWORD='PART'
+	VAL src_file_name
+	VAL func_name
+	
+	DWORD='PART'
+	DWORD LENS[8]
+	
+	DWORD='PART'
+	VAL[LENS.[0]]
+	
+	DWORD='PART'
+	VAL[LENS.[1]]
+	
+	DWORD='PART'
+	(
+		DWORD
+		VAL
+		VAL
+	)[LENS.[2]]
+	
+	DWORD='PART'
+	(
+		VAL
+		DWORD[3]
+	)[LENS.[3]]
+	
+	DWORD='PART'
+	(DWORD[2])[LENS.[4]]
+	
+	DWORD='PART'
+	DWORD[LENS.[5]]
+	
+	DWORD='PART'
+	(DWORD[2])[LENS.[6]]
+	
+	DWORD='PART'
+	PART[LENS.[7]]
+	
+	DWORD
+	BYTE
+	BYTE
+	
