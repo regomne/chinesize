@@ -53,7 +53,7 @@ int PatchMemory(PatchStruct* strt);
 BYTE* ReadFileToMem(const WCHAR* fName,DWORD* pSize);
 DWORD __stdcall CalcHash(void* buf,DWORD len);
 
-#define MUV_EXTRA
+//#define MUV_EXTRA
 //#define TEST
 
 #ifdef MUV_EXTRA

@@ -15,7 +15,7 @@
 //	}
 //}
 
-void WINAPI NewCreateFontIndirectA(LPLOGFONTA lf)
+void HOOKFUNC NewCreateFontIndirectA(LPLOGFONTA lf)
 {
     if(lf->lfCharSet==0x80)
         lf->lfCharSet=0x86;
@@ -38,7 +38,7 @@ void WINAPI NewCreateFontIndirectA(LPLOGFONTA lf)
 //	}
 //}
 
-void WINAPI NewGetGlyphOutlineA(LPDWORD ch)
+void HOOKFUNC NewGetGlyphOutlineA(LPDWORD ch)
 {
     if(*ch>=0x100 && MapTbl[*ch])
     {
@@ -59,7 +59,7 @@ void WINAPI NewGetGlyphOutlineA(LPDWORD ch)
 //	}
 //}
 
-void WINAPI NewEnumFontFamiliesExA(LPLOGFONTA lf)
+void HOOKFUNC NewEnumFontFamiliesExA(LPLOGFONTA lf)
 {
     if(lf->lfCharSet==0x80)
         lf->lfCharSet=0x86;
@@ -90,7 +90,7 @@ static const char* newTitleName="Muv-luv Alternative";
 //    }
 //}
 
-void WINAPI NewSetWindowTextA(const char** text)
+void HOOKFUNC NewSetWindowTextA(const char** text)
 {
     if(!lstrcmpA(*text,titleName))
         *text=newTitleName;
@@ -100,22 +100,22 @@ void WINAPI NewSetWindowTextA(const char** text)
 static const char* menuString="チャプターメニューへ戻る";
 static const char* newMenuString="ｷｵｻﾘﾕﾂｽﾚｲﾋｵ･(&C)";
 
-__declspec(naked) void NewAppendMenuA()
-{
-    __asm
-    {
-        push [esp+10h]
-        push menuString
-        call dword ptr [lstrcmpA]
-        test eax,eax
-        jnz _End
-        mov eax,newMenuString
-        mov [esp+10h],eax
-_End:
-        mov eax,OldAppendMenuA
-        jmp eax
-    }
-}
+// __declspec(naked) void NewAppendMenuA()
+// {
+//     __asm
+//     {
+//         push [esp+10h]
+//         push menuString
+//         call dword ptr [lstrcmpA]
+//         test eax,eax
+//         jnz _End
+//         mov eax,newMenuString
+//         mov [esp+10h],eax
+// _End:
+//         mov eax,OldAppendMenuA
+//         jmp eax
+//     }
+// }
 #endif
 
 //__declspec(naked) void NewCreateWindowExA()
@@ -135,7 +135,7 @@ _End:
 //    }
 //}
 
-void WINAPI NewCreateWindowExA(const char** text)
+void HOOKFUNC NewCreateWindowExA(const char** text)
 {
     if(!lstrcmpA(*text,titleName))
         *text=newTitleName;
@@ -190,9 +190,9 @@ BOOL InitApiHooks()
         return FALSE;
     }
 #ifndef MUV_EXTRA
-    ret=HookApi(L"user32.dll","AppendMenuA",NewAppendMenuA,&OldAppendMenuA);
-    if(!ret)
-        return ret;
+//     ret=HookApi(L"user32.dll","AppendMenuA",NewAppendMenuA,&OldAppendMenuA);
+//     if(!ret)
+//         return ret;
 #endif
     return TRUE;
 }

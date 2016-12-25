@@ -514,15 +514,22 @@ DWORD ReadFileToMem(WCHAR* fName,void* buff,DWORD nLen)
 {
     int nameLen=WideCharToMultiByte(CP_UTF8,0,fName,-1,0,0,0,0);
     char* name=new char[nameLen];
-    if(!name)
+    if (!name)
+    {
+        Log(L"ReadFileToMem: read fname cvt failed.");
         return 0;
+    }
 
     nameLen=WideCharToMultiByte(CP_UTF8,0,fName,-1,name,nameLen,0,0);
     QWORD hash=CalcHash(name,nameLen);
     int id=QueryFlatACTree<short>(MyPack.tree,MyPack.vtree,name);
     delete[] name;
-    if(id==-1)
+    if (id == -1)
+    {
+        Log(L"ReadFileToMem: ACTree query failed.");
         return 0;
+    }
+        
     QWORD off=MyPack.entry[id].offset^hash;
     QWORD len=MyPack.entry[id].size^(hash<<2);
 
@@ -680,6 +687,7 @@ BOOL ReadHashTbl()
     if(nRead!=sizeof(hfPairs))
         return FALSE;
 
+    Log(L"hash table read.");
 	WCHAR fName[20];
 	for(int i=0;i<FILE_COUNT;i++)
 	{
