@@ -18,10 +18,10 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="F:\Program\ilhook\src\asmhelper.cpp">
+    <ClCompile Include="G:\Program\ilhook\src\asmhelper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="F:\Program\ilhook\src\ilhook.cpp">
+    <ClCompile Include="G:\Program\ilhook\src\ilhook.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

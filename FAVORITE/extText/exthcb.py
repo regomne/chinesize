@@ -47,9 +47,9 @@ parser=hcbParser.HcbParser(stm)
 
 
 parser.SetFuncNameTable(fnt,'932')
-#txt=parser.Parse()
-#fs=open('world1.txt','wb')
-#fs.write(txt.decode('932').encode('U16'))
-#fs.close()
+##txt=parser.Parse()
+##fs=open('world1.txt','wb')
+##fs.write(txt.decode('932').encode('U16'))
+##fs.close()
 os.chdir('txt')
 parser.ParseTxt([(4484,4504),(4655,4770)],5042)

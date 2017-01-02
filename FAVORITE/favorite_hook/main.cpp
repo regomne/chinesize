@@ -76,7 +76,7 @@ void HOOKFUNC MyCreateWindowExA(char** title)
 {
 //     if (*(DWORD*)*title == 0xeb82a282)
 //     {
-        wchar_t* name = L"紅い瞳に映るセカイ-WORLD'S END LOVE WILL LAST FOREVER.-";
+        wchar_t* name = L"你朱眸里的五彩世界-WORLD'S END LOVE WILL LAST FOREVER.- Extra";
         static char mb[100];
 
         int ret = WideCharToMultiByte(CP_ACP, 0, name, -1, mb, 100, 0, 0);
@@ -238,7 +238,7 @@ int WINAPI DllMain(HANDLE hDllHandle, DWORD dwReason, LPVOID lpreserved)
         InitializeStringTables();
         wchar_t systemDir[100];
         GetSystemDirectory(systemDir, 100);
-        wcscat_s(systemDir, L"\\d3d9.dll");
+        wcscat(systemDir, L"\\d3d9.dll");
         HMODULE hm = LoadLibrary(systemDir);
         CreateFunc = (D3dCreateRoutine)GetProcAddress(hm, "Direct3DCreate9");
 

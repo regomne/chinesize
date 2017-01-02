@@ -41,13 +41,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>F:\Program\lpng162;$(IncludePath)</IncludePath>
-    <LibraryPath>F:\Program\lpng162\projects\vstudio\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>g:\Program\lpng162;G:\Program\beaengine\include;g:\Program\ilhook\src;$(IncludePath)</IncludePath>
+    <LibraryPath>g:\Program\lpng162\projects\vstudio\Release;G:\Program\beaengine\beaengine\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>e:\Program\lpng162;E:\Program\ilhook\src;$(IncludePath)</IncludePath>
-    <LibraryPath>e:\Program\lpng162\projects\vstudio\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>g:\Program\lpng162;G:\Program\beaengine\include;g:\Program\ilhook\src;$(IncludePath)</IncludePath>
+    <LibraryPath>g:\Program\lpng162\projects\vstudio\Release;G:\Program\beaengine\beaengine\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -60,7 +60,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libpng16.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libpng16.lib;zlib.lib;beaengine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/def:exp.def %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -79,14 +80,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libpng16.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libpng16.lib;zlib.lib;beaengine.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/def:exp.def %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ilhook\src\asmhelper.cpp" />
-    <ClCompile Include="..\ilhook\src\ilhook.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="G:\Program\ilhook\src\asmhelper.cpp" />
+    <ClCompile Include="G:\Program\ilhook\src\ilhook.cpp" />
     <ClCompile Include="Hook.cpp" />
     <ClCompile Include="Pack.cpp" />
     <ClCompile Include="picHook.cpp" />

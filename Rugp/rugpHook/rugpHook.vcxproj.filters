@@ -27,10 +27,10 @@
     <ClCompile Include="Pack.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\ilhook\src\asmhelper.cpp">
+    <ClCompile Include="G:\Program\ilhook\src\asmhelper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\ilhook\src\ilhook.cpp">
+    <ClCompile Include="G:\Program\ilhook\src\ilhook.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
