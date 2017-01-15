@@ -10,13 +10,13 @@ class MjoParser():
         self.text=[]
         self.code=0
         self.hdr=[mjo[0:0x10]]
-        self.hdr+=unpack('III',str(mjo[0x10:0x1c]))
+        self.hdr+=unpack('III',mjo[0x10:0x1c])
         mjo.seek(0x1c)
         self.fidx=[]
         for i in range(self.hdr[3]):
             self.fidx.append((mjo.readu32(),mjo.readu32()))
         size=mjo.readu32()
-        self.vmcode=bytefile.ByteIO(mjo[mjo.tell():mjo.tell()+size])
+        self.vmcode=bytefile.ByteFile(mjo[mjo.tell():mjo.tell()+size])
         self.XorDec(self.vmcode)
     def XorDec(self,bf):
         for i in range(len(bf)):
@@ -33,7 +33,7 @@ class MjoParser():
     def p801(self):
         slen=self.vmcode.readu16()
         s=self.vmcode.read(slen)
-        self.text[-1]+='pushStr "'+s.rstrip('\0')+'"'
+        self.text[-1]+='pushStr "'+s.rstrip(b'\0').decode('932')+'"'
     def p802(self):
         p1=self.vmcode.readu16()
         p2=self.vmcode.readu32()
@@ -81,7 +81,7 @@ class MjoParser():
     def p835(self):
         self.text[-1]+='Callp '+'(%08X, %d)'%(self.ru32(),self.ru16())
     def p836(self):
-        self.text[-1]+='OP836 '+self.vmcode.read(self.ru16())
+        self.text[-1]+='OP836 '+self.vmcode.read(self.ru16()).decode('932')
     def p837(self):
         self.text[-1]+='OP837 '+'(%08X, %08X)'%(self.ru32(),self.ru32())
     def p838(self):
@@ -106,11 +106,11 @@ class MjoParser():
     def p83f(self):
         self.text[-1]+='Int2Float'
     def p840(self):
-        self.text[-1]+='CatString "'+self.vmcode.read(self.ru16()).rstrip('\0')+'"'
+        self.text[-1]+='CatString "'+self.vmcode.read(self.ru16()).rstrip(b'\0').decode('932')+'"'
     def p841(self):
         self.text[-1]+='ProcessString'
     def p842(self):
-        self.text[-1]+='CtrlStr '+self.vmcode.read(self.ru16()).rstrip('\0')
+        self.text[-1]+='CtrlStr '+self.vmcode.read(self.ru16()).rstrip(b'\0').decode('932')
     def p843(self):
         dest=self.ru32()+self.vmcode.tell()+4
         self.text[-1]+='jmpSelX '+'%08X'%dest
@@ -200,7 +200,6 @@ class MjoParser():
                 self.pLen8()
             else:
                 int3()
-        newt=[str(s) for s in self.text]
-        return '\r\n'.join(newt)
+        return '\r\n'.join(self.text)
 
 
