@@ -1,4 +1,4 @@
-#include <windows.h>
+Ôªø#include <windows.h>
 #include <string>
 #include <memory>
 #include <vector>
@@ -22,11 +22,38 @@ struct PatchStruct
     DWORD len;
 } g_Patches[] = {
     DP("resident.dll", 0x21e4cb,"\x80","\x86") //cp
-    DP("resident.dll", 0x36332c,"\x81\x74","\xa1\xb7") //¿®∫≈
-    DP("resident.dll", 0x363340,"\x81\x73","\xa1\xb6") //¿®∫≈
-    DP("resident.dll", 0x21d2b7,"\x40\x81","\xa1\xa1") //ø’∏Ò
+    DP("resident.dll", 0x36332c,"\x81\x74","\xa1\xb7") //Êã¨Âè∑
+    DP("resident.dll", 0x363340,"\x81\x73","\xa1\xb6") //Êã¨Âè∑
+    DP("resident.dll", 0x21d2b7,"\x40\x81","\xa1\xa1") //Á©∫Ê†º
 };
 #undef DP
+
+struct CharToReplay
+{
+    wchar_t uc;
+    wchar_t repc;
+    uint8_t ac[3];
+};
+
+vector<CharToReplay> g_rep_chars = {
+    { u'‚ô™', u'‚îã', "\xa9\xaf" }
+};
+
+void replace_chars(wchar_t* text, uint32_t txtlen, const vector<CharToReplay>& reps)
+{
+    for (uint32_t i = 0;i < txtlen;i++)
+    {
+        auto c = text[i];
+        for (auto& rep : reps)
+        {
+            if (c == rep.uc)
+            {
+                text[i] = rep.repc;
+                break;
+            }
+        }
+    }
+}
 
 struct HookPointStruct
 {
@@ -201,9 +228,11 @@ NakedMemory CvtToAnsi(NakedMemory& str)
     auto buff = (uint8_t*)str.Get();
     if (*(WORD*)buff == 0xfeff)
     {
-        auto newsize = WideCharToMultiByte(codepage, 0, (wchar_t*)(buff + 2), (str.GetSize() - 2) / 2, 0, 0, 0, 0);
+        auto txtlen = (str.GetSize() - 2) / 2;
+        replace_chars((wchar_t*)(buff + 2), txtlen, g_rep_chars);
+        auto newsize = WideCharToMultiByte(codepage, 0, (wchar_t*)(buff + 2), txtlen, 0, 0, 0, 0);
         NakedMemory ansi(newsize);
-        WideCharToMultiByte(codepage, 0, (wchar_t*)(buff + 2), (str.GetSize() - 2) / 2, (char*)ansi.Get(), ansi.GetSize(), 0, 0);
+        WideCharToMultiByte(codepage, 0, (wchar_t*)(buff + 2), txtlen, (char*)ansi.Get(), ansi.GetSize(), 0, 0);
         return std::move(ansi);
     }
     else
@@ -321,6 +350,19 @@ void HOOKFUNC MyAddString(Registers* regs)
                 regs->ecx = (uint32_t)news;
             }
         }
+        else if (cmd == 21)
+        {
+            if (str_idx == 0)
+            {
+                auto news = ReadOneLineFromTxt();
+                if (!news)
+                {
+                    LOGERROR("%s txt read error", g_cur_txt.c_str());
+                    return;
+                }
+                regs->ecx = (uint32_t)news;
+            }
+        }
         else if (cmd == 48)
         {
             if (str_idx == 0)
@@ -387,6 +429,96 @@ void HOOKFUNC MyCFI(LPLOGFONTA lfi)
     {
         strcpy_s(lfi->lfFaceName, "SimHei");
     }
+}
+typedef DWORD (WINAPI *GetGlyphOutlineARoutine)(
+    _In_        HDC            hdc,
+    _In_        UINT           uChar,
+    _In_        UINT           uFormat,
+    _Out_       LPGLYPHMETRICS lpgm,
+    _In_        DWORD          cbBuffer,
+    _Out_       LPVOID         lpvBuffer,
+    _In_  const MAT2           *lpmat2
+);
+
+HFONT create_font()
+{
+    LOGFONT lf;
+    memset(&lf, 0, sizeof(lf));
+    lf.lfHeight = -24;
+    lf.lfWeight = 400;
+    lf.lfQuality = 3;
+    lf.lfPitchAndFamily = 1;
+    wcscpy_s(lf.lfFaceName, L"SimSun");
+    auto hf = CreateFontIndirect(&lf);
+    return hf;
+}
+
+class GlyphGen
+{
+public:
+    GlyphGen(HDC hdc)
+    {
+        hdc_ = CreateCompatibleDC(hdc);
+        hfont_ = create_font();
+        SelectObject(hdc_, hfont_);
+    }
+
+    ~GlyphGen()
+    {
+        DeleteDC(hdc_);
+        DeleteObject(hfont_);
+    }
+
+    DWORD get_glyph(
+        _In_        UINT           uChar,
+        _In_        UINT           uFormat,
+        _Out_       LPGLYPHMETRICS lpgm,
+        _In_        DWORD          cbBuffer,
+        _Out_       LPVOID         lpvBuffer,
+        _In_  const MAT2           *lpmat2)
+    {
+        return GetGlyphOutlineW(hdc_, uChar, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+    }
+
+private:
+    HFONT create_font()
+    {
+        LOGFONT lf;
+        memset(&lf, 0, sizeof(lf));
+        lf.lfHeight = -24;
+        lf.lfWeight = 400;
+        lf.lfQuality = 3;
+        lf.lfPitchAndFamily = 1;
+        wcscpy_s(lf.lfFaceName, L"SimSun");
+        auto hf = CreateFontIndirect(&lf);
+        return hf;
+    }
+
+private:
+    HDC hdc_;
+    HFONT hfont_;
+};
+
+DWORD HOOKFUNC MyGGOA(
+    GetGlyphOutlineARoutine old_func,
+    _In_        HDC            hdc,
+    _In_        UINT           uChar,
+    _In_        UINT           uFormat,
+    _Out_       LPGLYPHMETRICS lpgm,
+    _In_        DWORD          cbBuffer,
+    _Out_       LPVOID         lpvBuffer,
+    _In_  const MAT2           *lpmat2
+    )
+{
+    static auto font_gen = new GlyphGen(hdc);
+    for (auto& rep : g_rep_chars)
+    {
+        if (rep.ac[1] == (uChar & 0xff) && rep.ac[0] == (uChar >> 8))
+        {
+            return font_gen->get_glyph(rep.uc, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+        }
+    }
+    return old_func(hdc, uChar, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
 }
 typedef void* (__cdecl *exhibit_alloc_routine)(uint32_t size, uint32_t flag);
 typedef void (__cdecl *exhibit_free_routine)(void* size, uint32_t flag);
@@ -602,16 +734,17 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         if (!HookFunctions(points))
         {
-            MessageBox(0, L"Hook  ß∞‹£°", 0, 0);
+            MessageBox(0, L"Hook Â§±Ë¥•ÔºÅ", 0, 0);
             return TRUE;
         }
 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
+            { "gdi32.dll", "GetGlyphOutlineA", MyGGOA, "f1234567", true, 28 },
         };
         if (!HookFunctions(points2))
         {
-            MessageBox(0, L"Hook2  ß∞‹£°", 0, 0);
+            MessageBox(0, L"Hook2 Â§±Ë¥•ÔºÅ", 0, 0);
         }
     }
     return TRUE;
