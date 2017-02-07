@@ -65,6 +65,8 @@ h_unk3:%d, h_tag:%s'%(magic, h_unk1, h_unk2, inst_cnt, h_unk3, h_tag))
       for s in strs:
         if s != b'*' and s != b'$noname$' and len(s) != 0 and s.count(b',') < 2:
           pure_txt.append(s.decode('932'))
+    elif op == 21:
+      pure_txt.append(strs[0].decode('932'))
     elif op == 48:
       pure_txt.append(strs[0].decode('932'))
     elif op == 191:
@@ -105,5 +107,5 @@ def ext_all_rld(path1, path2):
             name_table)
 
 ext_all_rld(r'D:\galgame\仄暗き時の果てより\data\rld2',
-            r'D:\galgame\仄暗き時の果てより\data\txt')
+            r'D:\galgame\仄暗き時の果てより\data\txt2')
 
