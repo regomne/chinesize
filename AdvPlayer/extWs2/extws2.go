@@ -13,6 +13,8 @@ import (
 
 	"flag"
 
+	"hash/crc32"
+
 	"github.com/MJKWoolnough/memio"
 	"github.com/regomne/eutil/codec"
 	"github.com/regomne/eutil/pehelper"
@@ -110,7 +112,8 @@ func readUntil(buf io.Reader, b byte) []byte {
 	}
 }
 
-func getOp(buf *memio.ReadMem, op byte, opNext byte, strCodec int) (val interface{}, text string, retErr error) {
+func getOp(buf *memio.ReadMem, op byte, opNext byte, strCodec int) (
+	val interface{}, text string, retErr error) {
 	switch op {
 	case tByte:
 		b, _ := buf.ReadByte()
@@ -183,19 +186,21 @@ func getOp(buf *memio.ReadMem, op byte, opNext byte, strCodec int) (val interfac
 	return
 }
 
-func getSelectItem(buf *memio.ReadMem, strCodec int) (text string, sel string, retErr error) {
+func getSelectItem(buf *memio.ReadMem, strCodec int) (
+	text string, sel string, selIdx int64, retErr error) {
 	var (
 		w1 uint16
 		b1 uint8
 		w2 uint16
 	)
 	binary.Read(buf, binary.LittleEndian, &w1)
+	selIdx, _ = buf.Seek(0, 1)
 	s := readUntil(buf, 0)
 	sel = codec.Decode(s, codec.ShiftJIS)
 	binary.Read(buf, binary.LittleEndian, &b1)
 	binary.Read(buf, binary.LittleEndian, &w2)
 	op, _ := buf.ReadByte()
-	ls, _, err := parseInst(buf, op, gInstInfo[op], strCodec)
+	ls, _, _, err := parseInst(buf, op, gInstInfo[op], strCodec)
 	if err != nil {
 		retErr = err
 		return
@@ -206,9 +211,10 @@ func getSelectItem(buf *memio.ReadMem, strCodec int) (text string, sel string, r
 }
 
 func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
-	text []string, pureTxt []string, retErr error) {
+	text []string, pureTxt []string, txtIdx []int64, retErr error) {
 	text = make([]string, 0, len(info))
 	pureTxt = make([]string, 0, len(info))
+	txtIdx = make([]int64, 0, len(info))
 	vals := make([]interface{}, 0, len(info))
 	//text = fmt.Sprintf("Op %x, argcnt: %d", oriOp, len(info)))
 	if oriOp == 15 {
@@ -228,19 +234,22 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 		}
 		text = append(text, line)
 		for i := byte(0); i < cnt; i++ {
-			line, sel, err := getSelectItem(buf, strCodec)
+			line, sel, selIdx, err := getSelectItem(buf, strCodec)
 			if err != nil {
 				retErr = err
 				return
 			}
 			text = append(text, fmt.Sprintf("%d: %s", i, line))
 			pureTxt = append(pureTxt, "Sel:"+sel)
+			txtIdx = append(txtIdx, selIdx)
 		}
 		return
 	}
+	indexes := make([]int64, 0, len(info))
 	for i := 0; i < len(info); i++ {
 		op := info[i]
 		if op == tVariable {
+			pos, _ := buf.Seek(0, 1)
 			val, line, err := getOp(buf, op, info[i+1], strCodec)
 			if err != nil {
 				retErr = err
@@ -249,7 +258,9 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 			i++
 			text = append(text, line)
 			vals = append(vals, val)
+			indexes = append(indexes, pos)
 		} else {
+			pos, _ := buf.Seek(0, 1)
 			val, line, err := getOp(buf, op, 255, strCodec)
 			if err != nil {
 				retErr = err
@@ -258,6 +269,7 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 			if line != "" {
 				text = append(text, line)
 				vals = append(vals, val)
+				indexes = append(indexes, pos)
 			}
 		}
 	}
@@ -269,6 +281,7 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 				s = s[3:]
 			}
 			pureTxt = append(pureTxt, s)
+			txtIdx = append(txtIdx, indexes[0])
 		}
 	} else if oriOp == 0x14 {
 		s, _ := vals[2].(string)
@@ -276,23 +289,30 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 			s = s[:len(s)-4]
 		}
 		pureTxt = append(pureTxt, s)
+		txtIdx = append(txtIdx, indexes[2])
 	}
 	return
 }
 
-func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool) (text []string, pureTxt []string, retErr error) {
+func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool) (
+	text []string, pureTxt []string, txtIdx []int64, checkSum uint32, retErr error) {
 	text = []string{}
 	pureTxt = []string{}
+	txtIdx = []int64{}
 	for {
 		by, err := buf.ReadByte()
 		if err != nil {
-			if err.Error() == "EOF" {
-				return
-			}
 			retErr = err
 			return
 		}
 		if by == 255 {
+			pos, _ := buf.Seek(0, 1)
+			if pos > 0x1000 {
+				pos = 0x1000
+			}
+			sli := make([]byte, pos)
+			buf.ReadAt(sli, 0)
+			checkSum = crc32.ChecksumIEEE(sli)
 			text = append(text, "End")
 			return
 		}
@@ -306,7 +326,8 @@ func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool) (text []s
 		}
 		var optxt []string
 		var pTxt []string
-		optxt, pTxt, err = parseInst(buf, by, info, codec.ShiftJIS)
+		var subTxtIdx []int64
+		optxt, pTxt, subTxtIdx, err = parseInst(buf, by, info, codec.ShiftJIS)
 		if err != nil {
 			retErr = err
 			return
@@ -320,6 +341,7 @@ func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool) (text []s
 
 		if onlyTxt {
 			pureTxt = append(pureTxt, pTxt...)
+			txtIdx = append(txtIdx, subTxtIdx...)
 		}
 	}
 }
@@ -355,6 +377,16 @@ func (nullWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+func writeIndexToFile(fname string, txtIdx []int64, crc uint32) error {
+	bf := bytes.NewBuffer([]byte{})
+	binary.Write(bf, binary.LittleEndian, &crc)
+	for _, idx := range txtIdx {
+		idx32 := uint32(idx)
+		binary.Write(bf, binary.LittleEndian, &idx32)
+	}
+	return ioutil.WriteFile(fname, bf.Bytes(), os.ModePerm)
+}
+
 func main() {
 	exitCode := 1
 	defer func() {
@@ -367,6 +399,7 @@ func main() {
 	inputName := flag.String("i", "", "input ws2 file name")
 	outputName := flag.String("o", "", "output txt name")
 	onlyTxt := flag.Bool("only-txt", false, "whether parse all info or only txt")
+	indexName := flag.String("index-file", "", "file name for pure txt index and checksum (for chinesize)")
 	verbose := flag.Bool("v", false, "print detail information")
 	flag.Parse()
 	if *inputName == "" || *outputName == "" {
@@ -398,7 +431,9 @@ func main() {
 	membf := memio.Open(stm)
 	var text []string
 	var pureTxt []string
-	text, pureTxt, err = parseWs2(&membf, instInfo, *onlyTxt)
+	var txtIdx []int64
+	var crc uint32
+	text, pureTxt, txtIdx, crc, err = parseWs2(&membf, instInfo, *onlyTxt)
 	if err != nil {
 		fmt.Printf("Parsing fail. %v\n", err)
 		if !*verbose {
@@ -418,8 +453,19 @@ func main() {
 	err = ioutil.WriteFile(*outputName,
 		codec.Encode(strings.Join(*finalTxt, "\r\n"), codec.UTF8Sig, 0), os.ModePerm)
 	if err != nil {
-		fmt.Printf("Writing fail. %v\n", err)
+		fmt.Printf("Writing txt fail. %v\n", err)
 		return
+	}
+	if *onlyTxt && *indexName != "" {
+		if len(pureTxt) != len(txtIdx) {
+			panic(fmt.Errorf("code error"))
+		}
+		fmt.Println("Writing idx...")
+		err = writeIndexToFile(*indexName, txtIdx, crc)
+		if err != nil {
+			fmt.Printf("Writing idx fail. %v\n", err)
+			return
+		}
 	}
 	exitCode = 0
 }
