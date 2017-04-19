@@ -4,6 +4,7 @@
 #include <stack>
 #include <vector>
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -23,6 +24,12 @@ public:
 	DWORD ToNextFunction(int funcId);
 	vector<Malie_Moji> ParseScenario(vector<wstring> &chapterName,vector<DWORD> &chapterIndex);
 	size_t ParseJmpTable(vector<DWORD> &jmpTable);//return size of jump table
+    map<int, wstring>& get_name_data_table() {
+        return name_table_;
+    }
+    map<int, wstring>& get_sel_data_table() {
+        return sel_table_;
+    }
 // 	DWORD GetStackTop()
 // 	{
 // 		return vmStack.top();
@@ -36,5 +43,8 @@ private:
 	unsigned char *VM_DATA;
 	MalieExec *pMalieExec;
 	FILE *fdiasm;
+
+    map<int, wstring> name_table_;
+    map<int, wstring> sel_table_;
 };
 

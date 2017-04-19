@@ -314,14 +314,14 @@ int MalieExec::ExportStrByCode(void)
 
         //    exportFunc(pair<DWORD, wstring>(x.index, kotoba), fp);
         //});
-        auto write_crln = [&]() {
+        auto write_crln = [](FILE* fp) {
             fwrite(L"\r\n", 2, 2, fp);
         };
         for (auto& x : moji) {
             wchar_t tag[100];
             auto cnt = swprintf_s(tag, L"#%05d %s", x.index, x.name.c_str());
             fwrite(tag, 2, cnt, fp);
-            write_crln();
+            write_crln(fp);
 
             auto s = GetString(x.index);
             MalieString str(s);
@@ -330,11 +330,27 @@ int MalieExec::ExportStrByCode(void)
             
             for (auto& s : v) {
                 fwrite(s.c_str(), 2, s.length(), fp);
-                write_crln();
+                write_crln(fp);
             }
         }
 
 		fclose(fp);
+
+        fp = fopen("str.txt", "wb");
+        fwrite("\xff\xfe", 1, 2, fp);
+        auto fp2 = fopen("str.idx", "wb");
+        auto write_tbl = [&](map<int, wstring>& tbl) {
+            for (auto& itr : tbl) {
+                fwrite(&itr.first, 1, 4, fp2);
+                fwrite(itr.second.c_str(), 2, itr.second.length(), fp);
+                write_crln(fp);
+            }
+        };
+        write_tbl(vm.get_name_data_table());
+        write_tbl(vm.get_sel_data_table());
+        
+        fclose(fp);
+        fclose(fp2);
 	}
 
 	fprintf(stderr,"Done.\n");

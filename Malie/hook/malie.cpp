@@ -220,7 +220,7 @@ void read_data_table(map<int, wstring>& data_tbl) {
     }
 
     auto off_tbl = (int*)idx_mem.Get();
-    for (int i = 0;i < ls.size();i++) {
+    for (size_t i = 0;i < ls.size();i++) {
         data_tbl[off_tbl[i]] = ls[i];
     }
 }

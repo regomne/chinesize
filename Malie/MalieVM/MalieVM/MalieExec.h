@@ -8,7 +8,7 @@
 
 using namespace std;
 
-typedef enum _SIGNATURE
+enum _SIGNATURE
 {
 	TO_VOL=L'▲',
 	EOVOL=L'△',
