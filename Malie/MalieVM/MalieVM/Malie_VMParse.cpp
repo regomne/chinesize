@@ -55,6 +55,15 @@ size_t CMalie_VMParse::ParseJmpTable(vector<DWORD> &jmpTable)
 	return pCurrent-pJmpTableStart;
 }
 
+static bool is_all_half(const wstring& s) {
+    for (auto c : s) {
+        if (c >= 0x80) {
+            return false;
+        }
+    }
+    return true;
+}
+
 vector<Malie_Moji> CMalie_VMParse::ParseScenario(vector<wstring> &chapterName,vector<DWORD> &chapterIndex)
 {
 	vector<Malie_Moji> v;
@@ -116,6 +125,13 @@ vector<Malie_Moji> CMalie_VMParse::ParseScenario(vector<wstring> &chapterName,ve
 			else if (pParma==MALIE_NAME)
 			{
 				moji.name = pLastString;
+                if (!is_all_half(moji.name)) {
+                    auto off = (uint8_t*)pLastString - VM_DATA;
+                    if (name_table_.find(off) == name_table_.end()) {
+                        fprintf(stderr, "Find name: l%s\n", pLastString);
+                        name_table_[off] = pLastString;
+                    }
+                }
 			}
 			else if (pParma==MALIE_LABLE&&!v.size())
 			{
@@ -132,7 +148,8 @@ vector<Malie_Moji> CMalie_VMParse::ParseScenario(vector<wstring> &chapterName,ve
 				for each (DWORD x in selectTable)
 				{
 					fprintf(stderr, "Select %ls\n", x);
-				}
+                    sel_table_[x - (DWORD)VM_DATA] = (wchar_t*)x;
+                }
 			}
 			else if (pParma == FrameLayer_SendMessage && vmStack.size()>4)
 			{
