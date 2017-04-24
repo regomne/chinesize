@@ -196,7 +196,7 @@ func getSelectItem(buf *memio.ReadMem, strCodec int) (
 	binary.Read(buf, binary.LittleEndian, &w1)
 	selIdx, _ = buf.Seek(0, 1)
 	s := readUntil(buf, 0)
-	sel = codec.Decode(s, codec.ShiftJIS)
+	sel = codec.Decode(s, strCodec)
 	binary.Read(buf, binary.LittleEndian, &b1)
 	binary.Read(buf, binary.LittleEndian, &w2)
 	op, _ := buf.ReadByte()
@@ -277,7 +277,7 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 	if oriOp == 0x15 {
 		s, _ := vals[0].(string)
 		if len(s) != 0 {
-			if strings.Index(s, "%LC") == 0 {
+			if strings.Index(s, "%LF") == 0 {
 				s = s[3:]
 			}
 			pureTxt = append(pureTxt, s)
@@ -294,7 +294,7 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 	return
 }
 
-func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool) (
+func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool, cp int) (
 	text []string, pureTxt []string, txtIdx []int64, checkSum uint32, retErr error) {
 	text = []string{}
 	pureTxt = []string{}
@@ -327,7 +327,7 @@ func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool) (
 		var optxt []string
 		var pTxt []string
 		var subTxtIdx []int64
-		optxt, pTxt, subTxtIdx, err = parseInst(buf, by, info, codec.ShiftJIS)
+		optxt, pTxt, subTxtIdx, err = parseInst(buf, by, info, cp)
 		if err != nil {
 			retErr = err
 			return
@@ -387,6 +387,18 @@ func writeIndexToFile(fname string, txtIdx []int64, crc uint32) error {
 	return ioutil.WriteFile(fname, bf.Bytes(), os.ModePerm)
 }
 
+func getCodePageFromString(s string) (cp int, err error) {
+	switch s {
+	case "932":
+		cp = codec.C932
+	case "936":
+		cp = codec.C936
+	default:
+		err = fmt.Errorf("unknown code page %s", s)
+	}
+	return
+}
+
 func main() {
 	exitCode := 1
 	defer func() {
@@ -400,10 +412,16 @@ func main() {
 	outputName := flag.String("o", "", "output txt name")
 	onlyTxt := flag.Bool("only-txt", false, "whether parse all info or only txt")
 	indexName := flag.String("index-file", "", "file name for pure txt index and checksum (for chinesize)")
+	textCodePage := flag.String("cp", "932", "specific code page of text in ws2")
 	verbose := flag.Bool("v", false, "print detail information")
 	flag.Parse()
 	if *inputName == "" || *outputName == "" {
 		flag.Usage()
+		return
+	}
+	cp, cpErr := getCodePageFromString(*textCodePage)
+	if cpErr != nil {
+		fmt.Println(cpErr)
 		return
 	}
 	var nullOutputer nullWriter
@@ -433,7 +451,7 @@ func main() {
 	var pureTxt []string
 	var txtIdx []int64
 	var crc uint32
-	text, pureTxt, txtIdx, crc, err = parseWs2(&membf, instInfo, *onlyTxt)
+	text, pureTxt, txtIdx, crc, err = parseWs2(&membf, instInfo, *onlyTxt, cp)
 	if err != nil {
 		fmt.Printf("Parsing fail. %v\n", err)
 		if !*verbose {

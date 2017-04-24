@@ -22,6 +22,11 @@ struct TextInfo {
 map<uint32_t, TextInfo> g_TextInfo;
 map<wstring, wstring> g_MyFiles;
 
+#define READ_INST_RETURN_ADDR 0x4c646f
+#define OPEN_FILE_ARG1_OFFSET 0xb04
+#define NAME_LINE_START "%LC"
+#define LINE_END_WITH_WAIT "%K%P"
+
 constexpr wchar_t* ChArcName = L"Ch.arc";
 
 void HOOKFUNC MyOpenFile1(wchar_t* arcName, wchar_t* entName) {
@@ -40,7 +45,7 @@ void HOOKFUNC MyOpenFile1(wchar_t* arcName, wchar_t* entName) {
 }
 
 void HOOKFUNC MyOpenFile(Registers* regs) {
-    auto fnamePtr = *(wchar_t**)(regs->esp + 0xb04);
+    auto fnamePtr = *(wchar_t**)(regs->esp + OPEN_FILE_ARG1_OFFSET);
     if (!fnamePtr) {
         return;
     }
@@ -94,7 +99,7 @@ uint32_t HOOKFUNC MyReadInst(Registers* regs, uint32_t old_proc_func) {
     auto a3 = *(int*)(regs->esp + 0x4);
     auto a2 = (int)regs->edx;
     auto a1 = (int)regs->ecx;
-    if (*(uint32_t*)regs->esp != 0x4E45DF) {
+    if (*(uint32_t*)regs->esp != READ_INST_RETURN_ADDR) {
         return CallProcFunc(old_proc_func, a1, a2, a3, a4, a5, a6);
     }
 
@@ -122,11 +127,11 @@ uint32_t HOOKFUNC MyReadInst(Registers* regs, uint32_t old_proc_func) {
         if (idx != -1) {
             string newString = "^8";
             auto oldString = string((char*)a2);
-            if (oldString.find("%LC") == 0) {
-                newString += "%LC" + lines[idx];
+            if (oldString.find(NAME_LINE_START) == 0) {
+                newString += NAME_LINE_START + lines[idx];
             }
-            else if (oldString.length() >= 4 && oldString.substr(oldString.length() - 4) == "%K%P") {
-                newString += lines[idx] + "%K%P";
+            else if (oldString.length() >= 4 && oldString.substr(oldString.length() - 4) == LINE_END_WITH_WAIT) {
+                newString += lines[idx] + LINE_END_WITH_WAIT;
             }
             else {
                 newString += lines[idx];
@@ -153,6 +158,9 @@ void HOOKFUNC MyMbtowc(Registers* regs) {
             if (*strLen != -1 && *strLen > 2) {
                 *strLen -= 2;
             }
+        }
+        else {
+            *cp = 932;
         }
     }
 }
@@ -297,7 +305,7 @@ void InitWs2() {
         g_TextInfo[crc] = info;
     }
 
-    if (!ReadArcFileList(ChArcName, g_MyFiles)) {
-        Log(L"Can't find arc:%s", ChArcName);
-    }
+    //if (!ReadArcFileList(ChArcName, g_MyFiles)) {
+    //    Log(L"Can't find arc:%s", ChArcName);
+    //}
 }

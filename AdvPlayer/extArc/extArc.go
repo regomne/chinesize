@@ -13,8 +13,8 @@ import (
 	"github.com/regomne/eutil/codec"
 )
 
-const arcName = `d:\galgame\想いを捧げる乙女のメロディー\Rio.arc`
-const extPath = `Rio`
+const arcName = `d:\galgame\乙女奏恋+追加内容+V2补丁\otome.233`
+const extPath = `Rio2`
 
 var le = binary.LittleEndian
 
@@ -61,6 +61,7 @@ func readIndex(fs io.Reader, hdr *hdrS) []entryS {
 }
 
 func extFiles(path1 string, hdr *hdrS, entries []entryS, fs io.ReadSeeker) {
+	os.MkdirAll(path1, os.ModeDir)
 	offBase := hdr.IndexSize + uint32(binary.Size(*hdr))
 	for i := 0; i < len(entries); i++ {
 		entry := &entries[i]
@@ -81,7 +82,11 @@ func extFiles(path1 string, hdr *hdrS, entries []entryS, fs io.ReadSeeker) {
 }
 
 func main() {
-	fs, err := os.Open(arcName)
+	if len(os.Args) != 3 {
+		fmt.Printf("usage: %s <arc> <out_dir>\n", os.Args[0])
+		return
+	}
+	fs, err := os.Open(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -92,6 +97,6 @@ func main() {
 		panic(fmt.Errorf("index size error"))
 	}
 	log.Printf("hdr:%v, entryCnt:%d\n", hdr, len(entries))
-	extFiles(`Rio`, &hdr, entries, fs)
+	extFiles(os.Args[2], &hdr, entries, fs)
 	log.Println("Complete.")
 }

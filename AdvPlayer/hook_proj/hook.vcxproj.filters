@@ -39,9 +39,6 @@
     <ClCompile Include="TxtSupport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PicSupport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ws2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
