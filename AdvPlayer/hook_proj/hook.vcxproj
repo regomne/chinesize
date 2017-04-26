@@ -127,7 +127,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>beaengine.lib;libpng16.lib;zlib.lib;d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>beaengine.lib;d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>exp.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -156,7 +156,6 @@
     <ClCompile Include="ilhook.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NakedMemory.cpp" />
-    <ClCompile Include="PicSupport.cpp" />
     <ClCompile Include="TxtSupport.cpp" />
     <ClCompile Include="ws2.cpp" />
   </ItemGroup>

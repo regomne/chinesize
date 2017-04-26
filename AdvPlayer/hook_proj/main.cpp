@@ -47,11 +47,11 @@ void HOOKFUNC MyCFI(LPLOGFONTW lfi)
     }
 }
 
-void HOOKFUNC MyCW(char** strp)
+void HOOKFUNC MyCW(wchar_t** strp)
 {
-    if (strcmp(*strp, "\x83\x8C\x83\x7E\x83\x6A\x83\x5A\x83\x93\x83\x58") == 0)
+    if (*strp && wcscmp(*strp, L"乙女が奏でる恋のアリア") == 0)
     {
-        *strp = "Reminiscence";
+        *strp = L"『有少女奏响的爱之独歌』中文版 | 梦恋星空汉化组 译制 | 交流群号：153454926";
     }
 }
 
@@ -64,11 +64,11 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
 
         static const HookPointStruct points[] = {
-            { nullptr, 0xedaf0, MyOpenFile1, "23", false, 0 },
-            { nullptr, 0xedfd8, MyOpenFile, "r", false, 0 },
-            { nullptr, 0xE4AE0, MyReadInst, "rf", true, 0x10 },
-            { nullptr, 0xcc0bb, MyMbtowc, "r", false, 0 },
-            { nullptr, 0xe47be, MySelString, "r", false, 0 },
+            //{ nullptr, 0xedaf0, MyOpenFile1, "23", false, 0 },
+            { nullptr, 0xcfb90, MyOpenFile, "r", false, 0 },
+            { nullptr, 0xC68E0, MyReadInst, "rf", true, 0x10 },
+            { nullptr, 0xAE448, MyMbtowc, "r", false, 0 },
+            { nullptr, 0xC663B, MySelString, "r", false, 0 },
         };
 
         if (!HookFunctions(points))
@@ -79,7 +79,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectW", MyCFI, "1", false, 0 },
-            { "user32.dll", "CreateWindowExA", MyCW, "\x03", false, 0 },
+            { "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
         };
         if (!HookFunctions(points2))
         {
