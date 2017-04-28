@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 )
 
@@ -36,6 +38,13 @@ type Libp struct {
 	curFileOffset uint32
 }
 
+func ceilSize(size uint32) uint32 {
+	if (size & 1023) == 0 {
+		return size
+	}
+	return (size & ^uint32(1023)) + 1024
+}
+
 func (libp *Libp) readDir(path1 string) {
 	eles, err := ioutil.ReadDir(path.Join(libp.rootPath, path1))
 	if err != nil {
@@ -60,6 +69,7 @@ func (libp *Libp) readDir(path1 string) {
 		} else {
 			ent.Flags = 0x10000
 			ent.OffsetIndex = libp.curOffset2
+			ent.Length = uint32(ele.Size())
 			libp.curOffset2++
 
 			var info FileInfo
@@ -68,12 +78,7 @@ func (libp *Libp) readDir(path1 string) {
 			info.offset = libp.curFileOffset
 			libp.index2 = append(libp.index2, uint32(info.offset/1024))
 			libp.fInfos = append(libp.fInfos, info)
-			if ele.Size()&1023 != 0 {
-				libp.curFileOffset += uint32(ele.Size()&1023 + 1024)
-			} else {
-				libp.curFileOffset += uint32(ele.Size())
-			}
-
+			libp.curFileOffset += ceilSize(uint32(ele.Size()))
 		}
 		libp.index = append(libp.index, ent)
 	}
@@ -97,13 +102,42 @@ func (libp *Libp) prepare(rootPath string) {
 }
 
 func (libp *Libp) pack(fname string) {
+	fs, err := os.Create(fname)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fs.Close()
+	var hdr Header
+	copy(hdr.Magic[:], []byte("LIBP"))
+	hdr.Entry1Cnt = uint32(len(libp.index))
+	hdr.Entry2Cnt = uint32(len(libp.index2))
+	baseOff := binary.Size(hdr) + binary.Size(libp.index) + binary.Size(libp.index2)
+	baseOff = int(ceilSize(uint32(baseOff)))
+	binary.Write(fs, binary.LittleEndian, &hdr)
+	binary.Write(fs, binary.LittleEndian, &libp.index)
+	binary.Write(fs, binary.LittleEndian, &libp.index2)
 
+	var lastLength uint32
+	for _, info := range libp.fInfos {
+		bf, err := ioutil.ReadFile(info.fullName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if len(bf) != int(info.length) {
+			log.Fatal(fmt.Errorf("length not fit:%s", info.fullName))
+		}
+		fs.Seek(int64(baseOff+int(info.offset)), 0)
+		lastLength = info.length
+		fs.Write(bf)
+	}
+	padSize := ceilSize(lastLength) - lastLength
+	pad := make([]byte, padSize)
+	fs.Write(pad)
 }
 
 func main() {
-	eles, _ := ioutil.ReadDir(`D:\temp\natuyumenagisa`)
-	for _, ele := range eles {
-		fmt.Println(ele.Name(), ele.IsDir())
-	}
+	var libp Libp
+	libp.prepare(`g:\Program Files\sousyu1\data\extra\`)
+	libp.pack("a.dat")
 	fmt.Printf("over\n")
 }
