@@ -41,7 +41,8 @@ bool IsHalf(const string& s)
 void HOOKFUNC MyCFI(LPLOGFONTW lfi)
 {
     //"ＭＳ ゴシック"
-    if (wcscmp(lfi->lfFaceName, L"MS UI Gothic") == 0)
+    if (wcscmp(lfi->lfFaceName, L"MS UI Gothic") == 0 ||
+        wcscmp(lfi->lfFaceName, L"ＭＳ ゴシック") == 0)
     {
         wcscpy_s(lfi->lfFaceName, L"SimHei");
     }
@@ -49,9 +50,9 @@ void HOOKFUNC MyCFI(LPLOGFONTW lfi)
 
 void HOOKFUNC MyCW(wchar_t** strp)
 {
-    if (*strp && wcscmp(*strp, L"乙女が奏でる恋のアリア") == 0)
+    if (*strp && wcscmp(*strp, L"乙女が彩る恋のエッセンス") == 0)
     {
-        *strp = L"『有少女奏响的爱之独歌』中文版 | 梦恋星空汉化组 译制 | 交流群号：153454926";
+        *strp = L"『有少女涂彩的爱之芬芳』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
     }
 }
 
@@ -64,11 +65,12 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
 
         static const HookPointStruct points[] = {
-            //{ nullptr, 0xedaf0, MyOpenFile1, "23", false, 0 },
-            { nullptr, 0xcfb90, MyOpenFile, "r", false, 0 },
-            { nullptr, 0xC68E0, MyReadInst, "rf", true, 0x10 },
-            { nullptr, 0xAE448, MyMbtowc, "r", false, 0 },
-            { nullptr, 0xC663B, MySelString, "r", false, 0 },
+            { nullptr, 0xE9740, MyOpenFile1, "23", false, 0 },
+            { nullptr, 0xe9c28, MyOpenFile, "r", false, 0 },
+            { nullptr, 0xE05E0, MyReadInst, "rf", true, 0x10 },
+            { nullptr, 0xC8688, MyMbtowc, "r", false, 0 },
+            { nullptr, 0xE033B, MySelString, "r", false, 0 },
+            { nullptr, 0x3D000, MyChangeFont, "r", false, 0 },
         };
 
         if (!HookFunctions(points))

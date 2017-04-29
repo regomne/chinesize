@@ -22,9 +22,9 @@ struct TextInfo {
 map<uint32_t, TextInfo> g_TextInfo;
 map<wstring, wstring> g_MyFiles;
 
-#define READ_INST_RETURN_ADDR 0x4c646f
+#define READ_INST_RETURN_ADDR 0x4e016f
 #define OPEN_FILE_ARG1_OFFSET 0xb04
-#define NAME_LINE_START "%LC"
+#define NAME_LINE_START "%LF"
 #define LINE_END_WITH_WAIT "%K%P"
 
 constexpr wchar_t* ChArcName = L"Ch.arc";
@@ -199,6 +199,11 @@ void HOOKFUNC MySelString(Registers* regs) {
     }
 }
 
+void HOOKFUNC MyChangeFont(Registers* regs) {
+    static const wchar_t* font_name = L"MS UI Gothic";
+    regs->ecx = (DWORD)font_name;
+}
+
 vector<wstring> GetFileList(wchar_t* path) {
     WIN32_FIND_DATA wfd;
     vector<wstring> files;
@@ -305,7 +310,7 @@ void InitWs2() {
         g_TextInfo[crc] = info;
     }
 
-    //if (!ReadArcFileList(ChArcName, g_MyFiles)) {
-    //    Log(L"Can't find arc:%s", ChArcName);
-    //}
+    if (!ReadArcFileList(ChArcName, g_MyFiles)) {
+        Log(L"Can't find arc:%s", ChArcName);
+    }
 }
