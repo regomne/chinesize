@@ -21,6 +21,7 @@ import (
 )
 
 var gInstInfo *[256][]byte
+var gNamePrefix *string
 
 func parsePattern(pattern string) (isIgnore []bool, patt []byte) {
 	bf := strings.Split(pattern, " ")
@@ -277,7 +278,7 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 	if oriOp == 0x15 {
 		s, _ := vals[0].(string)
 		if len(s) != 0 {
-			if strings.Index(s, "%LF") == 0 {
+			if strings.Index(s, *gNamePrefix) == 0 {
 				s = s[3:]
 			}
 			pureTxt = append(pureTxt, s)
@@ -413,6 +414,7 @@ func main() {
 	onlyTxt := flag.Bool("only-txt", false, "whether parse all info or only txt")
 	indexName := flag.String("index-file", "", "file name for pure txt index and checksum (for chinesize)")
 	textCodePage := flag.String("cp", "932", "specific code page of text in ws2")
+	gNamePrefix = flag.String("name-prefix", "%LC", "set name prefix when only txt")
 	verbose := flag.Bool("v", false, "print detail information")
 	flag.Parse()
 	if *inputName == "" || *outputName == "" {
