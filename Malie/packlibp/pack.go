@@ -45,27 +45,27 @@ func ceilSize(size uint32) uint32 {
 	return (size & ^uint32(1023)) + 1024
 }
 
-func (libp *Libp) readDir(path1 string) {
+func (libp *Libp) readDir(path1 string, dirIdx int) {
 	eles, err := ioutil.ReadDir(path.Join(libp.rootPath, path1))
 	if err != nil {
 		log.Fatal(err)
 	}
+	libp.index[dirIdx].OffsetIndex = uint32(len(libp.index))
 
 	dirs := []string{}
-	curIndexOffset := len(libp.index) + len(eles)
+	dirIdxes := []int{}
 	for _, ele := range eles {
 		var ent Entry
 		copy(ent.FileName[:], []byte(ele.Name()))
 		if ele.IsDir() {
 			dirs = append(dirs, ele.Name())
+			dirIdxes = append(dirIdxes, len(libp.index))
 			ent.Flags = 0
 			newEles, err := ioutil.ReadDir(path.Join(libp.rootPath, path1, ele.Name()))
 			if err != nil {
 				log.Fatal(err)
 			}
 			ent.Length = uint32(len(newEles))
-			ent.OffsetIndex = uint32(curIndexOffset)
-			curIndexOffset += len(newEles)
 		} else {
 			ent.Flags = 0x10000
 			ent.OffsetIndex = libp.curOffset2
@@ -83,8 +83,8 @@ func (libp *Libp) readDir(path1 string) {
 		libp.index = append(libp.index, ent)
 	}
 
-	for _, dir := range dirs {
-		libp.readDir(path.Join(path1, dir))
+	for idx, dir := range dirs {
+		libp.readDir(path.Join(path1, dir), dirIdxes[idx])
 	}
 }
 
@@ -98,7 +98,8 @@ func (libp *Libp) prepare(rootPath string) {
 	ent.OffsetIndex = 1
 	ent.Length = uint32(len(eles))
 	libp.index = append(libp.index, ent)
-	libp.readDir(".")
+	log.Println("reading directory...")
+	libp.readDir(".", 0)
 }
 
 func (libp *Libp) pack(fname string) {
@@ -107,6 +108,7 @@ func (libp *Libp) pack(fname string) {
 		log.Fatal(err)
 	}
 	defer fs.Close()
+	log.Println("packing header and entries...")
 	var hdr Header
 	copy(hdr.Magic[:], []byte("LIBP"))
 	hdr.Entry1Cnt = uint32(len(libp.index))
@@ -117,6 +119,7 @@ func (libp *Libp) pack(fname string) {
 	binary.Write(fs, binary.LittleEndian, &libp.index)
 	binary.Write(fs, binary.LittleEndian, &libp.index2)
 
+	log.Println("packing files...")
 	var lastLength uint32
 	for _, info := range libp.fInfos {
 		bf, err := ioutil.ReadFile(info.fullName)
@@ -136,8 +139,13 @@ func (libp *Libp) pack(fname string) {
 }
 
 func main() {
+	if len(os.Args) != 3 {
+		fmt.Printf("usage: %s <dir> <arc>\n", os.Args[0])
+		fmt.Println(os.Args)
+		return
+	}
 	var libp Libp
-	libp.prepare(`g:\Program Files\sousyu1\data\extra\`)
-	libp.pack("a.dat")
-	fmt.Printf("over\n")
+	libp.prepare(os.Args[1])
+	libp.pack(os.Args[2])
+	log.Printf("complete\n")
 }
