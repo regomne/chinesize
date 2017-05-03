@@ -33,5 +33,6 @@ void HOOKFUNC MyReadStrTbl(Registers* regs);
 DWORD WINAPI malie_init_thread(LPVOID param);
 void HOOKFUNC MyReadVmData(Registers* regs);
 void HOOKFUNC MyReadDataString(const wchar_t** s_ptr);
+void HOOKFUNC MyReadLibp(Registers* regs);
 
 extern CRITICAL_SECTION g_init_lock;

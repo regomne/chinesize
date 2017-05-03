@@ -59,6 +59,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
             { nullptr, 0x1bbcec, MyReadStrTbl, "r", false, 0 },
             { nullptr, 0x1bb06f, MyReadVmData, "r", false, 0 },
             { nullptr, 0x1b4500, MyReadDataString, "\x02", false, 0 },
+            { nullptr, 0x1b569c, MyReadLibp, "r", false, 0 },
         };
 
         if (!HookFunctions(points))

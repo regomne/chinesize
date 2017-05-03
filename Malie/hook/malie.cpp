@@ -320,3 +320,22 @@ void HOOKFUNC MyReadDataString(const wchar_t** s_ptr) {
         *s_ptr = itr->second.c_str();
     }
 }
+
+static const wchar_t* DatNames[12] = {
+    L".\\data\\datac.dat",
+    L".\\data\\data9.dat",
+    L".\\data\\data8.dat",
+    L".\\data\\data7.dat",
+    L".\\data\\data6.dat",
+    L".\\data\\data5.dat",
+    L".\\data\\data4.dat",
+    L".\\data\\data3.dat",
+    L".\\data\\data2.dat",
+    L".\\data\\data1.dat",
+    L".\\data3.dat",
+    L".\\data2.dat",
+};
+
+void HOOKFUNC MyReadLibp(Registers* regs) {
+    regs->eax = (DWORD)DatNames[regs->esi / 4];
+}
