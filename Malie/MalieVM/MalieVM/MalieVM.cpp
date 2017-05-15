@@ -11,7 +11,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	setlocale(LC_ALL,"Japanese");
 //	MalieExec exec("D:\\Software\\deCrypt\\KDays\\MalieSystem\\Dies irae  -Amantes amentes-\\exec.dat");
-	MalieExec exec(R"(d:\Program Files\sousyu1\data\system\exec.dat)");
+	MalieExec exec(R"(g:\Program Files\sousyu1\exec.dat)");
 	exec.ExportStrByCode();
 	_getch();
  	//CMalie_VMParse vm(&exec);//0xF8Aexec.GetFuncOffset(L"_ms_message")

@@ -147,5 +147,5 @@ func main() {
 	var libp Libp
 	libp.prepare(os.Args[1])
 	libp.pack(os.Args[2])
-	log.Printf("complete\n")
+	log.Printf("pack complete\n")
 }

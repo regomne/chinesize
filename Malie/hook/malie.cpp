@@ -58,6 +58,11 @@ bool MalieString::init() {
         case 7:
             switch (str_[++idx]) {
             case 1://递归调用文字读取，然后继续处理（包含注释的文字）
+                if (state == State::Init) {
+                    //如果行首就是ruby的话，因为先改掉了state会导致下面代码不认为这是行首，所以需要先设置好
+                    //真特么蛋疼，这半吊子的状态机写得
+                    line_start = idx - 1;
+                }
                 state = State::Ruby;
                 state_changed = false;
                 break;
@@ -299,6 +304,7 @@ void HOOKFUNC MyReadStrTbl(Registers* regs) {
     auto new_str = str.import_str(make_str_func(str_idx));
     if (new_str.length() != 0) {
         static wchar_t static_str[1024];
+        memset(static_str, 0, sizeof(static_str));
         memcpy(static_str, new_str.c_str(), new_str.length() * 2);
 
         regs->esi = (DWORD)static_str;
@@ -322,7 +328,7 @@ void HOOKFUNC MyReadDataString(const wchar_t** s_ptr) {
 }
 
 static const wchar_t* DatNames[12] = {
-    L".\\data\\datac.dat",
+    L".\\chn.dat",
     L".\\data\\data9.dat",
     L".\\data\\data8.dat",
     L".\\data\\data7.dat",
