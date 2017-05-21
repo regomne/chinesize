@@ -3,13 +3,16 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <map>
 #include <D3D9.h>
 
 #include "ilhook.h"
 #include "FileReader.h"
 #include "FuncHelper.h"
 #include "PicSupport.h"
+#include "MyPack.h"
 
+MyPack* g_MyPack;
 using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,strlen(hex)},
@@ -21,10 +24,10 @@ struct PatchStruct
     char* hex;
     DWORD len;
 } g_Patches[] = {
-    DP("resident.dll", 0x21e4cb,"\x80","\x86") //cp
-    DP("resident.dll", 0x36332c,"\x81\x74","\xa1\xb7") //括号
-    DP("resident.dll", 0x363340,"\x81\x73","\xa1\xb6") //括号
-    DP("resident.dll", 0x21d2b7,"\x40\x81","\xa1\xa1") //空格
+    DP("resident.dll", 0x21F5EB,"\x80","\x86") //cp
+    DP("resident.dll", 0x37632C,"\x81\x74","\xa1\xb7") //括号
+    DP("resident.dll", 0x376340,"\x81\x73","\xa1\xb6") //括号
+    DP("resident.dll", 0x21E3D7,"\x40\x81","\xa1\xa1") //空格
 };
 #undef DP
 
@@ -129,7 +132,7 @@ bool HookFunctions(const HookPointStruct* hooks, uint32_t cnt)
             mod = LoadLibraryA(hook->module_name);
             if (!mod)
             {
-                LOGERROR("Hook: Can't find module: %s", hook->module_name);
+                LOGERROR("Hook: Can't find module: %s, error: %d", hook->module_name, GetLastError());
                 return false;
             }
         }
@@ -205,6 +208,16 @@ __declspec(naked) void D3dCreate9()
     __asm jmp Direct3DCreate9
 }
 
+std::string ReplaceAll(const std::string& str_ori, const std::string& from, const std::string& to) 
+{
+    size_t start_pos = 0;
+    std::string str(str_ori);
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return std::move(str);
+}
 vector<string>* SplitTxt(NakedMemory& txt)
 {
     auto buff = (uint8_t*)txt.Get();
@@ -214,7 +227,7 @@ vector<string>* SplitTxt(NakedMemory& txt)
     while (true)
     {
         while (i < txt.GetSize() && buff[i] != '\r') i++;
-        ls->push_back(string((char*)buff + last, i - last));
+        ls->push_back(ReplaceAll(string((char*)buff + last, i - last), "\\n", "\n"));
         if (i + 1 >= txt.GetSize()) break;
         i += 2;
         last = i;
@@ -222,18 +235,34 @@ vector<string>* SplitTxt(NakedMemory& txt)
     return ls;
 }
 
-NakedMemory CvtToAnsi(NakedMemory& str)
+NakedMemory CvtToAnsi(NakedMemory& str, int cp)
 {
-    const auto codepage = CP_ACP;
     auto buff = (uint8_t*)str.Get();
     if (*(WORD*)buff == 0xfeff)
     {
-        auto txtlen = (str.GetSize() - 2) / 2;
-        replace_chars((wchar_t*)(buff + 2), txtlen, g_rep_chars);
-        auto newsize = WideCharToMultiByte(codepage, 0, (wchar_t*)(buff + 2), txtlen, 0, 0, 0, 0);
+        auto newsize = WideCharToMultiByte(cp, 0, (wchar_t*)(buff + 2), (str.GetSize() - 2) / 2, 0, 0, 0, 0);
         NakedMemory ansi(newsize);
-        WideCharToMultiByte(codepage, 0, (wchar_t*)(buff + 2), txtlen, (char*)ansi.Get(), ansi.GetSize(), 0, 0);
+        WideCharToMultiByte(cp, 0, (wchar_t*)(buff + 2), (str.GetSize() - 2) / 2, (char*)ansi.Get(), ansi.GetSize(), 0, 0);
         return std::move(ansi);
+    }
+    else if (str.GetSize() > 3 && buff[0] == 0xef && buff[1] == 0xbb && buff[2] == 0xbf)
+    {
+        if (cp == CP_UTF8)
+        {
+            NakedMemory ansi(str.GetSize() - 3);
+            memcpy(ansi.Get(), buff + 3, ansi.GetSize());
+            return std::move(ansi);
+        }
+        else
+        {
+            NakedMemory u16(str.GetSize() * 2);
+            auto newsize1 = MultiByteToWideChar(CP_UTF8, 0, (char*)buff + 3, str.GetSize() - 3, (wchar_t*)u16.Get(), str.GetSize());
+
+            auto newsize = WideCharToMultiByte(cp, 0, (wchar_t*)u16.Get(), newsize1, 0, 0, 0, 0);
+            NakedMemory ansi(newsize);
+            WideCharToMultiByte(cp, 0, (wchar_t*)u16.Get(), newsize1, (char*)ansi.Get(), ansi.GetSize(), 0, 0);
+            return std::move(ansi);
+        }
     }
     else
     {
@@ -246,6 +275,12 @@ string g_cur_txt;
 uint32_t g_line_idx = 0;
 uint32_t HOOKFUNC MyLoadRld(void* old_proc, void* thisp, uint32_t arg1, uint32_t arg2)
 {
+    if (!g_MyPack) {
+        g_MyPack = new MyPack(L"cnpack");
+        if (!g_MyPack->Init()) {
+            //todo
+        }
+    }
     auto fname = string((char*)arg1);
     if (fname.find("rld\\") != 0)
     {
@@ -254,19 +289,19 @@ uint32_t HOOKFUNC MyLoadRld(void* old_proc, void* thisp, uint32_t arg1, uint32_t
     auto pos = fname.find(".rld");
     auto txtName = string("txt\\") + fname.substr(4, pos - 4) + ".txt";
     g_cur_txt = txtName;
-    MyFileReader reader;
-    auto mem = reader.ReadToMem(txtName.c_str());
-    if (!mem.Get())
-    {
+    auto mem = g_MyPack->ReadAFile(txtName);
+    if (!mem.Get()) {
+        //Log("Can't read %s", txtName.c_str());
         return ThiscallFunction2(old_proc, thisp, arg1, arg2);
     }
-    auto ansi = CvtToAnsi(mem);
+    auto ansi = CvtToAnsi(mem, 936);
     g_lines = SplitTxt(ansi);
     g_line_idx = 0;
 
     auto ret = ThiscallFunction2(old_proc, thisp, arg1, arg2);
 
     delete g_lines;
+    g_lines = nullptr;
     g_line_idx = 0;
     g_cur_txt = "";
     return ret;
@@ -278,7 +313,7 @@ uint32_t g_cur_cmd = -1;
 uint32_t HOOKFUNC MyProcCmds(Registers* regs, void* old_proc, void* thisp, uint32_t arg1, uint32_t arg2, uint32_t arg3)
 {
     static auto mod_addr = (intptr_t)GetModuleHandleA("resident.dll");
-    if (*(uint32_t*)regs->esp == mod_addr + 0xf6571)
+    if (*(uint32_t*)regs->esp == mod_addr + 0xF7381)
     {
         g_enter_proc = true;
         g_cur_cmd = arg2;
@@ -352,7 +387,10 @@ void HOOKFUNC MyAddString(Registers* regs)
         }
         else if (cmd == 21)
         {
-            if (str_idx == 0)
+            if (old_str.length() != 0 &&
+                old_str != "*" &&
+                old_str != "$noname$" &&
+                std::count(old_str.begin(), old_str.end(), ',') < 2)
             {
                 auto news = ReadOneLineFromTxt();
                 if (!news)
@@ -421,13 +459,13 @@ void HOOKFUNC MyDecRld(void* old_proc, void* thisp, uint32_t arg1, uint32_t arg2
 
 void HOOKFUNC MyCFI(LPLOGFONTA lfi)
 {
-    if (lfi->lfCharSet == 0x80)
-    {
-        lfi->lfCharSet = 0x86;
-    }
+    //if (lfi->lfCharSet == 0x80)
+    //{
+    //    lfi->lfCharSet = 0x86;
+    //}
     if (strcmp(lfi->lfFaceName, "\x82\x6C\x82\x72\x20\x83\x53\x83\x56\x83\x62\x83\x4E") == 0)
     {
-        strcpy_s(lfi->lfFaceName, "SimHei");
+        strcpy_s(lfi->lfFaceName, "Microsoft Yahei");
     }
 }
 typedef DWORD (WINAPI *GetGlyphOutlineARoutine)(
@@ -458,18 +496,23 @@ class GlyphGen
 public:
     GlyphGen(HDC hdc)
     {
-        hdc_ = CreateCompatibleDC(hdc);
-        hfont_ = create_font();
-        SelectObject(hdc_, hfont_);
+        song_dc_ = CreateCompatibleDC(hdc);
+        song_font_ = create_song_font();
+        SelectObject(song_dc_, song_font_);
+        basic_dc_ = CreateCompatibleDC(hdc);
+        basic_font_ = create_basic_font();
+        SelectObject(basic_dc_, basic_font_);
     }
 
     ~GlyphGen()
     {
-        DeleteDC(hdc_);
-        DeleteObject(hfont_);
+        DeleteDC(song_dc_);
+        DeleteObject(song_font_);
+        DeleteDC(basic_dc_);
+        DeleteObject(basic_font_);
     }
 
-    DWORD get_glyph(
+    DWORD get_song_glyph(
         _In_        UINT           uChar,
         _In_        UINT           uFormat,
         _Out_       LPGLYPHMETRICS lpgm,
@@ -477,11 +520,22 @@ public:
         _Out_       LPVOID         lpvBuffer,
         _In_  const MAT2           *lpmat2)
     {
-        return GetGlyphOutlineW(hdc_, uChar, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+        return GetGlyphOutlineW(song_dc_, uChar, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+    }
+
+    DWORD get_basic_glyph(
+        _In_        UINT           uChar,
+        _In_        UINT           uFormat,
+        _Out_       LPGLYPHMETRICS lpgm,
+        _In_        DWORD          cbBuffer,
+        _Out_       LPVOID         lpvBuffer,
+        _In_  const MAT2           *lpmat2)
+    {
+        return GetGlyphOutlineW(basic_dc_, uChar, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
     }
 
 private:
-    HFONT create_font()
+    HFONT create_song_font()
     {
         LOGFONT lf;
         memset(&lf, 0, sizeof(lf));
@@ -494,9 +548,23 @@ private:
         return hf;
     }
 
+    HFONT create_basic_font()
+    {
+        LOGFONT lf;
+        memset(&lf, 0, sizeof(lf));
+        lf.lfHeight = -24;
+        lf.lfWeight = 0x190;
+        lf.lfQuality = 2;
+        lf.lfPitchAndFamily = 1;
+        wcscpy_s(lf.lfFaceName, L"SimHei");
+        auto hf = CreateFontIndirect(&lf);
+        return hf;
+    }
 private:
-    HDC hdc_;
-    HFONT hfont_;
+    HDC song_dc_;
+    HDC basic_dc_;
+    HFONT song_font_;
+    HFONT basic_font_;
 };
 
 DWORD HOOKFUNC MyGGOA(
@@ -515,15 +583,28 @@ DWORD HOOKFUNC MyGGOA(
     {
         if (rep.ac[1] == (uChar & 0xff) && rep.ac[0] == (uChar >> 8))
         {
-            return font_gen->get_glyph(rep.uc, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+            return font_gen->get_song_glyph(rep.uc, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
         }
     }
-    return old_func(hdc, uChar, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+    char ach[2];
+    wchar_t wch[2];
+    if (uChar >= 0x80) {
+        ach[0] = uChar >> 8;
+        ach[1] = uChar & 0xff;
+    }
+    else {
+        ach[0] = uChar;
+        ach[1] = 0;
+    }
+    MultiByteToWideChar(936, 0, ach, 2, wch, 2);
+    return GetGlyphOutlineW(hdc, wch[0], uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+    return font_gen->get_basic_glyph(wch[0], uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
+    //return old_func(hdc, uChar, uFormat, lpgm, cbBuffer, lpvBuffer, lpmat2);
 }
 typedef void* (__cdecl *exhibit_alloc_routine)(uint32_t size, uint32_t flag);
 typedef void (__cdecl *exhibit_free_routine)(void* size, uint32_t flag);
 exhibit_alloc_routine g_exhibit_alloc = nullptr;
-exhibit_free_routine g_exhibit_free = nullptr;
+//exhibit_free_routine g_exhibit_free = nullptr;
 
 NakedMemory* g_png_rgb;
 NakedMemory* g_png_alpha;
@@ -710,6 +791,12 @@ void* HOOKFUNC MyDecodeGyuAlpha(void* old_proc, void* thisp)
     return (void*)ThiscallFunction0(old_proc, thisp);
 }
 
+void HOOKFUNC MyCWE(const char* className, char** windowName) {
+    if (strcmp(className, "lovesis.wndclass") == 0 && *windowName) {
+        *windowName = "『Love Love Sisters』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+    }
+}
+
 BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ void* _Reserved)
 {
     if (_Reason == DLL_PROCESS_ATTACH)
@@ -717,19 +804,19 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         PatchMemory();
 
         auto mod = (uint8_t*)LoadLibrary(L"resident.dll");
-        g_exhibit_alloc = (exhibit_alloc_routine)(mod + 0x2234a0);
-        g_exhibit_free = (exhibit_free_routine)(mod + 0x2234f0);
+        g_exhibit_alloc = (exhibit_alloc_routine)(mod + 0x2245C0);
+        //g_exhibit_free = (exhibit_free_routine)(mod + 0x2234f0);
 
         static const HookPointStruct points[] = {
-            { "resident.dll", 0xf6130, MyLoadRld, "fc12", true, 8 },
-            { "resident.dll", 0xaab20, MyProcCmds, "rfc123", true, 12 },
-            { "resident.dll", 0xa804d, MyAddString, "r", false, 0 },
-            { "resident.dll", 0x28d360, MyDecRld, "fc1234", true, 16 },
+            { "resident.dll", 0xf6f40, MyLoadRld, "fc12", true, 8 },
+            { "resident.dll", 0xAABA0, MyProcCmds, "rfc123", true, 12 },
+            { "resident.dll", 0xA80CD, MyAddString, "r", false, 0 },
+            { "resident.dll", 0x28EE30, MyDecRld, "fc1234", true, 16 },
 
-            { "resident.dll", 0x1ca030, MyReadGyu, "rfc123", true, 12 },
-            { "resident.dll", 0x1cb700, MyReadGyu2, "rfc123", true, 12 },
-            { "resident.dll", 0x28dc30, MyDecodeGyu, "rfc1", true, 4 },
-            { "resident.dll", 0x28E080, MyDecodeGyuAlpha, "fc", true, 0 },
+             //{ "resident.dll", 0x1CB150, MyReadGyu, "rfc123", true, 12 },
+             //{ "resident.dll", 0x1CC820, MyReadGyu2, "rfc123", true, 12 },
+             //{ "resident.dll", 0x28F700, MyDecodeGyu, "rfc1", true, 4 },
+             //{ "resident.dll", 0x28FB50, MyDecodeGyuAlpha, "fc", true, 0 },
         };
 
         if (!HookFunctions(points))
@@ -740,6 +827,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
+            { "user32.dll", "CreateWindowExA", MyCWE, "2\x03", false, 0 },
             { "gdi32.dll", "GetGlyphOutlineA", MyGGOA, "f1234567", true, 28 },
         };
         if (!HookFunctions(points2))

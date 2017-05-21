@@ -66,7 +66,9 @@ h_unk3:%d, h_tag:%s'%(magic, h_unk1, h_unk2, inst_cnt, h_unk3, h_tag))
         if s != b'*' and s != b'$noname$' and len(s) != 0 and s.count(b',') < 2:
           pure_txt.append(s.decode('932'))
     elif op == 21:
-      pure_txt.append(strs[0].decode('932'))
+      for s in strs:
+        if s != b'*' and s != b'$noname$' and len(s) != 0 and s.count(b',') < 2:
+          pure_txt.append(s.decode('932'))
     elif op == 48:
       pure_txt.append(strs[0].decode('932'))
     elif op == 191:
@@ -77,7 +79,8 @@ h_unk3:%d, h_tag:%s'%(magic, h_unk1, h_unk2, inst_cnt, h_unk3, h_tag))
 
 def write_txt(name,txt):
   fs=open(name,'wb')
-  fs.write('\r\n'.join(txt).encode('u16'))
+  ntxt=[l.replace('\n','\\n') for l in txt]
+  fs.write('\r\n'.join(ntxt).encode('u16'))
   fs.close()
 
 def ext_rld(fname1, fname2, name_table):
@@ -106,6 +109,6 @@ def ext_all_rld(path1, path2):
             os.path.join(path2,f.replace('.rld','.txt')),
             name_table)
 
-ext_all_rld(r'D:\galgame\仄暗き時の果てより\data\rld2',
-            r'D:\galgame\仄暗き時の果てより\data\txt2')
+ext_all_rld(r'f:\Program Files\lovelovesisters\rld2',
+            r'f:\Program Files\lovelovesisters\txt_n')
 
