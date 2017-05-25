@@ -151,7 +151,6 @@
     <ClCompile Include="..\FuncHelper.cpp" />
     <ClCompile Include="..\ilhook.cpp" />
     <ClCompile Include="..\NakedMemory.cpp" />
-    <ClCompile Include="..\PicSupport.cpp" />
     <ClCompile Include="..\TxtSupport.cpp" />
     <ClCompile Include="test_main.cpp" />
   </ItemGroup>

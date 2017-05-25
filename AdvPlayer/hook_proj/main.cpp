@@ -50,9 +50,9 @@ void HOOKFUNC MyCFI(LPLOGFONTW lfi)
 
 void HOOKFUNC MyCW(wchar_t** strp)
 {
-    if (*strp && wcscmp(*strp, L"乙女が彩る恋のエッセンス") == 0)
+    if (*strp && wcscmp(*strp, L"恋する気持ちのかさねかた") == 0)
     {
-        *strp = L"『有少女涂彩的爱之芬芳』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+        *strp = L"『恋する気持ちのかさねかた』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
     }
 }
 
@@ -65,12 +65,20 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
 
         static const HookPointStruct points[] = {
-            { nullptr, 0xE9740, MyOpenFile1, "23", false, 0 },
-            { nullptr, 0xe9c28, MyOpenFile, "r", false, 0 },
-            { nullptr, 0xE05E0, MyReadInst, "rf", true, 0x10 },
-            { nullptr, 0xC8688, MyMbtowc, "r", false, 0 },
-            { nullptr, 0xE033B, MySelString, "r", false, 0 },
-            { nullptr, 0x3D000, MyChangeFont, "r", false, 0 },
+            { nullptr, 0xd2820, MyOpenFile1, "12", false, 0 },
+            { nullptr, 0xd2d60, MyOpenFile, "r", false, 0 },
+
+            //0F B6 ?? ?? ?? 89 5C 24 ?? 8B 2C 85 ?? ?? ?? 00 85 ED 0F 84
+            //找到一个函数，此函数内有三次对ReadInst函数的call
+            { nullptr, 0xC99B0, MyReadInst, "rf", true, 0x10 },
+            
+            //8B 45 ?? 2B 45 ?? 8B 33 C7 44 24 ?? 01 00 00 00 3B F0 72 05 E8
+            //找到一个函数，下面有个参数是lpMultiByteStr的call
+            { nullptr, 0xC970B, MySelString, "r", false, 0 },
+            //此函数在上面那个call之内
+            { nullptr, 0xB1708, MyMbtowc, "r", false, 0 },
+            //wcsncmp的第二个引用所在的函数
+            { nullptr, 0x2E160, MyChangeFont, "r", false, 0 },
         };
 
         if (!HookFunctions(points))
