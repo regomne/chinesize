@@ -45,6 +45,9 @@
     <ClCompile Include="malie.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MyPack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FileReader.h">
@@ -63,6 +66,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="malie.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyPack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

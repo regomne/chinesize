@@ -156,6 +156,7 @@
     <ClCompile Include="ilhook.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="malie.cpp" />
+    <ClCompile Include="MyPack.cpp" />
     <ClCompile Include="NakedMemory.cpp" />
     <ClCompile Include="TxtSupport.cpp" />
   </ItemGroup>
@@ -163,6 +164,7 @@
     <ClInclude Include="FileReader.h" />
     <ClInclude Include="FuncHelper.h" />
     <ClInclude Include="malie.h" />
+    <ClInclude Include="MyPack.h" />
     <ClInclude Include="NakedMemory.h" />
     <ClInclude Include="PicSupport.h" />
     <ClInclude Include="TxtSupport.h" />
