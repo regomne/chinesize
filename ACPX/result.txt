@@ -1,0 +1,12 @@
+005088E0
+FilePtr* ReadFileFromBin("script\\0101.bin")
+
+FilePtr*
+{
+
+}
+
+508610
+Mem* __cdecl OpenExpFile(char* filename)
+
+v=Extract('D:\\galgame\\ARISTEAR REMAIN\\aristear.bin')
