@@ -33,9 +33,6 @@
     <ClCompile Include="..\ilhook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\PicSupport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="packbmp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

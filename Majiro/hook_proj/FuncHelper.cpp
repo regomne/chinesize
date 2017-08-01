@@ -238,3 +238,12 @@ std::wstring decode_string(const char* s, uint32_t slen, int cp)
     delete[] buff;
     return std::move(str);
 }
+
+std::string encode_string(const wchar_t* s, int cp) {
+    auto len = WideCharToMultiByte(cp, 0, s, -1, 0, 0, 0, 0);
+    auto buff = new char[len];
+    len = WideCharToMultiByte(cp, 0, s, -1, buff, len, 0, 0);
+    std::string str(buff, len);
+    delete[] buff;
+    return std::move(str);
+}

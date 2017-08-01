@@ -71,3 +71,4 @@ bool HookFunctions(const HookPointStructWithName(&strt)[_Size])
 
 std::wstring decode_string(const char* s, int cp);
 std::wstring decode_string(const char* s, uint32_t len, int cp);
+std::string encode_string(const wchar_t* s, int cp);
