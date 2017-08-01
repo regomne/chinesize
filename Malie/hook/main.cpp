@@ -47,6 +47,14 @@ void HOOKFUNC MyCW(wchar_t** strp)
     }
 }
 
+void HOOKFUNC MySWT(wchar_t** strp)
+{
+    if (*strp && wcslen(*strp) == 0x16 / 2)
+    {
+        *strp = L"『相州战神馆学园_八命阵』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+    }
+}
+
 BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ void* _Reserved)
 {
     if (_Reason == DLL_PROCESS_ATTACH)
@@ -59,6 +67,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
             { nullptr, 0x1bbcec, MyReadStrTbl, "r", false, 0 },
             { nullptr, 0x1bb06f, MyReadVmData, "r", false, 0 },
             { nullptr, 0x1b4500, MyReadDataString, "\x02", false, 0 },
+            { nullptr, 0x1b06f0, MyReadDataString, "\x01", false, 0 },
             { nullptr, 0x1b569c, MyReadLibp, "r", false, 0 },
         };
 
@@ -71,6 +80,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectW", MyCFI, "1", false, 0 },
             //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+            { "user32.dll", "SetWindowTextW", MySWT, "\x02", false, 0 },
         };
         if (!HookFunctions(points2))
         {

@@ -184,16 +184,43 @@ void AddSplitTxtW(NakedMemory& txt, vector<wstring>& ls)
     }
 }
 
+const uint32_t KeySize = 4096;
+NakedMemory read_key() {
+    MyFileReader reader;
+    auto mem = reader.ReadToMem(L"txt\\start");
+    if (mem.GetSize() < KeySize) {
+        return NakedMemory();
+    }
+    uint8_t keytag[] = { "8ugjiyhz" };
+    auto p = (uint8_t*)mem.Get();
+    for (auto i = 0;i < mem.GetSize();i++) {
+        p[i] ^= keytag[i & 7];
+    }
+    return move(mem);
+}
+
+void xor_txt(NakedMemory& key, NakedMemory& txt) {
+    if (key.GetSize() >= KeySize) {
+        auto pk = (uint8_t*)key.Get();
+        auto pt = (uint8_t*)txt.Get();
+        for (auto i = 0;i < txt.GetSize();i++) {
+            pt[i] ^= pk[i & 0x3ff];
+        }
+    }
+}
+
 vector<wstring> read_all_txt() {
+    auto key = read_key();
     MyFileReader reader;
     vector<wstring> ls;
     for (int i = 0;i < 20;i++) {
         wchar_t fname[100];
-        swprintf_s(fname, L"txt\\%02d.txt", i);
+        swprintf_s(fname, L"txt\\%02d", i);
         auto mem = reader.ReadToMem(fname);
         if (mem.GetSize() == 0) {
             break;
         }
+        xor_txt(key, mem);
         AddSplitTxtW(mem, ls);
         while (ls[ls.size() - 1].length() == 0) {
             ls.pop_back();
@@ -204,17 +231,19 @@ vector<wstring> read_all_txt() {
 
 map<int, wstring> g_data_tbl;
 void read_data_table(map<int, wstring>& data_tbl) {
+    auto key = read_key();
     MyFileReader reader;
     auto idx_mem = reader.ReadToMem(L"txt\\str.idx");
     if (idx_mem.GetSize() == 0) {
         LOGERROR("Can't find str.idx!");
         return;
     }
-    auto txt = reader.ReadToMem(L"txt\\str.txt");
+    auto txt = reader.ReadToMem(L"txt\\99");
     if (txt.GetSize() == 0) {
         LOGERROR("Can't find str.txt!");
         return;
     }
+    xor_txt(key, txt);
     auto ls = SplitTxtW(txt);
     while (ls[ls.size() - 1].length() == 0) {
         ls.pop_back();
