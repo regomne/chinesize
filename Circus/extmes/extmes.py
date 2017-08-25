@@ -5,11 +5,13 @@ import shutil
 
 import bytefile
 
-MES_NAME_OP = 0x4f
-MES_TEXT_OP = 0x50
-MES_VOICE1_OP = 0x37
-MES_VOICE2_OP = 0x38
+MES_NAME_OP = 0x4d
+MES_TEXT_OP = 0x4e
+MES_VOICE1_OP = 0x36
+MES_VOICE2_OP = 0x37
 MES_SEL_OP = 8
+#1和2的header不同，参见read_mes
+MesVersion = 1
 
 def dec_str(s):
   ns=[]
@@ -42,7 +44,8 @@ def add_text(bs,txt_idxes,txts,cmd_start):
 def read_mes(bs):
   cmd_cnt = bs.readu32()
   indexes = parse_indexes(bs.read(cmd_cnt * 4))
-  unk_indexes = bs.read(cmd_cnt * 2)
+  if MesVersion>=2:
+    unk_indexes = bs.read(cmd_cnt * 2)
   cmd_start = bs.tell()
   txts = []
   txt_idxes = []
@@ -167,7 +170,7 @@ def ext_all_mes(pathori, pathtxt):
   for f in os.listdir(pathori):
     if not f.endswith('.mes'):
       continue
-    #print(f)
+    print(f)
     fs=open(os.path.join(pathori,f),'rb')
     bs=bytefile.ByteFile(fs.read())
     fs.close()
@@ -204,8 +207,9 @@ def pack_all_mes(pathori,pathtxt,pathnew):
       fs.write(newmes)
       fs.close()
 
-#ext_all_mes(r'F:\Program Files\DC3RX\Advdata\0MES',r'F:\Program Files\DC3RX\Advdata\0txt')
+ext_all_mes(r'E:\Program Files\fortissimo FAAkkord：nachsten Phase\advdata\0MES',
+            r'E:\Program Files\fortissimo FAAkkord：nachsten Phase\advdata\0txt')
 
-pack_all_mes(r'F:\Program Files\DC3RX\Advdata\0MES',
-             r'F:\Program Files\DC3RX\Advdata\txt1',
-             r'F:\Program Files\DC3RX\Advdata\mes')
+##pack_all_mes(r'F:\Program Files\DC3RX\Advdata\0MES',
+##             r'F:\Program Files\DC3RX\Advdata\txt1',
+##             r'F:\Program Files\DC3RX\Advdata\mes')
