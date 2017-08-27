@@ -10,6 +10,7 @@ MES_TEXT_OP = 0x4e
 MES_VOICE1_OP = 0x36
 MES_VOICE2_OP = 0x37
 MES_SEL_OP = 8
+MES_KNOWN_OPS = [0x04, 0x62, 0x17, 0x1a]
 #1和2的header不同，参见read_mes
 MesVersion = 1
 
@@ -80,11 +81,12 @@ def read_mes(bs):
     elif op == MES_TEXT_OP:
       add_text(bs,txt_idxes,txts,cmd_start)
     elif op == MES_SEL_OP:
+      #print('read 8', hex(bs.tell))
       bs.readu16()
       while bs.readstr().startswith(b'D'):
         bs.readu8()
         add_text(bs,txt_idxes,txts,cmd_start)
-    elif op != 3 and op != 98 and op != 0x18 and op != 0x1a and op != 0x36:
+    elif op not in MES_KNOWN_OPS:
       print('op error op', hex(op), hex(bs.tell()))
   return txts,txt_idxes,indexes
 
@@ -137,8 +139,10 @@ def pack_mes(bs, ntxt, txt_idxes, indexes):
 
   has_high_bits = [i & 0x80000000 != 0 for i in indexes]
   low_inds = [i & 0x7fffffff for i in indexes]
-  
-  cmd_start = 4 + cmd_cnt * 6
+
+  cmd_start = 4 + cmd_cnt * 4
+  if MesVersion >=2:
+    cmd_start += cmd_cnt * 2
   ind_blocks = split_block(bs[cmd_start:], low_inds)
   final_blocks, new_2d_idxes = split_2d_block(ind_blocks, txt_idxes)
   #print('len new 2d ind:',len(new_2d_idxes),'len txt',len(ntxt))
@@ -159,7 +163,7 @@ def pack_mes(bs, ntxt, txt_idxes, indexes):
     i += 1
   return bs[0:4] +\
     pack_indexes(new_indexes) +\
-    bs[4 + cmd_cnt * 4: 4 + cmd_cnt * 6] +\
+    bs[4 + cmd_cnt * 4: cmd_start] +\
     b''.join(ind_blocks)
 
 def write_txts(fs,txts):
@@ -207,9 +211,9 @@ def pack_all_mes(pathori,pathtxt,pathnew):
       fs.write(newmes)
       fs.close()
 
-ext_all_mes(r'E:\Program Files\fortissimo FAAkkord：nachsten Phase\advdata\0MES',
-            r'E:\Program Files\fortissimo FAAkkord：nachsten Phase\advdata\0txt')
+##ext_all_mes(r'D:\galgame\fortissimo FA\advdata\0MES',
+##            r'D:\galgame\fortissimo FA\advdata\0txt')
 
-##pack_all_mes(r'F:\Program Files\DC3RX\Advdata\0MES',
-##             r'F:\Program Files\DC3RX\Advdata\txt1',
-##             r'F:\Program Files\DC3RX\Advdata\mes')
+pack_all_mes(r'D:\galgame\fortissimo FA\advdata\0MES',
+             r'D:\galgame\fortissimo FA\advdata\txt',
+             r'D:\galgame\fortissimo FA\advdata\MES')

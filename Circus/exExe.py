@@ -1,4 +1,6 @@
 #encoding=utf-8
+import sys
+import struct
 
 def IsFullSjisString(stm):
     i=0
@@ -47,21 +49,70 @@ def Replace(txts,stm):
     hasErr=False
     for s,off,length in txts:
         i+=1
-        s=s.encode('936')
-        if len(s)>length:
-            print(i,' too long')
-            hasErr=True
-            continue
-        stm[off:off+len(s)]=s
-        stm[off+len(s)]=0
+        ns=s.replace('\u30fb','·')
+        ns=ns.encode('936')
+##        if len(s)>length:
+##            print(i,' too long')
+##            hasErr=True
+##            continue
+        stm[off:off+len(ns)]=ns
+        stm[off+len(ns)]=0
     return hasErr
 
-seg=[(0x90468,0x162a80),(0x7aef8,0x7bd84),(0x7bdac,0x7e084),(0x7e528,0x7e798),(0x7ea34,0x80a48)]
+def ext_sp1(stm, begin, end):
+    txt=[]
+    i=begin
+    while i<end:
+        if struct.unpack('I',stm[i:i+4])[0]!=0:
+            p=stm.find(b'\0',i+8)
+            if p==-1 or p>end:
+                p=end
+            try:
+                txt.append((stm[i+8:p].decode("932"),i+8,p-(i+8)))
+            except:
+                print('%x'%i)
+                i=p+1
+                continue
+        else:
+            break
+        i+=0x10c
+    return txt
 
-fs=open('keiten.exe','rb')
-stm=fs.read()
-for i in range(len(seg)):
-    txt=getTxt(stm,seg[i][0],seg[i][1])
-    fs=open('%d.txt'%i,'wb')
-    fs.write(MakeRepr(txt).encode('u16'))
+Pack = 1
+if Pack==0:
+
+    seg=[(0x7dfe0,0x9ac10),(0x144498,0x15f280)]
+    spseg=(0x13c7fc,0x140210)
+
+    fs=open(r'd:\galgame\fortissimo FA\fortissimo_fa2.exe','rb')
+    stm=fs.read()
+    alltxt=[]
+    for i in range(len(seg)):
+        alltxt+=getTxt(stm,seg[i][0],seg[i][1])
+
+    alltxt+=ext_sp1(stm, spseg[0], spseg[1])
+
+    fs=open('exe.txt','wb')
+    fs.write(MakeRepr(alltxt).encode('u16'))
     fs.close()
+else:
+    if len(sys.argv)!=4:
+        print('usage: %s <exe> <txt> <new_exe>'%sys.argv[0])
+        sys.exit(0)
+    print('opening exe...')
+    fs=open(sys.argv[1],'rb')
+    stm = bytearray(fs.read())
+    fs.close()
+    print('reading text...')
+    fs=open(sys.argv[2],'rb')
+    text = fs.read().decode('u16')
+    fs.close()
+    txts = eval(text)
+    print('Replacing...')
+    Replace(txts,stm)
+    print('Writing...')
+    fs=open(sys.argv[3],'wb')
+    fs.write(stm)
+    fs.close()
+    print('complete')
+    
