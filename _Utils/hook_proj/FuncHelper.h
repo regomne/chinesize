@@ -18,8 +18,12 @@ struct HookPointStruct
     uint32_t offset;
     void* hook_routine;
     char* reg_tags;
-    bool override_eax;
-    uint32_t ret_value;
+    uint32_t options;
+    union
+    {
+        uint32_t ret_value;
+        uint32_t dest_rva;
+    };
 };
 struct HookPointStructWithName
 {
@@ -27,8 +31,12 @@ struct HookPointStructWithName
     char* proc_name;
     void* hook_routine;
     char* reg_tags;
-    bool override_eax;
-    uint32_t ret_value;
+    uint32_t options;
+    union
+    {
+        uint32_t ret_value;
+        uint32_t dest_rva;
+    };
 };
 
 uint32_t ThiscallFunction0(void* addr, void* this_p);

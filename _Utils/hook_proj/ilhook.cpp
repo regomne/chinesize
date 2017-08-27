@@ -44,29 +44,56 @@ bool GenerateStub(HookSrcObject* srcObj, HookStubObject* stubObj, void* newFunc,
         pst += 3;
     }
 
-    if (stubObj->options & STUB_OVERRIDEEAX)
+    if (stubObj->options & (STUB_JMP_EAX_AFTER_RETURN | STUB_JMP_ADDR_AFTER_RETURN))
     {
-        TEST_BUFF(4);
-        *(DWORD*)pst = 0x20244489; //mov [esp+20h],eax
-        pst += 4;
-    }
-    TEST_BUFF(2);
-    *pst++ = 0x9d; //popfd
-    *pst++ = 0x61; //popad
-
-    if (stubObj->options & STUB_DIRECTLYRETURN)
-    {
-        TEST_BUFF(3);
-        if (stubObj->retnVal == 0)
-            *pst++ = 0xc3; //ret
-        else
+        if (stubObj->options & STUB_JMP_ADDR_AFTER_RETURN)
         {
-            *pst = 0xc2; //retn XX
-            *(WORD*)(pst + 1) = (WORD)stubObj->retnVal;
-            pst += 3;
+            TEST_BUFF(7);
+            *pst++ = 0x9d; //popfd
+            *pst++ = 0x61; //popad
+            *pst++ = 0xe9; //jmp oriAddr
+            *(DWORD*)pst = stubObj->retnVal - (int)(pst + 4);
+            pst += 4;
+        }
+        else if (stubObj->options & STUB_JMP_EAX_AFTER_RETURN)
+        {
+            TEST_BUFF(10);
+            *(DWORD*)pst = 0xfc244489; //mov [esp-4], eax
+            pst += 4;
+            *pst++ = 0x9d; //popfd
+            *pst++ = 0x61; //popad
+            *(DWORD*)pst = 0xd82464ff; //jmp dword ptr [esp-0x28]
+            pst += 4;
         }
     }
-    if (!(stubObj->options & STUB_DIRECTLYRETURN) || newOriFuncPtr)
+    else
+    {
+        if (stubObj->options & STUB_OVERRIDEEAX)
+        {
+            TEST_BUFF(4);
+            *(DWORD*)pst = 0x20244489; //mov [esp+20h],eax
+            pst += 4;
+        }
+        TEST_BUFF(2);
+        *pst++ = 0x9d; //popfd
+        *pst++ = 0x61; //popad
+
+        if (stubObj->options & STUB_DIRECTLYRETURN)
+        {
+            TEST_BUFF(3);
+            if (stubObj->retnVal == 0)
+                *pst++ = 0xc3; //ret
+            else
+            {
+                *pst = 0xc2; //retn XX
+                *(WORD*)(pst + 1) = (WORD)stubObj->retnVal;
+                pst += 3;
+            }
+        }
+    }
+
+    if (!(stubObj->options & (STUB_DIRECTLYRETURN | STUB_JMP_ADDR_AFTER_RETURN | STUB_JMP_EAX_AFTER_RETURN))
+        || newOriFuncPtr)
     {
         if (newOriFuncPtr)
             *newOriFuncPtr = (DWORD)pst;
@@ -94,11 +121,11 @@ bool GenerateMovedCode(HookSrcObject* srcObj, BYTE* destAddr, int* length)
     BYTE* pend = p + *length;
 
     HookSrcObject::Instruction* inst = srcObj->insts;
-    for (int i = 0; i<srcObj->instCount; i++)
+    for (int i = 0; i < srcObj->instCount; i++)
     {
         if (inst[i].jmpType)
         {
-            if (p + 6>pend)
+            if (p + 6 > pend)
             {
                 SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 return false;
@@ -142,8 +169,8 @@ bool IsPatternMatch(void* buff, CodePattern* pat)
     for (int i = 0; i < pat->length; i++)
     {
         if (!(pat->mask) || pat->mask[i])
-        if (p[i] != pat->pattern[i])
-            return false;
+            if (p[i] != pat->pattern[i])
+                return false;
     }
     return true;
 }
@@ -227,36 +254,36 @@ bool InitializeHookSrcObject(HookSrcObject* obj, void* addr, bool forceAny/* =fa
         break;
     case PT_ANY:
     {
-                   int curOff = 0;
-                   int opLen;
-                   void* destAddr;
-                   HookSrcObject::Instruction* inst = obj->insts;
-                   while (curOff < 5)
-                   {
-                       destAddr = 0;
-                       if (!GetOpInfo(p + curOff, &opLen, &destAddr))
-                       {
-                           SetLastError(ERROR_INVALID_DATA);
-                           return false;
-                       }
-                       inst->offset = (BYTE)curOff;
-                       inst->length = (BYTE)opLen;
-                       inst->jmpType = destAddr ? *(WORD*)&p[curOff] : 0;
-                       inst->destAddr = destAddr;
+        int curOff = 0;
+        int opLen;
+        void* destAddr;
+        HookSrcObject::Instruction* inst = obj->insts;
+        while (curOff < 5)
+        {
+            destAddr = 0;
+            if (!GetOpInfo(p + curOff, &opLen, &destAddr))
+            {
+                SetLastError(ERROR_INVALID_DATA);
+                return false;
+            }
+            inst->offset = (BYTE)curOff;
+            inst->length = (BYTE)opLen;
+            inst->jmpType = destAddr ? *(WORD*)&p[curOff] : 0;
+            inst->destAddr = destAddr;
 
-                       inst++;
-                       curOff += opLen;
-                       if (curOff > MAX_PATCH_LENGTH)
-                       {
-                           SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                           return false;
-                       }
-                   }
-                   obj->instCount = inst - obj->insts;
-                   memcpy(obj->_pat, p, curOff);
-                   InitializePattern(&obj->pattern, obj->_pat, 0, curOff);
+            inst++;
+            curOff += opLen;
+            if (curOff > MAX_PATCH_LENGTH)
+            {
+                SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                return false;
+            }
+        }
+        obj->instCount = inst - obj->insts;
+        memcpy(obj->_pat, p, curOff);
+        InitializePattern(&obj->pattern, obj->_pat, 0, curOff);
     }
-        break;
+    break;
     }
     return true;
 }

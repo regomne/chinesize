@@ -451,3 +451,42 @@ bool decolor24(int w, int h, NakedMemory& rgb, NakedMemory& pal, NakedMemory& ne
     new_rgb = std::move(outdib);
     return true;
 }
+
+bool read_bmp_file(NakedMemory& src, int* width, int* height, int* bit_depth, NakedMemory& dib) {
+    auto file_header = (BITMAPFILEHEADER*)src.Get();
+    auto info_header = (BITMAPINFOHEADER*)(file_header + 1);
+    if (info_header->biBitCount != 24 || info_header->biBitCount != 32) {
+        return false;
+    }
+    *width = info_header->biWidth;
+    *height = info_header->biHeight;
+    bool is_bottom = false;
+    if (*height < 0) {
+        *height = -*height;
+        is_bottom = true;
+    }
+    *bit_depth = info_header->biBitCount;
+
+    auto stride = round_4(*width * (*bit_depth / 8));
+    if (file_header->bfOffBits + stride * *height > src.GetSize()) {
+        return false;
+    }
+    NakedMemory dibdata(stride * *height);
+    if (is_bottom) {
+        auto p = (uint8_t*)dibdata.Get();
+        auto po = (uint8_t*)src.Get() + file_header->bfOffBits;
+        p += (*height - 1) * stride;
+        for (int i = 0;i < *height;i++) {
+            memcpy(p, po, stride);
+            p -= stride;
+            po += stride;
+        }
+    }
+    else {
+        auto p = (uint8_t*)dibdata.Get();
+        auto po= (uint8_t*)src.Get() + file_header->bfOffBits;
+        memcpy(p, po, stride * *height);
+    }
+    dib = std::move(dibdata);
+    return true;
+}

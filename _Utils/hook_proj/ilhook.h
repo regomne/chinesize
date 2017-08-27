@@ -20,6 +20,12 @@ enum StubOptions
 
 	//set eax after newFunc called.
 	STUB_OVERRIDEEAX=(1<<1),
+
+    //jmp to dest addr when newFunc return.
+    STUB_JMP_ADDR_AFTER_RETURN=(1<<2),
+
+    //jmp to the return val of newFunc.
+    STUB_JMP_EAX_AFTER_RETURN = (1 << 3),
 };
 
 struct CodePattern

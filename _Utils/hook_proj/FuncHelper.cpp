@@ -164,9 +164,11 @@ bool HookFunctions(const HookPointStruct* hooks, uint32_t cnt)
             }
         }
         auto addr = (uint8_t*)mod + hook->offset;
-        uint32_t hook_flag = hook->override_eax ? (STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX) : 0;
+        auto opt_data = hook->options&STUB_JMP_ADDR_AFTER_RETURN ?
+            hook->dest_rva + (ptrdiff_t)mod :
+            hook->ret_value;
         if (!InitializeHookSrcObject(&src, addr, true) ||
-            !InitializeStubObject(&stub, buff + i * 100, 100, hook->ret_value, hook_flag) ||
+            !InitializeStubObject(&stub, buff + i * 100, 100, opt_data, hook->options) ||
             !Hook32(&src, 0, &stub, hook->hook_routine, hook->reg_tags))
         {
             LOGERROR("Hook: Can't hook module: %s, offset: 0x%x", hook->module_name, hook->offset);
@@ -207,9 +209,11 @@ bool HookFunctions(const HookPointStructWithName* hooks, uint32_t cnt)
             LOGERROR("Hook: Can't find %s in module: %s", hook->proc_name, hook->module_name);
             return false;
         }
-        uint32_t hook_flag = hook->override_eax ? (STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX) : 0;
+        auto opt_data = hook->options&STUB_JMP_ADDR_AFTER_RETURN ?
+            hook->dest_rva + (ptrdiff_t)mod :
+            hook->ret_value;
         if (!InitializeHookSrcObject(&src, addr, true) ||
-            !InitializeStubObject(&stub, buff + i * 100, 100, hook->ret_value, hook_flag) ||
+            !InitializeStubObject(&stub, buff + i * 100, 100, opt_data, hook->options) ||
             !Hook32(&src, 0, &stub, hook->hook_routine, hook->reg_tags))
         {
             LOGERROR("Hook: Can't hook module: %s, name: %s", hook->module_name, hook->proc_name);

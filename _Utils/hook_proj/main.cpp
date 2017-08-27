@@ -3,6 +3,7 @@
 
 #include "ilhook.h"
 #include "FuncHelper.h"
+#include "circus.h"
 
 using namespace std;
 
@@ -52,24 +53,24 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
     {
         //PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
 
-        //static const HookPointStruct points[] = {
-        //    { nullptr, 0x1bbcec, MyReadStrTbl, "r", false, 0 },
-        //};
-
-        //if (!HookFunctions(points))
-        //{
-        //    MessageBox(0, L"Hook Ê§°Ü£¡", 0, 0);
-        //    return TRUE;
-        //}
-
-        static const HookPointStructWithName points2[] = {
-            { "gdi32.dll", "CreateFontIndirectW", MyCFI, "1", false, 0 },
-            //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+        static const HookPointStruct points[] = {
+            { nullptr, 0x2F60, my_read_pic, "rf", STUB_JMP_EAX_AFTER_RETURN, 0 },
         };
-        if (!HookFunctions(points2))
+
+        if (!HookFunctions(points))
         {
-            MessageBox(0, L"Hook2 Ê§°Ü£¡", 0, 0);
+            MessageBox(0, L"Hook Ê§°Ü£¡", 0, 0);
+            return TRUE;
         }
+
+        //static const HookPointStructWithName points2[] = {
+        //    { "gdi32.dll", "CreateFontIndirectW", MyCFI, "1", false, 0 },
+        //    //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+        //};
+        //if (!HookFunctions(points2))
+        //{
+        //    MessageBox(0, L"Hook2 Ê§°Ü£¡", 0, 0);
+        //}
     }
     return TRUE;
 }

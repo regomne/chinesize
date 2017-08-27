@@ -94,7 +94,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>beaengine.lib;d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>beaengine.lib;d3d9.lib;libpng16.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>exp.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -127,7 +127,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>beaengine.lib;d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>beaengine.lib;d3d9.lib;libpng16.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>exp.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="asmhelper.cpp" />
+
     <ClCompile Include="crc32.h" />
     <ClCompile Include="FileReader.cpp" />
     <ClCompile Include="FuncHelper.cpp" />
@@ -157,9 +158,11 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyPack.cpp" />
     <ClCompile Include="NakedMemory.cpp" />
+    <ClCompile Include="PicSupport.cpp" />
     <ClCompile Include="TxtSupport.cpp" />
   </ItemGroup>
   <ItemGroup>
+
     <ClInclude Include="FileReader.h" />
     <ClInclude Include="FuncHelper.h" />
     <ClInclude Include="MyPack.h" />
