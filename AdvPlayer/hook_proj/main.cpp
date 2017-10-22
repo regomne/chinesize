@@ -50,9 +50,9 @@ void HOOKFUNC MyCFI(LPLOGFONTW lfi)
 
 void HOOKFUNC MyCW(wchar_t** strp)
 {
-    if (*strp && wcscmp(*strp, L"恋する気持ちのかさねかた～かさねた想いをずっと～") == 0)
+    if (*strp && wcscmp(*strp, L"見上げてごらん、夜空の星を FINE DAYS") == 0)
     {
-        *strp = L"『恋慕之心的交织方式 ～愿交织的思念永恒～』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：495988182";
+        *strp = L"抬头看看吧，看那天上的繁星 FINE DAYS";
     }
 }
 
@@ -66,18 +66,18 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         static const HookPointStruct points[] = {
             //_wfopen_s的所在函数，一个是函数头，一个函数中间call _wfopen_s用来读取arc的位置
-            { nullptr, 0xe9cc0, MyOpenFile1, "23", false, 0 }, //参数位置也需要适配
-            { nullptr, 0xea1a8, MyOpenFile, "r", false, 0 },
+            { nullptr, 0xe9cb0, MyOpenFile1, "23", false, 0 }, //参数位置也需要适配
+            { nullptr, 0xea198, MyOpenFile, "r", false, 0 },
 
             //0F B6 ?? ?? ?? 89 5C 24 ?? 8B 2C 85 ?? ?? ?? 00 85 ED 0F 84
             //根据特征码找到一个函数，其内有三次对ReadInst函数的call，hook ReadInst的函数头
-            { nullptr, 0xE0CE0, MyReadInst, "rf", true, 0x10 },
+            { nullptr, 0xE0Cd0, MyReadInst, "rf", true, 0x10 },
             
             //8B 45 ?? 2B 45 ?? 8B 33 C7 44 24 ?? 01 00 00 00 3B F0 72 05 E8
             //此特征码头部即为hook地址，其下几十行之内有个参数是lpMultiByteStr的call
-            { nullptr, 0xE09B0, MySelString, "r", false, 0 },
+            { nullptr, 0xE09a0, MySelString, "r", false, 0 },
             //此位置在上面那个call之内，call MultiByteToWideChar的位置
-            { nullptr, 0xC7CE8, MyMbtowc, "r", false, 0 },
+            { nullptr, 0xC7Cd8, MyMbtowc, "r", false, 0 },
             //wcsncmp的第二个引用所在的函数
             { nullptr, 0x3CC00, MyChangeFont, "r", false, 0 },
         };
