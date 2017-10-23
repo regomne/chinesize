@@ -41,7 +41,7 @@ func parsePattern(pattern string) (isIgnore []bool, patt []byte) {
 	return
 }
 
-func findBytes(buf []byte, pattern string) (uint32, error) {
+func findBytes(buf []byte, pattern string) (int, error) {
 	isIgnore, patt := parsePattern(pattern)
 	for i := 0; i < len(buf)-len(patt); i++ {
 		match := true
@@ -55,7 +55,7 @@ func findBytes(buf []byte, pattern string) (uint32, error) {
 			}
 		}
 		if match {
-			return uint32(i), nil
+			return i, nil
 		}
 	}
 	return 0, fmt.Errorf("can't find pattern")
@@ -347,7 +347,36 @@ func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool, cp int) (
 	}
 }
 
-func getInstInfo(exeName string) (instInfo *[256][]byte) {
+func searchInstInfo(image []byte, pat string, off int) (fileOff int, err error) {
+	if pat != "" {
+		fmt.Println("Using user-define op table pattern...")
+		fileOff, err = findBytes(image, pat)
+		if err == nil {
+			fileOff += off
+		}
+		return
+	}
+	Pats := []string{
+		// AdvHD 1.5
+		"8b 2c 85 ?? ?? ?? ?? 85 ed 0f 84 ?? ?? ?? ?? 38 5d 00",
+		// AdvHD 1.7
+		"0f b6 45 ?? 33 ff 89 4d ?? 8b 04 85 ?? ?? ?? ?? 89 45",
+	}
+	Offs := []int{
+		3,
+		12,
+	}
+	for i := 0; i < len(Pats); i++ {
+		fileOff, err = findBytes(image, Pats[i])
+		if err == nil {
+			fileOff += Offs[i]
+			return
+		}
+	}
+	return
+}
+
+func getInstInfo(exeName string, pat string, off int) (instInfo *[256][]byte) {
 	fmt.Printf("Opening exe: %s\n", exeName)
 	image, baseAddr, err := peHelper.LoadPEImage(exeName)
 	if err != nil {
@@ -356,14 +385,13 @@ func getInstInfo(exeName string) (instInfo *[256][]byte) {
 	}
 
 	fmt.Println("Finding offsets...")
-	var off uint32
-	off, err = findBytes(image, "8b 2c 85 ?? ?? ?? ?? 85 ed 0f 84 ?? ?? ?? ?? 38 5d 00")
+	fileOff, err := searchInstInfo(image, pat, off)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	mem := memio.Open(image)
-	mem.Seek(int64(off+3), 0)
+	mem.Seek(int64(fileOff), 0)
 	var startOff uint32
 	binary.Read(mem, binary.LittleEndian, &startOff)
 	instInfo1 := readInstInfo(&mem, startOff, baseAddr)
@@ -416,6 +444,8 @@ func main() {
 	textCodePage := flag.String("cp", "932", "specific code page of text in ws2")
 	gNamePrefix = flag.String("name-prefix", "%LC", "set name prefix when only txt")
 	verbose := flag.Bool("v", false, "print detail information")
+	pattern := flag.String("exe-pat", "", "specify table pattern for advhd.exe")
+	patternOffset := flag.Int("exe-pat-off", 0, "specify offset of pattern for advhd.exe")
 	flag.Parse()
 	if *inputName == "" || *outputName == "" {
 		flag.Usage()
@@ -434,7 +464,7 @@ func main() {
 	fmt.Printf("Parsing %s\n", *inputName)
 	var instInfo *[256][]byte
 	if *exeName != "" {
-		instInfo = getInstInfo(*exeName)
+		instInfo = getInstInfo(*exeName, *pattern, *patternOffset)
 	}
 	if instInfo == nil {
 		fmt.Println("Using default op table.")

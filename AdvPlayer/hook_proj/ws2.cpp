@@ -22,10 +22,19 @@ struct TextInfo {
 map<uint32_t, TextInfo> g_TextInfo;
 map<wstring, wstring> g_MyFiles;
 
-#define READ_INST_RETURN_ADDR 0x4e085f
-#define OPEN_FILE_ARG1_OFFSET 0xb04
-#define NAME_LINE_START "%LF"
+#define READ_INST_RETURN_ADDR 0x4d4b15
+#define OPEN_FILE_ARG1_OFFSET 0xb00
+#define NAME_LINE_START "%LR"
 #define LINE_END_WITH_WAIT "%K%P"
+//v1.5
+//#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 8
+//#define SCRIPT_OBJ_SCRIPT_END_OFFSET 9
+//#define SCRIPT_OBJ_CUR_OFFSET 4
+
+//v1.7
+#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 5
+#define SCRIPT_OBJ_SCRIPT_END_OFFSET 6
+#define SCRIPT_OBJ_CUR_OFFSET 4
 
 constexpr wchar_t* ChArcName = L"Ch.arc";
 
@@ -77,7 +86,7 @@ int bin_search(const T* start, uint32_t cnt, const T& val) {
     return -1;
 }
 
-uint32_t CallProcFunc(uint32_t old_proc_func, int a1, int a2, int a3, int a4, int a5, int a6) {
+uint32_t CallProcFunc6(uint32_t old_proc_func, int a1, int a2, int a3, int a4, int a5, int a6) {
     uint32_t retVal;
     __asm {
         push a6;
@@ -91,6 +100,27 @@ uint32_t CallProcFunc(uint32_t old_proc_func, int a1, int a2, int a3, int a4, in
     }
     return retVal;
 }
+uint32_t CallProcFunc7(uint32_t old_proc_func, int a1, int a2, int a3, int a4, int a5, int a6, int a7) {
+    uint32_t retVal;
+    __asm {
+        push a7
+        push a6;
+        push a5;
+        push a4;
+        push a3;
+        mov edx, a2;
+        mov ecx, a1;
+        call old_proc_func;
+        mov retVal, eax;
+    }
+    return retVal;
+}
+
+void get_script_info(uint32_t* script_obj, uint8_t** sc_start, uint8_t** sc_end, uint32_t* cur_off) {
+    *sc_start = (uint8_t*)script_obj[SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET];
+    *sc_end= (uint8_t*)script_obj[SCRIPT_OBJ_SCRIPT_END_OFFSET];
+    *cur_off = script_obj[SCRIPT_OBJ_CUR_OFFSET];
+}
 
 uint32_t HOOKFUNC MyReadInst(Registers* regs, uint32_t old_proc_func) {
     auto a6 = *(int*)(regs->esp + 0x10);
@@ -100,13 +130,13 @@ uint32_t HOOKFUNC MyReadInst(Registers* regs, uint32_t old_proc_func) {
     auto a2 = (int)regs->edx;
     auto a1 = (int)regs->ecx;
     if (*(uint32_t*)regs->esp != READ_INST_RETURN_ADDR) {
-        return CallProcFunc(old_proc_func, a1, a2, a3, a4, a5, a6);
+        return CallProcFunc6(old_proc_func, a1, a2, a3, a4, a5, a6);
     }
 
-    auto scriptObj = (uint32_t*)regs->esi;
-    auto scriptStart = (uint8_t*)scriptObj[8];
-    auto scriptEnd = (uint8_t*)scriptObj[9];
-    auto curOff = scriptObj[4];
+    uint8_t* scriptStart;
+    uint8_t* scriptEnd;
+    uint32_t curOff;
+    get_script_info((uint32_t*)regs->esi, &scriptStart, &scriptEnd, &curOff);
     auto scriptSize = scriptEnd - scriptStart;
 
     static TextInfo* txtInfo = nullptr;
@@ -136,11 +166,63 @@ uint32_t HOOKFUNC MyReadInst(Registers* regs, uint32_t old_proc_func) {
             else {
                 newString += lines[idx];
             }
-            CallProcFunc(old_proc_func, a1, (int)newString.c_str(), a3, a4, a5, a6);
+            CallProcFunc6(old_proc_func, a1, (int)newString.c_str(), a3, a4, a5, a6);
             return oldString.length();
         }
     }
-    return CallProcFunc(old_proc_func, a1, a2, a3, a4, a5, a6);
+    return CallProcFunc6(old_proc_func, a1, a2, a3, a4, a5, a6);
+}
+
+uint32_t HOOKFUNC MyReadInst_v17(Registers* regs, uint32_t old_proc_func) {
+    auto a7 = *(int*)(regs->esp + 0x14);
+    auto a6 = *(int*)(regs->esp + 0x10);
+    auto a5 = *(int*)(regs->esp + 0xc);
+    auto a4 = *(int*)(regs->esp + 0x8);
+    auto a3 = *(int*)(regs->esp + 0x4);
+    auto a2 = (int)regs->edx;
+    auto a1 = (int)regs->ecx;
+    if (*(uint32_t*)regs->esp != READ_INST_RETURN_ADDR) {
+        return CallProcFunc7(old_proc_func, a1, a2, a3, a4, a5, a6, a7);
+    }
+
+    uint8_t* scriptStart;
+    uint8_t* scriptEnd;
+    uint32_t curOff;
+    get_script_info(*(uint32_t**)(regs->ebp - 0x24), &scriptStart, &scriptEnd, &curOff);
+    auto scriptSize = scriptEnd - scriptStart;
+
+    static TextInfo* txtInfo = nullptr;
+    if (g_Ws2HasChanged) {
+        g_Ws2HasChanged = false;
+        auto crc = crc32(scriptStart, scriptSize > 0x1000 ? 0x1000 : scriptSize);
+        auto itr = g_TextInfo.find(crc);
+        if (itr != g_TextInfo.end()) {
+            txtInfo = &itr->second;
+        }
+        else {
+            txtInfo = nullptr;
+        }
+    }
+    if (txtInfo) {
+        auto idx = bin_search(&(*txtInfo->idxs)[0], txtInfo->idxs->size(), curOff);
+        auto& lines = *(txtInfo->lines);
+        if (idx != -1) {
+            string newString = "^8";
+            auto oldString = string((char*)a4);
+            if (oldString.find(NAME_LINE_START) == 0) {
+                newString += NAME_LINE_START + lines[idx];
+            }
+            else if (oldString.length() >= 4 && oldString.substr(oldString.length() - 4) == LINE_END_WITH_WAIT) {
+                newString += lines[idx] + LINE_END_WITH_WAIT;
+            }
+            else {
+                newString += lines[idx];
+            }
+            CallProcFunc7(old_proc_func, a1, a2, a3, (int)newString.c_str(), a5, a6, a7);
+            return oldString.length();
+        }
+    }
+    return CallProcFunc7(old_proc_func, a1, a2, a3, a4, a5, a6, a7);
 }
 
 void HOOKFUNC MyMbtowc(Registers* regs) {
@@ -166,9 +248,10 @@ void HOOKFUNC MyMbtowc(Registers* regs) {
 }
 
 void HOOKFUNC MySelString(Registers* regs) {
-    auto scriptObj = (uint32_t*)regs->ebp;
-    auto scriptStart = (uint8_t*)scriptObj[8];
-    auto scriptEnd = (uint8_t*)scriptObj[9];
+    uint8_t* scriptStart;
+    uint8_t* scriptEnd;
+    uint32_t _nouse_curOff;
+    get_script_info((uint32_t*)regs->ebp, &scriptStart, &scriptEnd, &_nouse_curOff);
     auto curOff = *(uint32_t*)regs->ebx;
     auto scriptSize = scriptEnd - scriptStart;
 
@@ -195,6 +278,40 @@ void HOOKFUNC MySelString(Registers* regs) {
                 strcat_s(newString, line.c_str());
             }
             *(char**)(regs->esp) = newString;
+        }
+    }
+}
+
+void HOOKFUNC MySelString_v17(Registers* regs) {
+    uint8_t* scriptStart;
+    uint8_t* scriptEnd;
+    uint32_t curOff;
+    get_script_info((uint32_t*)regs->esi, &scriptStart, &scriptEnd, &curOff);
+    auto scriptSize = scriptEnd - scriptStart;
+
+    TextInfo* txtInfo = nullptr;
+    auto crc = crc32(scriptStart, scriptSize > 0x1000 ? 0x1000 : scriptSize);
+    auto itr = g_TextInfo.find(crc);
+    if (itr != g_TextInfo.end()) {
+        txtInfo = &itr->second;
+    }
+    else {
+        txtInfo = nullptr;
+    }
+    if (txtInfo) {
+        auto idx = bin_search(&(*txtInfo->idxs)[0], txtInfo->idxs->size(), curOff);
+        auto& lines = *(txtInfo->lines);
+        if (idx != -1) {
+            auto& line = lines[idx];
+            static char newString[200];
+            strcpy_s(newString, "^8");
+            if (line.find("Sel:") == 0) {
+                strcat_s(newString, &line[4]);
+            }
+            else {
+                strcat_s(newString, line.c_str());
+            }
+            *(char**)(regs->ecx) = newString;
         }
     }
 }

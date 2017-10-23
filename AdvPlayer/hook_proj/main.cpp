@@ -66,20 +66,30 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         static const HookPointStruct points[] = {
             //_wfopen_s的所在函数，一个是函数头，一个函数中间call _wfopen_s用来读取arc的位置
-            { nullptr, 0xe9cb0, MyOpenFile1, "23", false, 0 }, //参数位置也需要适配
-            { nullptr, 0xea198, MyOpenFile, "r", false, 0 },
+            { nullptr, 0xdcfc0, MyOpenFile1, "12", false, 0 }, //参数位置也需要适配
+            { nullptr, 0xdd54b, MyOpenFile, "r", false, 0 },
 
-            //0F B6 ?? ?? ?? 89 5C 24 ?? 8B 2C 85 ?? ?? ?? 00 85 ED 0F 84
+            //1.5版本 0F B6 ?? ?? ?? 89 5C 24 ?? 8B 2C 85 ?? ?? ?? 00 85 ED 0F 84
             //根据特征码找到一个函数，其内有三次对ReadInst函数的call，hook ReadInst的函数头
-            { nullptr, 0xE0Cd0, MyReadInst, "rf", true, 0x10 },
+            //{ nullptr, 0xD4EE0, MyReadInst, "rf", true, 0x10 },
+
+            //1.7版本 0f b6 45 ?? 33 ff 89 4d ?? 8b 04 85 ?? ?? ?? ?? 89 45 
+            //根据特征码找到一个函数，其内有三次对ReadInst函数的call，hook ReadInst的函数头
+            { nullptr, 0xD4EE0, MyReadInst_v17, "rf", true, 0x14 },
             
-            //8B 45 ?? 2B 45 ?? 8B 33 C7 44 24 ?? 01 00 00 00 3B F0 72 05 E8
+            //1.5版本 8B 45 ?? 2B 45 ?? 8B 33 C7 44 24 ?? 01 00 00 00 3B F0 72 05 E8
             //此特征码头部即为hook地址，其下几十行之内有个参数是lpMultiByteStr的call
-            { nullptr, 0xE09a0, MySelString, "r", false, 0 },
+            //{ nullptr, 0xE09a0, MySelString, "r", false, 0 },
+
+            //1.7版本 C7 45 FC 02 00 00 00 8d 55 ?? 8b 4e ?? 03 0f e8
+            //此特征码尾部的call指令即为hook地址，此处call的函数就是MyMbtowc hook位置所在的函数
+            { nullptr, 0xd4cc0, MySelString_v17, "r", false, 0 },
+
             //此位置在上面那个call之内，call MultiByteToWideChar的位置
-            { nullptr, 0xC7Cd8, MyMbtowc, "r", false, 0 },
-            //wcsncmp的第二个引用所在的函数
-            { nullptr, 0x3CC00, MyChangeFont, "r", false, 0 },
+            { nullptr, 0xBF4DB, MyMbtowc, "r", false, 0 },
+
+            //wcsncmp的第二个引用所在的函数，1.7版本之后不需要
+            //{ nullptr, 0x3CC00, MyChangeFont, "r", false, 0 },
         };
 
         if (!HookFunctions(points))
