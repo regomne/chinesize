@@ -321,6 +321,12 @@ void HOOKFUNC MyChangeFont(Registers* regs) {
     regs->ecx = (DWORD)font_name;
 }
 
+void HOOKFUNC MyChangeFont_v17(Registers* regs) {
+    static const wchar_t* font_name = L"MS UI Gothic";
+    *(const wchar_t**)(regs->esp + 0x10) = font_name;
+    //regs->ecx = (DWORD)font_name;
+}
+
 struct ArcHeader {
     uint32_t cnt;
     uint32_t idxSize;

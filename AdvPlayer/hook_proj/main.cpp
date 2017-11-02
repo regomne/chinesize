@@ -50,9 +50,9 @@ void HOOKFUNC MyCFI(LPLOGFONTW lfi)
 
 void HOOKFUNC MyCW(wchar_t** strp)
 {
-    if (*strp && wcscmp(*strp, L"見上げてごらん、夜空の星を FINE DAYS") == 0)
+    if (*strp && wcscmp(*strp, L"ピュアソングガーデン！") == 0)
     {
-        *strp = L"抬头看看吧，看那天上的繁星 FINE DAYS";
+        *strp = L"pure song garden！";
     }
 }
 
@@ -88,8 +88,8 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
             //此位置在上面那个call之内，call MultiByteToWideChar的位置
             { nullptr, 0xBF4DB, MyMbtowc, "r", false, 0 },
 
-            //wcsncmp的第二个引用所在的函数，1.7版本之后不需要
-            //{ nullptr, 0x3CC00, MyChangeFont, "r", false, 0 },
+            //wcsncmp的第二个引用所在的函数头
+            { nullptr, 0x3C9B0, MyChangeFont_v17, "r", false, 0 },
         };
 
         if (!HookFunctions(points))
