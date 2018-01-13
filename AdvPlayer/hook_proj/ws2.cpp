@@ -22,9 +22,9 @@ struct TextInfo {
 map<uint32_t, TextInfo> g_TextInfo;
 map<wstring, wstring> g_MyFiles;
 
-#define READ_INST_RETURN_ADDR 0x4d4b15
-#define OPEN_FILE_ARG1_OFFSET 0xb00
-#define NAME_LINE_START "%LR"
+#define READ_INST_RETURN_ADDR 0x4cb9db
+#define OPEN_FILE_ARG1_OFFSET 0xb30
+#define NAME_LINE_START "%LC"
 #define LINE_END_WITH_WAIT "%K%P"
 //v1.5
 //#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 8
@@ -286,7 +286,7 @@ void HOOKFUNC MySelString_v17(Registers* regs) {
     uint8_t* scriptStart;
     uint8_t* scriptEnd;
     uint32_t curOff;
-    get_script_info((uint32_t*)regs->esi, &scriptStart, &scriptEnd, &curOff);
+    get_script_info((uint32_t*)regs->edi, &scriptStart, &scriptEnd, &curOff);
     auto scriptSize = scriptEnd - scriptStart;
 
     TextInfo* txtInfo = nullptr;
