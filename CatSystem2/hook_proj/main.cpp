@@ -8,8 +8,8 @@ using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0x177463,"\x9f","\xfe")
-    DP(nullptr, 0x177476,"\x7e","\xfe")
+    DP(nullptr, 0x24e233,"\x9f","\xfe")
+    DP(nullptr, 0x24e246,"\x7e","\xfe")
 };
 #undef DP
 

@@ -1,4 +1,4 @@
-// merge_windmill_chr.cpp, v1.04 2011/05/28
+// merge_windmill_chr.cpp, v1.05.2 2012/12/02
 // coded by asmodean
 
 // contact: 
@@ -12,11 +12,24 @@
 #include <list>
 #include <map>
 
+// VARIATION_VERSION=1 & TOC_VERSION=1 & PREFIX_BUG=0: older stuff
+// VARIATION_VERSION=2 & TOC_VERSION=1 & PREFIX_BUG=0: kamikaze
+// VARIATION_VERSION=1 & TOC_VERSION=2 & PREFIX_BUG=0: kamigakari
+// VARIATION_VERSION=1 & TOC_VERSION=2 & PREFIX_BUG=1: witchsgarden
+
 // Extra characters at the end of the filename
-//#define VARIATION_VERSION 1
+#define VARIATION_VERSION 1
 
 // Replace first character
-#define VARIATION_VERSION 2
+//#define VARIATION_VERSION 2
+
+//#define TOC_VERSION 1
+#define TOC_VERSION 2
+
+//#define PREFIX_BUG 0
+
+// Base/face prefix mismatch in ウィッチズガーデン
+#define PREFIX_BUG 1
 
 struct DATSECT {
   unsigned long length;
@@ -50,7 +63,11 @@ struct DATSETENTRY {
   unsigned long unknown2;
   unsigned long index;
   char          name[32];
+#if TOC_VERSION >= 2
+  char          prefix[32];
+#else
   char          prefix[8];
+#endif
   char          layers[DATSETENTRY_MAX_LAYERS];
 };
 
@@ -69,7 +86,7 @@ bool valid_layer(char c) {
 int main(int argc, char** argv) {
 #if VARIATION_VERSION == 2
   if (argc < 3) {
-    fprintf(stderr, "merge_windmill_chr v1.04 by asmodean\n\n");
+    fprintf(stderr, "merge_windmill_chr v1.05.2 by asmodean\n\n");
     fprintf(stderr, "usage: %s <CharList.set> <variation2> [variation2]\n\n", argv[0]);
     fprintf(stderr, "\t variation2 = variation string (1a, 2a, 3a, 1b ...)\n");
     fprintf(stderr, "\t variation3 = size variation string (LL, L, M, T)\n");
@@ -83,7 +100,7 @@ int main(int argc, char** argv) {
   if (argc > 3) variation3 = argv[3];
 #else
   if (argc < 2) {
-    fprintf(stderr, "merge_windmill_chr v1.03 by asmodean\n\n");
+    fprintf(stderr, "merge_windmill_chr v1.05.2 by asmodean\n\n");
     fprintf(stderr, "usage: %s <CharList.set> [variation]\n\n", argv[0]);
     fprintf(stderr, "\t variation = size variation string (f, l, s, ss)\n");
     return -1;
@@ -102,6 +119,8 @@ int main(int argc, char** argv) {
   close(fd);
 
   unsigned char* toc_p = dat_buff;
+
+  as::make_path("merged/");
 
   while (true) {
     DATSECT* sect = (DATSECT*) toc_p;
@@ -151,17 +170,19 @@ int main(int argc, char** argv) {
         {
           DATSETENTRY* other = *j;
 
-          unsigned long  base_len    = 0;
-          unsigned char* base_buff   = NULL;
-          unsigned long  base_width  = 0;
-          unsigned long  base_height = 0;
-          unsigned long  base_depth  = 0;
-          unsigned long  base_stride = 0;
-          bool           skip        = false;
-          bool           has_base    = false;
-          bool           has_part    = false;
+          unsigned long  base_len      = 0;
+          unsigned char* base_buff     = NULL;
+          unsigned long  base_width    = 0;
+          unsigned long  base_height   = 0;
+          unsigned long  base_depth    = 0;
+          unsigned long  base_stride   = 0;
+          unsigned long  base_offset_x = 0;
+          unsigned long  base_offset_y = 0;
+          bool           skip          = false;
+          bool           has_base      = false;
+          bool           has_part      = false;
 
-          string out_filename = as::get_file_prefix(sethdr->name) + "+" + base->name + "+";
+          string out_filename = "merged/" + as::get_file_prefix(sethdr->name) + "+" + base->name + "+";
 
 #if VARIATION_VERSION == 2
           variation1 = sethdr->name[4];
@@ -186,7 +207,12 @@ int main(int argc, char** argv) {
               continue;
             }
 
+#if PREFIX_BUG == 1
+            // Witch's Garden has some mismatched base/layer prefixes
+            string filename = base->prefix;
+#else
             string filename = use->prefix;
+#endif
 
 #if VARIATION_VERSION == 2
             if (as::stringtou(variation3) == "LL") {
@@ -210,9 +236,13 @@ int main(int argc, char** argv) {
             }
 #endif
 
-            filename += as::stringf("_%0*c.bmp", k + 1, use->layers[k]);
+            filename += as::stringf("_%0*c", k + 1, use->layers[k]);
 
-            if (!as::is_file_readable(filename)) {
+            unsigned long offset_x = 0;
+            unsigned long offset_y = 0;
+            string full_filename = as::find_filename_with_xy(filename, &offset_x, &offset_y);
+
+            if (!as::is_file_readable(full_filename)) {
               fprintf(stderr, "%s: can't open this file (skipped)\n", filename.c_str());
 #if VARIATION_VERSION == 2
               skip = true;
@@ -223,42 +253,21 @@ int main(int argc, char** argv) {
             out_filename += use->layers[k];
 
             if (base_buff) {
-              unsigned long  len    = 0;
-              unsigned char* buff   = NULL;
-              unsigned long  width  = 0;
-              unsigned long  height = 0;
-              unsigned long  depth  = 0;
-              unsigned long  stride = 0;
+              as::blend_bmp_resize(full_filename,
+                                   offset_x,
+                                   offset_y,
+                                   base_buff,
+                                   base_len,
+                                   base_width,
+                                   base_height,
+                                   base_depth,
+                                   base_offset_x,
+                                   base_offset_y);
+            } else {
+              base_offset_x = offset_x;
+              base_offset_y = offset_y;
 
-              as::read_bmp(filename,
-                           buff,
-                           len,
-                           width,
-                           height,
-                           depth,
-                           stride,
-                           as::READ_BMP_ONLY32BIT);
-
-              if (width == base_width && height == base_height) {
-                for (unsigned long p = 0; p < len; p += 4) {
-                  // Exact byte equations from DmWiki
-                  double FA = buff[p + 3] + ((255 - buff[p + 3]) * base_buff[p + 3]) / 255;
-                  double SA = FA ? (buff[p + 3] * 255 / FA) : 0;
-                  double DA = 255 - SA;
-
-                  base_buff[p + 3] = (unsigned char) FA;
-                  base_buff[p + 0] = (unsigned char) ((buff[p + 0] * SA + base_buff[p + 0] * DA) / 255);
-                  base_buff[p + 1] = (unsigned char) ((buff[p + 1] * SA + base_buff[p + 1] * DA) / 255);
-                  base_buff[p + 2] = (unsigned char) ((buff[p + 2] * SA + base_buff[p + 2] * DA) / 255);
-                }
-              } else {                
-                fprintf(stderr, "%s + %s: skipped due to size mismatch (possible bug in datafile)\n", out_filename.c_str(), filename.c_str());
-                out_filename += "!";
-              }
-
-              delete [] buff;
-            } else {           
-              as::read_bmp(filename,
+              as::read_bmp(full_filename,
                            base_buff,
                            base_len,
                            base_width,

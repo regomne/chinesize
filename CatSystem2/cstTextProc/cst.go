@@ -206,9 +206,9 @@ func packCst(cstName, txtName, newCstName string, cp int) bool {
 		fmt.Println(err)
 		return false
 	}
-	for lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
+	// for lines[len(lines)-1] == "" {
+	// 	lines = lines[:len(lines)-1]
+	// }
 	if len(lines) != len(oriTxts) {
 		fmt.Printf("txt line not fit, should be:%d, real:%d\n", len(oriTxts), len(lines))
 		return false

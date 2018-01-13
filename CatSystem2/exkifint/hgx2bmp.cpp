@@ -1,4 +1,4 @@
-// hgx2bmp.cpp, v1.03 2010/05/24
+// hgx2bmp.cpp, v1.04 2012/05/26
 // coded by asmodean
 
 // contact: 
@@ -12,7 +12,7 @@
 #include "zlib.h"
 
 // Expand image fragments to the full total image dimensions
-#define EXPAND_FRAGMENTS
+//#define EXPAND_FRAGMENTS
 
 // Extract non-image data
 // #define EXTRACT_JUNK
@@ -324,9 +324,7 @@ string make_filename(const string& prefix,
 
 #ifndef EXPAND_FRAGMENTS
   if (offset_x || offset_y) {
-    filename += as::stringf("%dx%d+%dx%d", 
-                           width,
-                           height,
+    filename += as::stringf("+x%dy%d",
                            offset_x,
                            offset_y);
   }
@@ -337,7 +335,7 @@ string make_filename(const string& prefix,
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    fprintf(stderr, "hgx2bmp v1.03 by asmodean\n\n");
+    fprintf(stderr, "hgx2bmp v1.04 by asmodean\n\n");
     fprintf(stderr, "usage: %s <input.hg3>\n", argv[0]);
     return -1;
   }

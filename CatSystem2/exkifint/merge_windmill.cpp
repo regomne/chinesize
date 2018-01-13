@@ -1,4 +1,4 @@
-// merge_windmill.cpp, v1.04 2011/05/27
+// merge_windmill.cpp, v1.05.2 2013/05/31
 // coded by asmodean
 
 // contact: 
@@ -8,20 +8,8 @@
 
 // This tool merges event images from some of Windmill's games.
 
-#include <windows.h>
-#include <io.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <cerrno>
-#include <cstring>
-#include <cstdio>
-#include <string>
+#include "as-util.h"
 #include <map>
-#include <vector>
-
-using std::string;
-using std::map;
-using std::vector;
 
 //#define INCLUDE_ENTRY_NAME
 
@@ -41,39 +29,9 @@ struct DATSUBENTRY {
   char frame_names[64];
 };
 
-typedef vector<string> string_list_t;
-
-string_list_t split_str(const std::string& s) {
-  string_list_t     strings;
-  string            temp = s;
-  string::size_type pos;
-
-  while ((pos = temp.find(",")) != string::npos) {
-    strings.push_back(temp.substr(0, pos));
-    temp = temp.substr(pos + 1);
-  }
-
-  if (!temp.empty()) {
-    strings.push_back(temp);
-  }
-
-  return strings;
-}
-
-int open_or_die(const string& filename, int flags, int mode = 0) {
-  int fd = open(filename.c_str(), flags, mode);
-
-  if (fd == -1) {
-    fprintf(stderr, "Could not open %s (%s)\n", filename.c_str(), strerror(errno));
-    exit(-1);
-  }
-
-  return fd;
-}
-
 int main(int argc, char** argv) {
   if (argc < 2) {
-    fprintf(stderr, "merge_windmill v1.04 by asmodean\n\n");
+    fprintf(stderr, "merge_windmill v1.05.2 by asmodean\n\n");
     fprintf(stderr, "usage: %s <cglist.dat> [-large]\n", argv[0]);
     return -1;
   }
@@ -81,13 +39,15 @@ int main(int argc, char** argv) {
   string dat_filename(argv[1]);
   bool   do_large = argc > 2 && !strcmp(argv[2], "-large");
   
-  int dat_fd = open_or_die(dat_filename, O_RDONLY | O_BINARY);
+  int dat_fd = as::open_or_die(dat_filename, O_RDONLY | O_BINARY);
 
-  typedef map<string, unsigned long> duplicates_t;
+  typedef std::map<string, unsigned long> duplicates_t;
   duplicates_t duplicates;
 
   DATHDR hdr;
   read(dat_fd, &hdr, sizeof(hdr));
+
+  as::make_path("merged/");
 
   for (unsigned long i = 0; i < hdr.entry_count; i++) {
     DATENTRY entry;
@@ -114,7 +74,7 @@ int main(int argc, char** argv) {
         }
       }
 
-      string_list_t frames = split_str(subentry.frame_names);
+      as::split_strings_t frames = as::splitstr(subentry.frame_names, ",");
 
       // What was this for?  I don't remember...
 #if 0
@@ -128,84 +88,77 @@ int main(int argc, char** argv) {
       string prefix = frames[0];
       if (do_large) prefix += "L";
 
+      string out_filename = "merged/";
+
 #ifdef INCLUDE_ENTRY_NAME
-      string out_filename = entry.name;     
+      out_filename += entry.name;     
       if (do_large) out_filename += "L";
       out_filename += "+" + prefix + "+";
 #else
-      string out_filename = prefix + "+";
+      out_filename += prefix + "+";
 #endif
 
       for (unsigned long k = 1; k < frames.size(); k++) out_filename += frames[k];
       out_filename += ".bmp";
      
-      BITMAPFILEHEADER base_bmf  = { 0 };
-      BITMAPINFOHEADER base_bmi  = { 0 };
-      unsigned long    base_len  = 0;
-      unsigned char*   base_buff = NULL;
+      unsigned long  base_len      = 0;
+      unsigned char* base_buff     = NULL;
+      unsigned long  base_width    = 0;
+      unsigned long  base_height   = 0;
+      unsigned long  base_depth    = 0;
+      unsigned long  base_stride   = 0;
+      unsigned long  base_offset_x = 0;
+      unsigned long  base_offset_y = 0;
 
       for (unsigned long k = 1; k < frames.size(); k++) {
         if (frames[k] == string("0")) {
           continue;
         }
 
-        char frame_name[4096] = { 0 };
-        sprintf(frame_name, "%s_%0*s.bmp", prefix.c_str(), k, frames[k].c_str());
+        string frame_name = as::stringf("%s_%0*s", prefix.c_str(), k, frames[k].c_str());
 
-        int part_fd = open(frame_name, O_RDONLY | O_BINARY);
+        unsigned long offset_x = 0;
+        unsigned long offset_y = 0;
+        string filename = as::find_filename_with_xy(frame_name, &offset_x, &offset_y);
 
-        if (part_fd == -1) {
-          printf("%s: could not open fragment [%s]\n", out_filename.c_str(), frame_name);
+        if (!as::is_file_readable(filename)) {
+          printf("%s: could not open fragment [%s] [%s]\n", out_filename.c_str(), frame_name.c_str(), filename.c_str());
           continue;
         }
 
-        BITMAPFILEHEADER bmf;
-        read(part_fd, &bmf, sizeof(bmf));
+        if (base_buff) {
+          as::blend_bmp_resize(filename,
+                               offset_x,
+                               offset_y,
+                               base_buff,
+                               base_len,
+                               base_width,
+                               base_height,
+                               base_depth,
+                               base_offset_x,
+                               base_offset_y);
+        } else {
+          base_offset_x = offset_x;
+          base_offset_y = offset_y;
 
-        BITMAPINFOHEADER bmi;
-        read(part_fd, &bmi, sizeof(bmi));
-
-        if (!base_len) {
-          base_bmf  = bmf;
-          base_bmi  = bmi;
-          base_len  = bmi.biWidth * bmi.biHeight * 4;
-          base_buff = new unsigned char[base_len];
-          memset(base_buff, 0, base_len);
+          as::read_bmp(filename,
+                       base_buff,
+                       base_len,
+                       base_width,
+                       base_height,
+                       base_depth,
+                       base_stride,
+                       as::READ_BMP_ONLY32BIT);
         }
-
-        if (bmi.biBitCount != 32) {
-          fprintf(stderr, "%s: expected 32-bit bitmap [%s]\n", out_filename.c_str(), frame_name);
-          continue;
-        }
-
-        unsigned long  len  = bmi.biWidth * bmi.biHeight * bmi.biBitCount / 8;
-        unsigned char* buff = new unsigned char[len];
-        read(part_fd, buff, len);
-        close(part_fd);
-
-        for (unsigned long p = 0; p < len; p += 4) {
-          // Exact byte equations from DmWiki
-          double FA = buff[p + 3] + ((255 - buff[p + 3]) * base_buff[p + 3]) / 255;
-          double SA = FA ? (buff[p + 3] * 255 / FA) : 0;
-          double DA = 255 - SA;
-
-          base_buff[p + 3] = (unsigned char) FA;
-          base_buff[p + 0] = (unsigned char) ((buff[p + 0] * SA + base_buff[p + 0] * DA) / 255);
-          base_buff[p + 1] = (unsigned char) ((buff[p + 1] * SA + base_buff[p + 1] * DA) / 255);
-          base_buff[p + 2] = (unsigned char) ((buff[p + 2] * SA + base_buff[p + 2] * DA) / 255);
-        }
-
-        delete [] buff;        
       }
 
       if (base_buff) {
-        int out_fd = open_or_die(out_filename, 
-                                 O_CREAT | O_TRUNC | O_WRONLY | O_BINARY,
-                                 S_IREAD | S_IWRITE);
-        write(out_fd, &base_bmf, sizeof(base_bmf));
-        write(out_fd, &base_bmi, sizeof(base_bmi));
-        write(out_fd, base_buff, base_len);
-        close(out_fd);        
+        as::write_bmp(out_filename, 
+                      base_buff, 
+                      base_len, 
+                      base_width, 
+                      base_height, 
+                      base_depth);
 
         delete [] base_buff;
       }

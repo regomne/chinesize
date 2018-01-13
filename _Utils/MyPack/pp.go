@@ -82,9 +82,9 @@ func main() {
 
 	f1, _ := ioutil.ReadDir(`txt\`)
 	files1 := cvtToList("txt\\", f1)
-	// f2, _ := ioutil.ReadDir(`idx\`)
-	// files2 := cvtToList("idx\\", f2)
-	// files1 = append(files1, files2...)
+	f2, _ := ioutil.ReadDir(`idx\`)
+	files2 := cvtToList("idx\\", f2)
+	files1 = append(files1, files2...)
 	packList(files1, "cnpack")
 	encFile("cnpack")
 }
