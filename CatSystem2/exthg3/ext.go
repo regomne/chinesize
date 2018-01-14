@@ -74,6 +74,11 @@ type blockRecord struct {
 	Sections []secRecord
 }
 
+type hg3Record struct {
+	ImageBaseName string
+	Records       []blockRecord
+}
+
 func unpackVal(in byte) (out byte) {
 	out = in >> 1
 	if (in & 1) != 0 {
@@ -305,7 +310,7 @@ func extractABlock(reader io.Reader, imageID uint32, namePrefix string) (
 			if err != nil {
 				return
 			}
-			blockInfo = append(blockInfo, secRecord{string(secInfo.Tag[:]), imgInfo, nil})
+			blockInfo = append(blockInfo, secRecord{findStr(secInfo.Tag[:]), imgInfo, nil})
 		} else {
 			data := make([]byte, secInfo.SecLength)
 			_, err = reader.Read(data)
@@ -369,7 +374,8 @@ func extractHG3(fname, destDir string) {
 		fs.Seek(curOffset+int64(blockInfo.NextOffset), 0)
 	}
 
-	fileInfo, err := json.MarshalIndent(blocks, "", "  ")
+	fileRecord := hg3Record{basename, blocks}
+	fileInfo, err := json.MarshalIndent(fileRecord, "", "  ")
 	if err != nil {
 		fmt.Printf("json error:%v\n", err)
 		return

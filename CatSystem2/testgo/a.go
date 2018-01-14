@@ -87,9 +87,9 @@ func testQueryTable() {
 	}
 	log.Println("query pass")
 }
-func readBitLen(stm *bstream.BStream) int {
+func readBitLen(stm *bstream.BStream) uint32 {
 	digits := 0
-	val := 0
+	val := uint32(0)
 	for {
 		b, err := stm.ReadBit()
 		if b {
@@ -109,10 +109,12 @@ func readBitLen(stm *bstream.BStream) int {
 	}
 	return val
 }
-func writeBitLen(stm *bstream.BStream, len1 int) {
-	l := uint32(len1)
+func writeBitLen(stm *bstream.BStream, l uint32) {
+	if l == 0 {
+		panic("error bit len")
+	}
 	bitCnt := bits.Len32(l)
-	for i := bitCnt; i != 0; i-- {
+	for i := bitCnt - 1; i != 0; i-- {
 		stm.WriteBit(false)
 	}
 	l <<= uint(32 - bitCnt)
@@ -123,17 +125,34 @@ func writeBitLen(stm *bstream.BStream, len1 int) {
 }
 
 func testBitLen() {
-	s := bstream.NewBStreamWriter(1000)
-	for i = 0; i < 100; i++ {
+	s := bstream.NewBStreamWriter(100)
+	vals := make([]uint32, 100)
+	for i := 0; i < 100; i++ {
 		v := rand.Uint32()
 		if v == 0 {
 			continue
 		}
-
+		vals[i] = v
+		writeBitLen(s, v)
 	}
+
+	r := bstream.NewBStreamReader(s.Bytes())
+	for i := 0; i < 100; i++ {
+		v := vals[i]
+		if v == 0 {
+			continue
+		}
+		v2 := readBitLen(r)
+		if v != v2 {
+			log.Printf("bitLen error:%d %d\n", v, v2)
+			return
+		}
+	}
+	log.Println("bitLen pass")
 }
 
 func main() {
 	testPack()
 	testQueryTable()
+	testBitLen()
 }
