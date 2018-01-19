@@ -5,6 +5,7 @@ import (
 	"compress/zlib"
 	"encoding/binary"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -267,7 +268,7 @@ func findStr(bf []byte) string {
 	return string(bf[0:idx])
 }
 
-func extractABlock(reader io.Reader, imageID uint32, namePrefix string) (
+func extractABlock(reader io.Reader, blockID uint32, namePrefix string) (
 	blockInfo []secRecord, err error) {
 	var secInfo SectionInfo
 	binary.Read(reader, binary.LittleEndian, &secInfo)
@@ -291,9 +292,9 @@ func extractABlock(reader io.Reader, imageID uint32, namePrefix string) (
 			return
 		}
 
-		outName := fmt.Sprintf("%s_%d_%03d", namePrefix, imageID, secImgIdx)
+		outName := fmt.Sprintf("%s_%d_%03d", namePrefix, blockID, secImgIdx)
 		secImgIdx++
-		if bytes.Equal(secInfo.Tag[0:3], []byte("img")) &&
+		if bytes.Equal(secInfo.Tag[0:4], []byte("img0")) &&
 			!bytes.Equal(secInfo.Tag[0:7], []byte("img_jpg")) {
 			var imgInfo SecImg
 			err = binary.Read(reader, binary.LittleEndian, &imgInfo)
@@ -323,11 +324,11 @@ func extractABlock(reader io.Reader, imageID uint32, namePrefix string) (
 	return
 }
 
-func extractHG3(fname, destDir string) {
+func extractHG3(fname, destDir string) bool {
 	fs, err := os.Open(fname)
 	if err != nil {
 		fmt.Printf("open hg3 file error:%v\n", err)
-		return
+		return false
 	}
 	defer fs.Close()
 	if _, err = os.Stat(destDir); os.IsNotExist(err) {
@@ -347,7 +348,7 @@ func extractHG3(fname, destDir string) {
 	if !bytes.Equal(fileHeader.Magic[:], []byte("HG-3")) ||
 		fileHeader.HeaderSize != 12 {
 		fmt.Println("not a hg3 file")
-		return
+		return false
 	}
 	blocks := make([]blockRecord, 0)
 
@@ -357,13 +358,13 @@ func extractHG3(fname, destDir string) {
 		err = binary.Read(fs, binary.LittleEndian, &blockInfo)
 		if err != nil {
 			fmt.Printf("read file error:%v\n", err)
-			return
+			return false
 		}
 		var block []secRecord
-		block, err = extractABlock(fs, blockInfo.ImageID, prefix)
+		block, err = extractABlock(fs, uint32(len(blocks)), prefix)
 		if err != nil {
-			fmt.Printf("extract block id:0x%x error:%v\n", blockInfo.ImageID, err)
-			return
+			fmt.Printf("extract block id:%d error:%v\n", len(blocks), err)
+			return false
 		}
 
 		blocks = append(blocks, blockRecord{blockInfo.ImageID, block})
@@ -378,35 +379,56 @@ func extractHG3(fname, destDir string) {
 	fileInfo, err := json.MarshalIndent(fileRecord, "", "  ")
 	if err != nil {
 		fmt.Printf("json error:%v\n", err)
-		return
+		return false
 	}
 	fsJson, err := os.Create(filepath.Join(destDir, "info.json"))
 	if err != nil {
 		fmt.Printf("can't create json file:%v\n", err)
-		return
+		return false
 	}
 	defer fsJson.Close()
 	fsJson.Write(fileInfo)
-	return
+	return true
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Printf("usage: %s <input.hg3> [out_folder]\n", os.Args[0])
+	exitCode := 0
+	defer func() {
+		os.Exit(exitCode)
+	}()
+	isExtract := flag.Bool("e", false, "extract hg3")
+	isPack := flag.Bool("p", false, "pack hg3")
+	inputName := flag.String("i", "", "hg3 file name(with -e) or png image folder(with -p)")
+	outputName := flag.String("o", "", "output name")
+	flag.Parse()
+	if (*isExtract && *isPack) || (!*isExtract && !*isPack) ||
+		*inputName == "" {
+		flag.Usage()
 		return
 	}
 
-	var destDir string
-	if len(os.Args) == 2 {
-		idx := strings.LastIndex(os.Args[1], ".")
-		if idx != -1 && strings.LastIndexAny(os.Args[1], "\\/") < idx {
-			destDir = os.Args[1][:idx]
+	output := *outputName
+	if output == "" {
+		if *isExtract {
+			idx := strings.LastIndex(*inputName, ".")
+			if idx != -1 && strings.LastIndexAny(*inputName, "\\/") < idx {
+				output = (*inputName)[:idx]
+			} else {
+				fmt.Printf("please specify the output folder!\n")
+				return
+			}
 		} else {
-			fmt.Printf("please specify the output folder!\n")
-			return
+			output = *inputName + ".hg3"
 		}
-	} else {
-		destDir = os.Args[2]
 	}
-	extractHG3(os.Args[1], destDir)
+
+	hasError := false
+	if *isExtract {
+		hasError = extractHG3(*inputName, output)
+	} else {
+		hasError = packImagesToHG3(*inputName, output)
+	}
+	if hasError {
+		exitCode = 1
+	}
 }
