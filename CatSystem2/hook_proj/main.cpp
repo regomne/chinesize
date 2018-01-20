@@ -3,13 +3,14 @@
 
 #include "ilhook.h"
 #include "FuncHelper.h"
+#include "cs2.h"
 
 using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0x24e233,"\x9f","\xfe")
-    DP(nullptr, 0x24e246,"\x7e","\xfe")
+    DP(nullptr, 0x177463,"\x9f","\xfe")
+    DP(nullptr, 0x177476,"\x7e","\xfe")
 };
 #undef DP
 
@@ -57,9 +58,31 @@ void HOOKFUNC MyCW(wchar_t** strp)
 }
 
 void HOOKFUNC MySWT(char** str) {
-    constexpr auto ori_name = "\x83\x6A\x83\x85\x81\x5B\x83\x67\x83\x93\x82\xC6\x97\xD1\x8C\xE7\x82\xCC\x8E\xF7";
+    constexpr auto ori_name = "\x97\xF6\x83\x6A\x81\x41\x8A\xC3\x96\xA1\x83\x92\x83\x5C\x83\x47\x83\x65\x81\x69\x44\x4C\x94\xC5\x81\x6A";
     if (memcmp(*str, ori_name, strlen(ori_name)) == 0) {
-        *str = "『牛顿与苹果树』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+        *str = "『尚有佳蜜伴茶馨』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+    }
+}
+
+void HOOKFUNC before_start(Registers* regs) {
+    auto path = get_module_path(GetModuleHandle(nullptr));
+    auto cmd = path + L"msquestion.exe";
+    STARTUPINFO start_info = {};
+    PROCESS_INFORMATION proc_info = {};
+    start_info.cb = sizeof(start_info);
+    auto ret = CreateProcess(0, (wchar_t*)cmd.c_str(), 0, 0, FALSE, 0, 0, 0, &start_info, &proc_info);
+    if (!ret) {
+        MessageBox(0, L"文件损坏！", 0, 0);
+        ExitProcess(0);
+        return;
+    }
+    WaitForSingleObject(proc_info.hProcess, INFINITE);
+    DWORD exit_code;
+    GetExitCodeProcess(proc_info.hProcess, &exit_code);
+    CloseHandle(proc_info.hProcess);
+    CloseHandle(proc_info.hThread);
+    if (exit_code != 1) {
+        ExitProcess(0);
     }
 }
 
@@ -69,20 +92,22 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
     {
         PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
 
-        //static const HookPointStruct points[] = {
-        //    { nullptr, 0x2F60, my_read_pic, "rf", STUB_JMP_EAX_AFTER_RETURN, 0 },
-        //};
+        auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
+        static const HookPointStruct points[] = {
+            { nullptr, rva, before_start, "r", 0, 0 },
+        };
 
-        //if (!HookFunctions(points))
-        //{
-        //    MessageBox(0, L"Hook 失败！", 0, 0);
-        //    return TRUE;
-        //}
+        if (!HookFunctions(points))
+        {
+            MessageBox(0, L"Hook 失败！", 0, 0);
+            return TRUE;
+        }
 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
             //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
             {"user32.dll","SetWindowTextA",MySWT, "\x02",false,0},
+            {"kernel32.dll","GetVolumeInformationA",MyGetVolumeInformation,"f12345678",true,32}
         };
         if (!HookFunctions(points2))
         {
