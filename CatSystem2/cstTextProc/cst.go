@@ -144,7 +144,7 @@ func isNeedExtract(line []byte) bool {
 	if c == 0x20 || c == 0x21 {
 		return true
 	}
-	isSel, err := regexp.Match(`^\d sc\d\d.*`, line[2:])
+	isSel, err := regexp.Match(`^\d \w.*`, line[2:])
 	if err != nil {
 		return false
 	}

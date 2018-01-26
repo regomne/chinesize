@@ -3,6 +3,7 @@
 
 #include "ilhook.h"
 #include "FuncHelper.h"
+#include "enc.h"
 #include "cs2.h"
 
 using namespace std;
@@ -64,27 +65,6 @@ void HOOKFUNC MySWT(char** str) {
     }
 }
 
-void HOOKFUNC before_start(Registers* regs) {
-    auto path = get_module_path(GetModuleHandle(nullptr));
-    auto cmd = path + L"msquestion.exe";
-    STARTUPINFO start_info = {};
-    PROCESS_INFORMATION proc_info = {};
-    start_info.cb = sizeof(start_info);
-    auto ret = CreateProcess(0, (wchar_t*)cmd.c_str(), 0, 0, FALSE, 0, 0, 0, &start_info, &proc_info);
-    if (!ret) {
-        MessageBox(0, L"ÎÄ¼þËð»µ£¡", 0, 0);
-        ExitProcess(0);
-        return;
-    }
-    WaitForSingleObject(proc_info.hProcess, INFINITE);
-    DWORD exit_code;
-    GetExitCodeProcess(proc_info.hProcess, &exit_code);
-    CloseHandle(proc_info.hProcess);
-    CloseHandle(proc_info.hThread);
-    if (exit_code != 1) {
-        ExitProcess(0);
-    }
-}
 
 BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ void* _Reserved)
 {
@@ -94,7 +74,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
         static const HookPointStruct points[] = {
-            { nullptr, rva, before_start, "r", 0, 0 },
+            { nullptr, 0x236F25, before_start, "r", 0, 0 },
         };
 
         if (!HookFunctions(points))
