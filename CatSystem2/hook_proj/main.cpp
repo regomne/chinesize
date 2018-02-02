@@ -56,6 +56,13 @@ void HOOKFUNC MyCW(wchar_t** strp)
     }
 }
 
+void HOOKFUNC MySWT(char** str) {
+    constexpr auto ori_name = "\x83\x6A\x83\x85\x81\x5B\x83\x67\x83\x93\x82\xC6\x97\xD1\x8C\xE7\x82\xCC\x8E\xF7";
+    if (memcmp(*str, ori_name, strlen(ori_name)) == 0) {
+        *str = "『牛顿与苹果树』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+    }
+}
+
 BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ void* _Reserved)
 {
     if (_Reason == DLL_PROCESS_ATTACH)
@@ -75,6 +82,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
             //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+            {"user32.dll","SetWindowTextA",MySWT, "\x02",false,0},
         };
         if (!HookFunctions(points2))
         {

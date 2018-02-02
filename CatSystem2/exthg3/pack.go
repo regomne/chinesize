@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/png"
 	"io"
 	"io/ioutil"
@@ -20,7 +21,8 @@ import (
 )
 
 func getDibFromImage(img image.Image) (dib []byte, err error) {
-	width, height := img.Bounds().Max.X, img.Bounds().Max.Y
+	bounds := img.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
 	dibSize := width * 4 * height
 	if dibSize < 1024 {
 		dibSize = 1024
@@ -31,11 +33,13 @@ func getDibFromImage(img image.Image) (dib []byte, err error) {
 	for y := 0; y < height; y++ {
 		line := dib[y*stride:]
 		for x := 0; x < width; x++ {
-			r, g, b, a := img.At(x, height-y-1).RGBA()
-			line[x*4] = byte(b)
-			line[x*4+1] = byte(g)
-			line[x*4+2] = byte(r)
-			line[x*4+3] = byte(a)
+			c := img.At(x, height-y-1)
+			nc := color.NRGBAModel.Convert(c)
+			r, g, b, a := nc.RGBA()
+			line[x*4] = byte(b >> 8)
+			line[x*4+1] = byte(g >> 8)
+			line[x*4+2] = byte(r >> 8)
+			line[x*4+3] = byte(a >> 8)
 		}
 	}
 	return
@@ -170,11 +174,13 @@ func readImageToBuff(stdInfo *SecStdinfo, imgInfo *SecImg, fname string) (
 	}
 	newImgInfo.DataCompLen = uint32(len(content))
 	newImgInfo.CtrlCompLen = uint32(len(ctrl))
+	newImgInfo.Height = imgInfo.Height
+	newImgInfo.Unk1 = imgInfo.Unk1
 	out = append(content, ctrl...)
 	return
 }
 
-func genBlockWithImage(block *blockRecord, pathPrefix string) (out []byte, err error) {
+func genBlockWithImage(block *blockRecord, blockID int, pathPrefix string) (out []byte, err error) {
 	if block.Sections[0].Tag != "stdinfo" {
 		err = fmt.Errorf("section 0 must be stdinfo")
 		return
@@ -200,7 +206,7 @@ func genBlockWithImage(block *blockRecord, pathPrefix string) (out []byte, err e
 	binary.Write(&writer, binary.LittleEndian, &stdInfo)
 	for idx, sec := range block.Sections[1:] {
 		secInfo = SectionInfo{}
-		if sec.Tag[0:3] == "img" && sec.Tag[0:7] != "img_jpg" {
+		if sec.Tag[0:4] == "img0" && sec.Tag[0:7] != "img_jpg" {
 			copy(secInfo.Tag[:], []byte(sec.Tag))
 			var imgInfo SecImg
 			temp, _ := json.Marshal(sec.Info)
@@ -209,7 +215,7 @@ func genBlockWithImage(block *blockRecord, pathPrefix string) (out []byte, err e
 				err = fmt.Errorf("section %d info error: %v", idx+1, err)
 				return
 			}
-			imgName := fmt.Sprintf(`%s_%d_%03d.png`, pathPrefix, block.ImageID, idx)
+			imgName := fmt.Sprintf(`%s_%d_%03d.png`, pathPrefix, blockID, idx)
 			newImgInfo, imgbf, err1 := readImageToBuff(&stdInfo, &imgInfo, imgName)
 			if err1 != nil {
 				err = fmt.Errorf("reading pic: %s error: %v", imgName, err1)
@@ -243,19 +249,26 @@ func genBlockWithImage(block *blockRecord, pathPrefix string) (out []byte, err e
 }
 
 func writeBlocks(w io.Writer, blocks []blockRecord, pathPrefix string) (err error) {
-	var padding [8]byte
+	var padding [12]byte
 	for idx, block := range blocks {
 		var buff []byte
-		buff, err = genBlockWithImage(&block, pathPrefix)
+		buff, err = genBlockWithImage(&block, idx, pathPrefix)
 		if err != nil {
 			err = fmt.Errorf("generate block %d err: %v", idx, err)
 			return
 		}
 		alignedLen := len(buff)
 		if alignedLen%8 != 0 {
-			alignedLen = alignedLen&7 + 8
+			alignedLen = alignedLen&(^7) + 8
 		}
-		blockInfo := ImageBlockInfo{uint32(alignedLen) + 8, block.ImageID}
+		if idx == 0 {
+			alignedLen += 4
+		}
+		var blockInfo ImageBlockInfo
+		blockInfo.ImageID = block.ImageID
+		if idx+1 != len(blocks) {
+			blockInfo.NextOffset = uint32(alignedLen) + 8
+		}
 		binary.Write(w, binary.LittleEndian, &blockInfo)
 		w.Write(buff)
 		if alignedLen != len(buff) {
@@ -265,18 +278,17 @@ func writeBlocks(w io.Writer, blocks []blockRecord, pathPrefix string) (err erro
 	return
 }
 
-func packImagesToHG3(imagePath string, destName string) (err error) {
-	fmt.Println("reading info.json ...")
+func packImagesToHG3(imagePath string, destName string) bool {
 	desc, err := ioutil.ReadFile(filepath.Join(imagePath, "info.json"))
 	if err != nil {
 		fmt.Println("reading json error:", err)
-		return
+		return false
 	}
 	var fileRecord hg3Record
 	err = json.Unmarshal(desc, &fileRecord)
 	if err != nil {
 		fmt.Println("json parse error:", err)
-		return
+		return false
 	}
 	idx := strings.Index(fileRecord.ImageBaseName, ".")
 	prefix := imagePath
@@ -286,11 +298,10 @@ func packImagesToHG3(imagePath string, destName string) (err error) {
 		prefix = filepath.Join(prefix, fileRecord.ImageBaseName)
 	}
 
-	fmt.Println("Writing...")
 	fs, err := os.Create(destName)
 	if err != nil {
 		fmt.Println("create hg3 error:", err)
-		return
+		return false
 	}
 	defer fs.Close()
 	header := HG3Header{[4]byte{'H', 'G', '-', '3'}, 12, 0x300}
@@ -298,7 +309,8 @@ func packImagesToHG3(imagePath string, destName string) (err error) {
 	err = writeBlocks(fs, fileRecord.Records, prefix)
 	if err != nil {
 		fmt.Println("writing block error:", err)
-		return
+		return false
 	}
-	return
+	fmt.Println("Complete.")
+	return true
 }
