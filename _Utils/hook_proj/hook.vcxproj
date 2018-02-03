@@ -150,7 +150,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="asmhelper.cpp" />
-
     <ClCompile Include="crc32.h" />
     <ClCompile Include="FileReader.cpp" />
     <ClCompile Include="FuncHelper.cpp" />
@@ -162,7 +161,7 @@
     <ClCompile Include="TxtSupport.cpp" />
   </ItemGroup>
   <ItemGroup>
-
+    <ClInclude Include="enc.h" />
     <ClInclude Include="FileReader.h" />
     <ClInclude Include="FuncHelper.h" />
     <ClInclude Include="MyPack.h" />

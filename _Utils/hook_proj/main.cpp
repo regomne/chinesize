@@ -3,7 +3,7 @@
 
 #include "ilhook.h"
 #include "FuncHelper.h"
-#include "circus.h"
+#include "enc.h"
 
 using namespace std;
 
@@ -52,9 +52,10 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
     if (_Reason == DLL_PROCESS_ATTACH)
     {
         //PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
-
+        auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
         static const HookPointStruct points[] = {
-            { nullptr, 0x2F60, my_read_pic, "rf", STUB_JMP_EAX_AFTER_RETURN, 0 },
+            { nullptr, rva, before_start, "r", 0, 0 },
+            //{ nullptr, 0x2F60, my_read_pic, "rf", STUB_JMP_EAX_AFTER_RETURN, 0 },
         };
 
         if (!HookFunctions(points))

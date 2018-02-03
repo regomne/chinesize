@@ -1,5 +1,6 @@
 #pragma once
 
+#include <windows.h>
 #include <stdint.h>
 #include <string>
 
@@ -79,3 +80,6 @@ bool HookFunctions(const HookPointStructWithName(&strt)[_Size])
 
 std::wstring decode_string(const char* s, int cp);
 std::wstring decode_string(const char* s, uint32_t len, int cp);
+
+uint32_t get_ep_rva_from_module_address(void* module_start);
+std::wstring get_module_path(HMODULE module);

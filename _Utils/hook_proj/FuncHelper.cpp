@@ -242,3 +242,26 @@ std::wstring decode_string(const char* s, uint32_t slen, int cp)
     delete[] buff;
     return std::move(str);
 }
+
+uint32_t get_ep_rva_from_module_address(void* module_start) {
+    auto dos_head = (IMAGE_DOS_HEADER*)module_start;
+    if (dos_head->e_magic != 'ZM') {
+        return 0;
+    }
+    auto head = (IMAGE_NT_HEADERS*)((uint8_t*)dos_head + dos_head->e_lfanew);
+    auto ep = head->OptionalHeader.AddressOfEntryPoint;
+    return ep;
+}
+
+std::wstring get_module_path(HMODULE module) {
+    wchar_t path[2048];
+    auto name_len = GetModuleFileName(module, path, ARRAYSIZE(path));
+    if (name_len == 0 || name_len == ARRAYSIZE(path)) {
+        return L"";
+    }
+    auto p = wcsrchr(path, L'\\');
+    if (!p) {
+        return L"";
+    }
+    return std::wstring(path, p - path + 1);
+}

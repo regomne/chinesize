@@ -68,6 +68,9 @@
     <ClInclude Include="MyPack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="enc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="exp.def">
