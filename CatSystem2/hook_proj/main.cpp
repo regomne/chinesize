@@ -10,8 +10,8 @@ using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0x177463,"\x9f","\xfe")
-    DP(nullptr, 0x177476,"\x7e","\xfe")
+    DP(nullptr, 0x24e233,"\x9f","\xfe")
+    DP(nullptr, 0x24e246,"\x7e","\xfe")
 };
 #undef DP
 
@@ -59,9 +59,9 @@ void HOOKFUNC MyCW(wchar_t** strp)
 }
 
 void HOOKFUNC MySWT(char** str) {
-    constexpr auto ori_name = "\x97\xF6\x83\x6A\x81\x41\x8A\xC3\x96\xA1\x83\x92\x83\x5C\x83\x47\x83\x65\x81\x69\x44\x4C\x94\xC5\x81\x6A";
+    constexpr auto ori_name = "\x83\x6A\x83\x85\x81\x5B\x83\x67\x83\x93\x82\xC6\x97\xD1\x8C\xE7\x82\xCC\x8E\xF7";
     if (memcmp(*str, ori_name, strlen(ori_name)) == 0) {
-        *str = "『尚有佳蜜伴茶馨』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+        *str = "『牛顿与苹果树』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
     }
 }
 
@@ -74,7 +74,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
         static const HookPointStruct points[] = {
-            { nullptr, 0x236F25, before_start, "r", 0, 0 },
+            { nullptr, 0x30EA61, before_start, "r", 0, 0 },
         };
 
         if (!HookFunctions(points))
