@@ -318,6 +318,15 @@ func extTextFromYksRecord(yks yksRecord, codePage int) (txt []string, err error)
 				txt = append(txt, codec.Decode(arg1.A1, codePage))
 				i++
 			}
+		} else if cmd.Name == "OP9" {
+			cmd = &yks.Cmd[i+2]
+			if cmd.Name != "STR" {
+				err = fmt.Errorf("OP9 not followed with str, cmd idx:%d", i)
+				return
+			}
+			arg, _ := cmd.Args.(cmdStrRecord)
+			txt = append(txt, codec.Decode(arg.A1, codePage))
+			i += 2
 		}
 	}
 	return
@@ -360,6 +369,21 @@ func packTextToYksRecord(yks yksRecord, txt []string, codePage int) (err error) 
 				i++
 				txtIdx++
 			}
+		} else if cmd.Name == "OP9" {
+			cmd = &yks.Cmd[i+2]
+			if cmd.Name != "STR" {
+				err = fmt.Errorf("OP9 not followed with str, cmd idx:%d", i)
+				return
+			}
+			arg, _ := cmd.Args.(cmdStrRecord)
+			if txtIdx >= len(txt) {
+				err = fmt.Errorf("txt lines error")
+				return
+			}
+			arg.A1 = codec.Encode(txt[txtIdx], codePage, codec.Replace)
+			cmd.Args = arg
+			i += 2
+			txtIdx++
 		}
 	}
 	if txtIdx != len(txt) {
@@ -396,6 +420,7 @@ func parseYksFile(yksFileName, outScriptName, outTxtName string, codePage int) b
 		return false
 	}
 	if outScriptName != "" {
+		os.MkdirAll(filepath.Dir(outScriptName), os.ModePerm)
 		out, err := os.Create(outScriptName)
 		if err != nil {
 			fmt.Println(err)
@@ -408,6 +433,7 @@ func parseYksFile(yksFileName, outScriptName, outTxtName string, codePage int) b
 	}
 
 	if outTxtName != "" {
+		os.MkdirAll(filepath.Dir(outTxtName), os.ModePerm)
 		out, err := os.Create(outTxtName)
 		if err != nil {
 			fmt.Println(err)
