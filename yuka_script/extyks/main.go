@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/regomne/eutil/textFile"
@@ -441,9 +443,10 @@ func packTxtToYksFile(yksFileName, txtFileName, outYksName string, codePage int)
 		fmt.Println("packing text to yks fail:", err)
 		return
 	}
+	os.MkdirAll(filepath.Dir(outYksName), os.ModePerm)
 	nfs, err := os.Create(outYksName)
 	if err != nil {
-		fmt.Println("creating out file fail:", err)
+		fmt.Printf("creating %s fail: %v\n", outYksName, err)
 		return
 	}
 	defer nfs.Close()
@@ -481,7 +484,64 @@ func writeYksFile(oriname string, outname string) bool {
 	return true
 }
 
+func usage() {
+	fmt.Printf(`Usage:
+  %s -e -yks=in.yks [-json=out.json] [-txt=out.txt] [-cp=XXX]
+  %s -p <-yks=in.yks|-json=in.json> <-txt=in.txt> <-new-yks=out.yks> [-cp=XXX]
+`, os.Args[0], os.Args[0])
+	flag.Usage()
+}
+
+func parseCp(s string) int {
+	switch s {
+	case "936":
+		return codec.C936
+	case "932":
+		return codec.C932
+	default:
+		return 0
+	}
+}
+
 func main() {
-	//parseYksFile("new.yks", "aa.txt", "bb.txt", codec.C932)
-	packTxtToYksFile("new.yks", "bb.txt", "new2.yks", codec.C936)
+	exitCode := 0
+	defer func() {
+		os.Exit(exitCode)
+	}()
+	isExt := flag.Bool("e", false, "extract txt from yks")
+	isPack := flag.Bool("p", false, "pack txt to yks")
+	jsonName := flag.String("json", "", "json file name")
+	txtName := flag.String("txt", "", "txt file name")
+	inYksName := flag.String("yks", "", "yks file name")
+	outYksName := flag.String("new-yks", "", "new yks file name")
+	cp := flag.String("cp", "932", "code page in yks(only 932 or 936)")
+	flag.Parse()
+	if (!*isExt && !*isPack) || (*isExt && *isPack) ||
+		(*isExt && *inYksName == "") ||
+		(*isPack && ((*jsonName == "" && *inYksName == "") || *txtName == "" || *outYksName == "")) {
+		usage()
+		return
+	}
+	codePage := parseCp(*cp)
+	if codePage == 0 {
+		fmt.Println("not supported code page")
+		return
+	}
+	if *isExt {
+		if !parseYksFile(*inYksName, *jsonName, *txtName, codePage) {
+			exitCode = 1
+		}
+	} else {
+		if *inYksName != "" && *jsonName != "" {
+			fmt.Println("input is yks or json, not both")
+			return
+		}
+		if *inYksName == "" {
+			fmt.Println("not support json input now")
+			return
+		}
+		if !packTxtToYksFile(*inYksName, *txtName, *outYksName, codePage) {
+			exitCode = 1
+		}
+	}
 }
