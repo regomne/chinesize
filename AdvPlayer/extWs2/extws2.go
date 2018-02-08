@@ -15,9 +15,8 @@ import (
 
 	"hash/crc32"
 
-	"github.com/MJKWoolnough/memio"
 	"github.com/regomne/eutil/codec"
-	"github.com/regomne/eutil/pehelper"
+	"github.com/regomne/eutil/peHelper"
 )
 
 var gInstInfo *[256][]byte
@@ -61,7 +60,7 @@ func findBytes(buf []byte, pattern string) (int, error) {
 	return 0, fmt.Errorf("can't find pattern")
 }
 
-func readInstInfo(mem *memio.ReadMem, startOff uint32, base uint32) (instInfo [256][]byte) {
+func readInstInfo(mem *bytes.Reader, startOff uint32, base uint32) (instInfo [256][]byte) {
 	for i := uint32(0); i < 256; i++ {
 		mem.Seek(int64(startOff-base+i*4), 0)
 		var np uint32
@@ -113,7 +112,7 @@ func readUntil(buf io.Reader, b byte) []byte {
 	}
 }
 
-func getOp(buf *memio.ReadMem, op byte, opNext byte, strCodec int) (
+func getOp(buf *bytes.Reader, op byte, opNext byte, strCodec int) (
 	val interface{}, text string, retErr error) {
 	switch op {
 	case tByte:
@@ -146,19 +145,19 @@ func getOp(buf *memio.ReadMem, op byte, opNext byte, strCodec int) (
 		text = fmt.Sprintf("Float: %g", v)
 		val = v
 	case tStr:
-		s := readUntil(*buf, 0)
+		s := readUntil(buf, 0)
 		buf.UnreadByte()
 		ns := codec.Decode(s, strCodec)
 		text = fmt.Sprintf("Str: %s", ns)
 		val = ns
 	case tStrDefine:
-		s := readUntil(*buf, 0)
+		s := readUntil(buf, 0)
 		buf.UnreadByte()
 		ns := codec.Decode(s, strCodec)
 		text = fmt.Sprintf("StrDef: %s", ns)
 		val = ns
 	case tStrFileName:
-		s := readUntil(*buf, 0)
+		s := readUntil(buf, 0)
 		buf.UnreadByte()
 		ns := codec.Decode(s, strCodec)
 		text = fmt.Sprintf("StrFile: %s", ns)
@@ -187,7 +186,7 @@ func getOp(buf *memio.ReadMem, op byte, opNext byte, strCodec int) (
 	return
 }
 
-func getSelectItem(buf *memio.ReadMem, strCodec int) (
+func getSelectItem(buf *bytes.Reader, strCodec int) (
 	text string, sel string, selIdx int64, retErr error) {
 	var (
 		w1 uint16
@@ -211,7 +210,7 @@ func getSelectItem(buf *memio.ReadMem, strCodec int) (
 	return
 }
 
-func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
+func parseInst(buf *bytes.Reader, oriOp byte, info []byte, strCodec int) (
 	text []string, pureTxt []string, txtIdx []int64, retErr error) {
 	text = make([]string, 0, len(info))
 	pureTxt = make([]string, 0, len(info))
@@ -295,7 +294,7 @@ func parseInst(buf *memio.ReadMem, oriOp byte, info []byte, strCodec int) (
 	return
 }
 
-func parseWs2(buf *memio.ReadMem, instInfo *[256][]byte, onlyTxt bool, cp int) (
+func parseWs2(buf *bytes.Reader, instInfo *[256][]byte, onlyTxt bool, cp int) (
 	text []string, pureTxt []string, txtIdx []int64, checkSum uint32, retErr error) {
 	text = []string{}
 	pureTxt = []string{}
@@ -390,11 +389,11 @@ func getInstInfo(exeName string, pat string, off int) (instInfo *[256][]byte) {
 		fmt.Println(err)
 		return
 	}
-	mem := memio.Open(image)
+	mem := bytes.NewReader(image)
 	mem.Seek(int64(fileOff), 0)
 	var startOff uint32
 	binary.Read(mem, binary.LittleEndian, &startOff)
-	instInfo1 := readInstInfo(&mem, startOff, baseAddr)
+	instInfo1 := readInstInfo(mem, startOff, baseAddr)
 	fmt.Println("Op table found.")
 	return &instInfo1
 }
@@ -478,12 +477,12 @@ func main() {
 		fmt.Printf("Reading fail. %v\n", err)
 		return
 	}
-	membf := memio.Open(stm)
+	membf := bytes.NewReader(stm)
 	var text []string
 	var pureTxt []string
 	var txtIdx []int64
 	var crc uint32
-	text, pureTxt, txtIdx, crc, err = parseWs2(&membf, instInfo, *onlyTxt, cp)
+	text, pureTxt, txtIdx, crc, err = parseWs2(membf, instInfo, *onlyTxt, cp)
 	if err != nil {
 		fmt.Printf("Parsing fail. %v\n", err)
 		if !*verbose {
