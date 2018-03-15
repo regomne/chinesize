@@ -525,7 +525,7 @@ func parseCp(s string) int {
 	case "932":
 		return codec.C932
 	default:
-		return 0
+		return codec.Unknown
 	}
 }
 
@@ -549,7 +549,7 @@ func main() {
 		return
 	}
 	codePage := parseCp(*cp)
-	if codePage == 0 {
+	if codePage == codec.Unknown {
 		fmt.Println("not supported code page")
 		return
 	}
