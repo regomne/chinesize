@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/regomne/eutil/codec"
 )
 
 type YkcHeader struct {
@@ -45,7 +47,7 @@ func extYkc(fname, outputFolder string) bool {
 
 func packYkc(fname, inFolder string) bool {
 	entries := make([]YkcEntry, 0, 100)
-	names := make([]uint8, 0, 100)
+	names := make([][]uint8, 0, 100)
 	fs, err := os.Create(fname)
 	if err != nil {
 		fmt.Println("Can't create file, err:", err)
@@ -54,6 +56,8 @@ func packYkc(fname, inFolder string) bool {
 	defer fs.Close()
 	fs.Seek(0x18, 0)
 
+	curNameOffset := 0
+	curFileOffset := 0x18
 	filepath.Walk(inFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println("walk dir error, err:", err)
@@ -63,17 +67,56 @@ func packYkc(fname, inFolder string) bool {
 			return nil
 		}
 		relPath, _ := filepath.Rel(inFolder, path)
+		relPath += "\x00"
 		newf, err := os.Open(path)
 		if err != nil {
 			fmt.Printf("open file %s error\n", path)
 			return err
 		}
+		fmt.Printf("packing %s ...\n", relPath)
 		defer newf.Close()
 		io.Copy(fs, newf)
+		encodedPath := codec.Encode(relPath, codec.C932, codec.Replace)
+		names = append(names, encodedPath)
+		var ent YkcEntry
+		ent.NameLength = uint32(len(encodedPath)) - 1
+		ent.NameOffset = uint32(curNameOffset)
+		curNameOffset += int(ent.NameLength)
+		ent.Offset = uint32(curFileOffset)
+		ent.Size = uint32(info.Size())
+		curFileOffset += int(ent.Size)
+		entries = append(entries, ent)
 		return nil
 	})
+
+	fmt.Printf("writing index...\n")
+	for _, name := range names {
+		fs.Write(name)
+	}
+	curOff, _ := fs.Seek(0, 1)
+	var header YkcHeader
+	header.HeaderSize = 0x18
+	header.IndexOffset = uint32(curOff)
+	header.IndexSize = uint32(len(entries) * 20)
+	for idx := range entries {
+		entries[idx].NameOffset += uint32(curFileOffset)
+	}
+	binary.Write(fs, binary.LittleEndian, &entries)
+	fs.Seek(0, 0)
+	copy(header.Magic[:], []byte("YKC001\x00\x00"))
+	binary.Write(fs, binary.LittleEndian, &header)
+	fmt.Printf("complete.")
+	return true
 }
 
 func main() {
-
+	exitCode := 0
+	defer func() {
+		os.Exit(exitCode)
+	}()
+	if len(os.Args) != 3 {
+		fmt.Printf("Usage: %s <input_dir> <output.ykc>\n", os.Args[0])
+		return
+	}
+	packYkc(os.Args[2], os.Args[1])
 }
