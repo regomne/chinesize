@@ -311,8 +311,19 @@ func extTextFromYksRecord(yks yksRecord, codePage int) (txt []string, err error)
 			} else if bytes.Compare(arg.A1, []byte("StrOut")) == 0 {
 				cmd = &yks.Cmd[i+1]
 				if cmd.Name != "STR" {
-					err = fmt.Errorf("StrOut not followed with str, cmd idx:%d", i)
-					return
+					if yks.Cmd[i-2].Name == "STR" &&
+						//a special case for a game
+						yks.Cmd[i-1].Name == "LBL" {
+						arg1, _ := yks.Cmd[i-2].Args.(cmdStrRecord)
+						txt = append(txt, codec.Decode(arg1.A1, codePage))
+						arg2, _ := yks.Cmd[i-1].Args.(cmdLblRecord)
+						txt = append(txt, codec.Decode(arg2.A1, codePage))
+						continue
+						//special case over
+					} else {
+						err = fmt.Errorf("StrOut not followed with str, cmd idx:%d", i)
+						return
+					}
 				}
 				arg1, _ := cmd.Args.(cmdStrRecord)
 				txt = append(txt, codec.Decode(arg1.A1, codePage))
@@ -356,8 +367,22 @@ func packTextToYksRecord(yks yksRecord, txt []string, codePage int) (err error) 
 			} else if bytes.Compare(arg.A1, []byte("StrOut")) == 0 {
 				cmd = &yks.Cmd[i+1]
 				if cmd.Name != "STR" {
-					err = fmt.Errorf("StrOut not followed with str, cmd idx:%d", i)
-					return
+					if yks.Cmd[i-2].Name == "STR" &&
+						//a special case for a game
+						yks.Cmd[i-1].Name == "LBL" {
+						arg1, _ := yks.Cmd[i-2].Args.(cmdStrRecord)
+						arg1.A1 = codec.Encode(txt[txtIdx], codePage, codec.Replace)
+						yks.Cmd[i-2].Args = arg1
+						arg2, _ := yks.Cmd[i-1].Args.(cmdLblRecord)
+						arg2.A1 = codec.Encode(txt[txtIdx+1], codePage, codec.Replace)
+						yks.Cmd[i-1].Args = arg2
+						txtIdx += 2
+						continue
+						//special case over
+					} else {
+						err = fmt.Errorf("StrOut not followed with str, cmd idx:%d", i)
+						return
+					}
 				}
 				arg1, _ := cmd.Args.(cmdStrRecord)
 				if txtIdx >= len(txt) {

@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/regomne/eutil/codec"
 )
@@ -45,6 +47,11 @@ func extYkc(fname, outputFolder string) bool {
 	return false
 }
 
+type fileEntry struct {
+	path string
+	size int64
+}
+
 func packYkc(fname, inFolder string) bool {
 	entries := make([]YkcEntry, 0, 100)
 	names := make([][]uint8, 0, 100)
@@ -58,6 +65,7 @@ func packYkc(fname, inFolder string) bool {
 
 	curNameOffset := 0
 	curFileOffset := 0x18
+	filelists := make([]fileEntry, 0, 100)
 	filepath.Walk(inFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println("walk dir error, err:", err)
@@ -66,12 +74,26 @@ func packYkc(fname, inFolder string) bool {
 		if info.IsDir() {
 			return nil
 		}
+		filelists = append(filelists, fileEntry{path, info.Size()})
+		return nil
+	})
+
+	sort.Slice(filelists, func(i, j int) bool {
+		p1 := strings.ToLower(filelists[i].path)
+		p2 := strings.ToLower(filelists[j].path)
+		s1 := codec.Encode(p1, codec.C932, codec.Replace)
+		s2 := codec.Encode(p2, codec.C932, codec.Replace)
+		return bytes.Compare(s1, s2) < 0
+	})
+
+	for _, fileInfo := range filelists {
+		path := fileInfo.path
 		relPath, _ := filepath.Rel(inFolder, path)
 		relPath += "\x00"
 		newf, err := os.Open(path)
 		if err != nil {
 			fmt.Printf("open file %s error\n", path)
-			return err
+			return false
 		}
 		fmt.Printf("packing %s ...\n", relPath)
 		defer newf.Close()
@@ -79,15 +101,14 @@ func packYkc(fname, inFolder string) bool {
 		encodedPath := codec.Encode(relPath, codec.C932, codec.Replace)
 		names = append(names, encodedPath)
 		var ent YkcEntry
-		ent.NameLength = uint32(len(encodedPath)) - 1
+		ent.NameLength = uint32(len(encodedPath))
 		ent.NameOffset = uint32(curNameOffset)
 		curNameOffset += int(ent.NameLength)
 		ent.Offset = uint32(curFileOffset)
-		ent.Size = uint32(info.Size())
+		ent.Size = uint32(fileInfo.size)
 		curFileOffset += int(ent.Size)
 		entries = append(entries, ent)
-		return nil
-	})
+	}
 
 	fmt.Printf("writing index...\n")
 	for _, name := range names {
