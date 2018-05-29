@@ -26,8 +26,8 @@ def decodeYbn(ybn):
 			decode.append(bytes([ybn.readu8()^key[n&3]]))
 	return b''.join(decode)
 
-fs=open("bn.ypf",'rb')
-stm=bytefile.ByteIO(fs.read())
+fs=open("ysbin.ypf",'rb')
+stm=bytefile.ByteFile(fs.read())
 stm.seek(8)
 count, index_size=struct.unpack("II",stm.read(8))
 stm.seek(0x20)
@@ -37,7 +37,7 @@ for n in range(count):
 	name1=stm.read(str_lens[-len2-1])
 	name=[]
 	for i in range(len(name1)):
-		name.append(chr(name1[i]^0xff))
+		name.append(chr(name1[i]^0xff^0x36))
 	name=''.join(name)
 	type1, is_compressed, uncomplen, complen, offset, datacrc=\
                struct.unpack('=BBIIII',stm.read(18))

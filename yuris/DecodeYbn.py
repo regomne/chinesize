@@ -3,6 +3,7 @@ import struct
 import bytefile
 
 key=[0xd3, 0x6f, 0xac, 0x96]
+key=[0xdb, 0xda, 0xfd, 0x6c]
 
 def decodeYbn(ybn):
 	if ybn.read(4)!=b'YSTB':
@@ -16,13 +17,13 @@ def decodeYbn(ybn):
 			decode.append(bytes([ybn.readu8()^key[n&3]]))
 	return b''.join(decode)
 
-path1='ys1'
-path2='ys1d'
+path1='ysbin'
+path2='ysbind'
 if not os.path.exists(path2):
         os.makedirs(path2)
 for f in os.listdir(path1):
         fs=open(os.path.join(path1,f),'rb')
-        stm=bytefile.ByteIO(fs.read())
+        stm=bytefile.ByteFile(fs.read())
         fs.close()
         fs=open(os.path.join(path2,f),'wb')
         fs.write(decodeYbn(stm))
