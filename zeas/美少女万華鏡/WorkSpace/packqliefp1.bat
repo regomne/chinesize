@@ -1,13 +1,13 @@
 @echo off
 rem ='''
-set pypath="%~dp0python\python.exe"
-if not exist %pypath% set pypath=D:\tools\python-2.6.5\python.exe
-if not exist %pypath% ( echo I can't find "%~dp0python\python.exe" !
+set "pypath=D:\Program Files\Python27\python.exe"
+if not exist "%pypath%" set pypath=D:\tools\python-2.6.5\python.exe
+if not exist "%pypath%" ( echo I can't find "%~dp0python\python.exe" !
 pause
 goto :EOF
 )
 rem %~dp0appstarter.exe 0411 %pypath% -x "%~f0" %*
-%pypath% -x "%~f0" %*
+"%pypath%" -x "%~f0" %*
 goto :EOF
 rem '''
 
