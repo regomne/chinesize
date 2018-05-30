@@ -20,6 +20,11 @@ type YInst struct {
 type YArg struct {
 	Value     uint16
 	Type      uint16
-	ResOffset uint32
 	ResSize   uint32
+	ResOffset uint32
+}
+
+type YResInfo struct {
+	Type uint8
+	Len  uint16
 }
