@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/regomne/eutil/codec"
 )
 
 type resourceEntry struct {
@@ -47,9 +49,16 @@ func parseYbn(stm io.ReadSeeker) (script ybnInfo, err error) {
 		err = fmt.Errorf("not a ybn file or file format error")
 		return
 	}
+	fileSize, _ := stm.Seek(0, 2)
+	if uint32(binary.Size(header))+header.CodeSize+header.ArgSize+header.ResourceSize+
+		header.OffSize != uint32(fileSize) {
+		err = fmt.Errorf("file size error")
+		return
+	}
 	if header.Resv != 0 {
 		fmt.Println("reserved is not 0, maybe can't extract all the info")
 	}
+	stm.Seek(int64(binary.Size(header)), 0)
 	script.Insts = make([]instInfo, header.InstCnt)
 	binary.Read(stm, binary.LittleEndian, &script.Insts)
 	args := make([]YArg, header.InstCnt)
@@ -67,7 +76,18 @@ func parseYbn(stm io.ReadSeeker) (script ybnInfo, err error) {
 		res.Res = make([]byte, resInfo.Len)
 		stm.Read(res.Res)
 	}
+	offTblOffset := uint32(binary.Size(header)) + header.CodeSize + header.ArgSize + header.ResourceSize
+	stm.Seek(int64(offTblOffset), 0)
+	script.Offs = make([]uint32, header.InstCnt)
+	binary.Read(stm, binary.LittleEndian, &script.Offs)
 	return
+}
+
+func decodeScriptString(script ybnInfo, codePage int) {
+	for i := range script.Args {
+		res := &script.Args[i].Res
+		res.ResStr = codec.Decode(res.Res, codePage)
+	}
 }
 
 func parseYbnFile(ybnName, outScriptName, outTxtName string, codePage int) bool {
