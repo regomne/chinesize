@@ -9,9 +9,9 @@ import (
 )
 
 type resourceEntry struct {
-	Type     uint8
-	CodePage uint32
-	Res      []byte
+	Type   uint8
+	Res    []byte
+	ResStr string `json:",omitempty"`
 }
 
 type argInfo struct {
@@ -64,7 +64,8 @@ func parseYbn(stm io.ReadSeeker) (script ybnInfo, err error) {
 		res := &script.Args[i].Res
 		binary.Read(stm, binary.LittleEndian, &resInfo)
 		res.Type = resInfo.Type
-		//todo: json格式输出时选择性输出res中的string字符串
+		res.Res = make([]byte, resInfo.Len)
+		stm.Read(res.Res)
 	}
 	return
 }
