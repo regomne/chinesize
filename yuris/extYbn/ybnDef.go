@@ -28,3 +28,14 @@ type YResInfo struct {
 	Type uint8
 	Len  uint16
 }
+
+func GetTextFunctionNames() []string {
+	return []string{
+		`"es.sel.set"`,
+		`"es.char.name.mark.set"`,
+		`"es.char.name"`,
+		`"es.input.str.set"`,
+		`"es.tips.def.set"`,
+		`"es.tips.tx.def.set"`,
+	}
+}
