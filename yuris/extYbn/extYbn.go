@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/regomne/eutil/codec"
 	"github.com/regomne/eutil/memio"
+	"github.com/regomne/eutil/textFile"
 )
 
 type keyOps struct {
@@ -271,10 +273,43 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 	return newYbn.Bytes(), nil
 }
 
+func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, codePage int) bool {
+	oriStm, err := ioutil.ReadFile(ybnName)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
+		decryptYbn(oriStm, key)
+	}
+	reader := bytes.NewReader(oriStm)
+	script, err := parseYbn(reader)
+	if err != nil {
+		fmt.Println("parse error:", err)
+		return false
+	}
+	ls, err := textFile.ReadWin32TxtToLines(txtName)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	newStm, err := packTxtToYbn(&script, oriStm, ls, ops, codePage)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	ioutil.WriteFile(outYbnName, newStm, os.ModePerm)
+	return true
+}
+
 func main() {
 	ops := keyOps{108, 43}
 	parseYbnFile(`d:\chinesize\yuris\ysbind\yst00237.ybn`,
 		`d:\chinesize\yuris\yst00237.json`,
 		`d:\chinesize\yuris\yst00237.txt`,
 		[]byte("\x00\x00\x00\x00"), &ops, codec.C932)
+	isExtract := flag.Bool("e", false, "extract a ybn")
+	isPack := flag.Bool("p", false, "pack a ybn")
+	jsonName := flag.String("json", "", "output script file name")
+
 }
