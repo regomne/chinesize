@@ -298,18 +298,66 @@ func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, c
 		fmt.Println(err)
 		return false
 	}
+	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
+		decryptYbn(newStm, key)
+	}
 	ioutil.WriteFile(outYbnName, newStm, os.ModePerm)
 	return true
 }
 
+func printUsage(exeName string) {
+	fmt.Printf("Usage: %s -e -ybn <ybn> [-json <json>] [-txt <txt>] [options]\n", exeName)
+	fmt.Printf("Usage: %s -p -ybn <ybn> -txt <txt> -new-ybn <new_ybn> [options]\n", exeName)
+	flag.Usage()
+}
+
+func parseCp(s string) int {
+	switch s {
+	case "936":
+		return codec.C936
+	case "932":
+		return codec.C932
+	default:
+		return codec.Unknown
+	}
+}
+
 func main() {
-	ops := keyOps{108, 43}
-	parseYbnFile(`d:\chinesize\yuris\ysbind\yst00237.ybn`,
-		`d:\chinesize\yuris\yst00237.json`,
-		`d:\chinesize\yuris\yst00237.txt`,
-		[]byte("\x00\x00\x00\x00"), &ops, codec.C932)
+	retCode := 0
+	defer os.Exit(retCode)
 	isExtract := flag.Bool("e", false, "extract a ybn")
 	isPack := flag.Bool("p", false, "pack a ybn")
+	inYbnName := flag.String("ybn", "", "input ybn file name")
 	jsonName := flag.String("json", "", "output script file name")
+	txtName := flag.String("txt", "", "output/input txt file name")
+	outYbnName := flag.String("new-ybn", "", "output ybn file name")
+	keyInt := flag.Int("key", 0x96ac6fd3, "decode key of ybn")
+	opMsg := flag.Int("op-msg", 0, "specify opcode of Msg. defaut: auto guess")
+	opCall := flag.Int("op-call", 0, "specify opcode of Call. default: auto guess")
+	codePage := flag.String("cp", "932", "specify code page")
+	if (!*isExtract && !*isPack) || (*isExtract && *isPack) ||
+		*inYbnName == "" ||
+		(*isPack && (*outYbnName == "" || *txtName == "")) {
+		printUsage(os.Args[0])
+		return
+	}
 
+	key := [4]byte{}
+	key[0] = byte(*keyInt & 0xff)
+	key[1] = byte((*keyInt >> 8) & 0xff)
+	key[2] = byte((*keyInt >> 16) & 0xff)
+	key[3] = byte((*keyInt >> 24) & 0xff)
+
+	ops := keyOps{uint8(*opMsg), uint8(*opCall)}
+	//ops := keyOps{108, 43}
+
+	var ret bool
+	if *isExtract {
+		ret = parseYbnFile(*inYbnName, *jsonName, *txtName, key[:], &ops, parseCp(*codePage))
+	} else {
+		ret = packYbnFile(*inYbnName, *txtName, *outYbnName, key[:], &ops, parseCp(*codePage))
+	}
+	if !ret {
+		retCode = 1
+	}
 }
