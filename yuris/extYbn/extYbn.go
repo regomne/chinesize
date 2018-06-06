@@ -127,6 +127,42 @@ func parseYbn(stm io.ReadSeeker) (script ybnInfo, err error) {
 	return
 }
 
+func guessYbnOp(script *ybnInfo, ops *keyOps) bool {
+	if ops.callOp != 0 && ops.msgOp != 0 {
+		return true
+	}
+	msgStat := [256]int{0}
+	callStat := [256]int{0}
+	for _, inst := range script.Insts {
+		if ops.msgOp == 0 && len(inst.Args) == 1 &&
+			inst.Args[0].Type == 0 && inst.Args[0].Value == 0 {
+			res := &inst.Args[0].Res
+			if len(res.ResRaw) != 0 && res.ResRaw[0] > 0x80 {
+				msgStat[inst.Op]++
+				if msgStat[inst.Op] > 10 {
+					ops.msgOp = inst.Op
+				}
+			}
+		}
+		if ops.callOp == 0 && len(inst.Args) >= 1 &&
+			inst.Args[0].Value == 0 && inst.Args[0].Type == 3 {
+			res := &inst.Args[0].Res
+			s := string(res.Res)
+			if res.Type == 0x4d && len(s) > 4 &&
+				s[0] == '"' && s[1] == 'e' && s[len(s)-1] == '"' {
+				callStat[inst.Op]++
+				if callStat[inst.Op] > 5 {
+					ops.callOp = inst.Op
+				}
+			}
+		}
+		if ops.msgOp != 0 && ops.callOp != 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func decodeScriptString(script *ybnInfo, ops *keyOps, codePage int) {
 	for i := range script.Insts {
 		inst := &script.Insts[i]
@@ -195,6 +231,10 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 		fmt.Println("parse error:", err)
 		return false
 	}
+	if !guessYbnOp(&script, ops) {
+		fmt.Println("Can't guess the opcode")
+		return false
+	}
 	if outScriptName != "" {
 		decodeScriptString(&script, ops, codePage)
 		out, err := json.MarshalIndent(script, "", "\t")
@@ -210,7 +250,7 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 			fmt.Println("error when extracting txt:", err)
 			return false
 		}
-		out := codec.Encode(strings.Join(txt, "\r\n"), codec.UTF8, codec.Replace)
+		out := codec.Encode(strings.Join(txt, "\r\n"), codec.UTF8Sig, codec.Replace)
 		ioutil.WriteFile(outTxtName, out, os.ModePerm)
 	}
 	return true
@@ -288,6 +328,10 @@ func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, c
 		fmt.Println("parse error:", err)
 		return false
 	}
+	if !guessYbnOp(&script, ops) {
+		fmt.Println("Can't guess the opcode")
+		return false
+	}
 	ls, err := textFile.ReadWin32TxtToLines(txtName)
 	if err != nil {
 		fmt.Println(err)
@@ -335,6 +379,7 @@ func main() {
 	opMsg := flag.Int("op-msg", 0, "specify opcode of Msg. defaut: auto guess")
 	opCall := flag.Int("op-call", 0, "specify opcode of Call. default: auto guess")
 	codePage := flag.String("cp", "932", "specify code page")
+	flag.Parse()
 	if (!*isExtract && !*isPack) || (*isExtract && *isPack) ||
 		*inYbnName == "" ||
 		(*isPack && (*outYbnName == "" || *txtName == "")) {
