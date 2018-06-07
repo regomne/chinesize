@@ -375,7 +375,7 @@ func main() {
 	jsonName := flag.String("json", "", "output script file name")
 	txtName := flag.String("txt", "", "output/input txt file name")
 	outYbnName := flag.String("new-ybn", "", "output ybn file name")
-	keyInt := flag.Int("key", 0x96ac6fd3, "decode key of ybn")
+	keyInt := flag.Int64("key", 0x96ac6fd3, "decode key of ybn")
 	opMsg := flag.Int("op-msg", 0, "specify opcode of Msg. defaut: auto guess")
 	opCall := flag.Int("op-call", 0, "specify opcode of Call. default: auto guess")
 	codePage := flag.String("cp", "932", "specify code page")
