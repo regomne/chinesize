@@ -9,7 +9,7 @@ using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0x44ddd,"\x75\x81","\xb8\xa1") //quote
+    DP(nullptr, 0x44ddd,(char*)"\x75\x81",(char*)"\xb8\xa1") //quote
 };
 #undef DP
 
@@ -30,20 +30,21 @@ bool IsHalf(const string& s)
     return true;
 }
 
-void HOOKFUNC MyCFI(LPLOGFONTW lfi)
+void HOOKFUNC MyCFI(LPLOGFONTA lfi)
 {
-    //"£Í£Ó ¥´¥·¥Ã¥¯"
-    if (wcscmp(lfi->lfFaceName, L"MS UI Gothic") == 0)
-    {
-        wcscpy_s(lfi->lfFaceName, L"SimHei");
-    }
+	lfi->lfCharSet = 0x86;
+    //"ï¼­ï¼³ ã‚´ã‚·ãƒƒã‚¯"
+    //if (wcscmp(lfi->lfFaceName, L"MS UI Gothic") == 0)
+    //{
+    //    wcscpy_s(lfi->lfFaceName, L"SimHei");
+    //}
 }
 
 void HOOKFUNC MyCW(wchar_t** strp)
 {
-    if (*strp && wcscmp(*strp, L"Ïë¤¤¤òÅõ¤²¤ëÒÒÅ®¤Î¥á¥í¥Ç¥£©`") == 0)
+    if (*strp && wcscmp(*strp, L"æƒ³ã„ã‚’æ§ã’ã‚‹ä¹™å¥³ã®ãƒ¡ãƒ­ãƒ‡ã‚£ãƒ¼") == 0)
     {
-        *strp = L"¡ºÓĞÉÙÅ®Ï×ÃùµÄ°®Ö®×àÕÂ¡»ÖĞÎÄ°æ | üaÊ¾ÓÎÏ·ÖĞÎÄ»¯ĞËÈ¤Ğ¡×é ÒëÖÆ | ½»Á÷ÈººÅ£º153454926";
+        *strp = L"ã€æœ‰å°‘å¥³çŒ®é¸£çš„çˆ±ä¹‹å¥ç« ã€ä¸­æ–‡ç‰ˆ | é»™ç¤ºæ¸¸æˆä¸­æ–‡åŒ–å…´è¶£å°ç»„ è¯‘åˆ¶ | äº¤æµç¾¤å·ï¼š153454926";
     }
 }
 
@@ -52,26 +53,26 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
     if (_Reason == DLL_PROCESS_ATTACH)
     {
         //PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
-        auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
-        static const HookPointStruct points[] = {
-            { nullptr, rva, before_start, "r", 0, 0 },
-            //{ nullptr, 0x2F60, my_read_pic, "rf", STUB_JMP_EAX_AFTER_RETURN, 0 },
-        };
-
-        if (!HookFunctions(points))
-        {
-            MessageBox(0, L"Hook Ê§°Ü£¡", 0, 0);
-            return TRUE;
-        }
-
-        //static const HookPointStructWithName points2[] = {
-        //    { "gdi32.dll", "CreateFontIndirectW", MyCFI, "1", false, 0 },
-        //    //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+        //auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
+        //static const HookPointStruct points[] = {
+        //    { nullptr, rva, before_start, "r", 0, 0 },
+        //    //{ nullptr, 0x2F60, my_read_pic, "rf", STUB_JMP_EAX_AFTER_RETURN, 0 },
         //};
-        //if (!HookFunctions(points2))
+
+        //if (!HookFunctions(points))
         //{
-        //    MessageBox(0, L"Hook2 Ê§°Ü£¡", 0, 0);
+        //    MessageBox(0, L"Hook å¤±è´¥ï¼", 0, 0);
+        //    return TRUE;
         //}
+
+        static const HookPointStructWithName points2[] = {
+            { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
+            //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+        };
+        if (!HookFunctions(points2))
+        {
+            MessageBox(0, L"Hook2 å¤±è´¥ï¼", 0, 0);
+        }
     }
     return TRUE;
 }

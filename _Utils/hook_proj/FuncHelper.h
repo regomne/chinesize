@@ -50,9 +50,9 @@ uint32_t ThiscallFunction3(void* addr, void* thisp, uint32_t arg1, uint32_t arg2
 
 uint32_t ThiscallFunction4(void* addr, void* thisp, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4);
 
-void Log(wchar_t* format, ...);
+void Log(const wchar_t* format, ...);
 
-void Log(char* format, ...);
+void Log(const char* format, ...);
 
 #ifdef LOG_DETAIL
 #define LOGERROR(...) Log(__VA_ARGS__)

@@ -24,7 +24,7 @@ NakedMemory MyFileReader::ReadToMem(const char* fileName)
     {
         return NakedMemory();
     }
-    return std::move(mem);
+    return mem;
 }
 
 NakedMemory MyFileReader::ReadToMem(const wchar_t* fileName)
@@ -49,7 +49,7 @@ NakedMemory MyFileReader::ReadToMem(const wchar_t* fileName)
     {
         return NakedMemory();
     }
-    return std::move(mem);
+    return mem;
 }
 
 bool exists_file(const char* file_name)

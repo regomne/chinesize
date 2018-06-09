@@ -20,7 +20,7 @@ class MyFileReader :public IFileReader
 {
 public:
     MyFileReader() {}
-    ~MyFileReader()
+    virtual ~MyFileReader()
     {
     }
     NakedMemory ReadToMem(const char* fileName) override;

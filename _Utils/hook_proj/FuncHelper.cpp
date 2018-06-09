@@ -20,9 +20,9 @@ __declspec(naked) uint32_t ThiscallFunction1(void* addr, void* thisp, uint32_t a
     {
         push ebp;
         mov ebp, esp;
-        push arg1;
-        mov ecx, thisp;
-        call addr;
+        push [ebp + 0x10];
+        mov ecx, [ebp + 0xc];
+        call [ebp + 0x8];
         pop ebp;
         ret;
     }
@@ -33,11 +33,11 @@ __declspec(naked) uint32_t ThiscallFunction2(void* addr, void* thisp, uint32_t a
     {
         push ebp;
         mov ebp, esp;
-        push arg2;
-        push arg1;
-        mov ecx, thisp;
-        call addr;
-        pop ebp;
+        push [ebp + 0x14];
+		push [ebp + 0x10];
+		mov ecx, [ebp + 0xc];
+		call [ebp + 0x8];
+		pop ebp;
         ret;
     }
 }
@@ -48,11 +48,11 @@ __declspec(naked) uint32_t ThiscallFunction3(void* addr, void* thisp, uint32_t a
     {
         push ebp;
         mov ebp, esp;
-        push arg3;
-        push arg2;
-        push arg1;
-        mov ecx, thisp;
-        call addr;
+        push [ebp + 0x18];
+        push [ebp + 0x14];
+		push [ebp + 0x10];
+		mov ecx, [ebp + 0xc];
+		call [ebp + 0x8];
         pop ebp;
         ret;
     }
@@ -64,39 +64,39 @@ __declspec(naked) uint32_t ThiscallFunction4(void* addr, void* thisp, uint32_t a
     {
         push ebp;
         mov ebp, esp;
-        push arg4;
-        push arg3;
-        push arg2;
-        push arg1;
-        mov ecx, thisp;
-        call addr;
+        push [ebp + 0x1c];
+        push [ebp + 0x18];
+        push [ebp + 0x14];
+		push [ebp + 0x10];
+		mov ecx, [ebp + 0xc];
+		call [ebp + 0x8];
         pop ebp;
         ret;
     }
 }
 
-void Log(wchar_t* format, ...)
+void Log(const wchar_t* format, ...)
 {
     wchar_t buffer[0x1000];
     va_list ap;
     va_start(ap, format);
     auto char_cnt = vswprintf_s(buffer, format, ap);
     FILE* fp = nullptr;
-    auto err = fopen_s(&fp, "log.log", "ab+");
+    fopen_s(&fp, "log.log", "ab+");
     fwrite(buffer, 1, char_cnt * 2, fp);
     fwrite(L"\r\n", 1, 4, fp);
     fclose(fp);
     va_end(ap);
 }
 
-void Log(char* format, ...)
+void Log(const char* format, ...)
 {
     char buffer[0x1000];
     va_list ap;
     va_start(ap, format);
     auto char_cnt = vsprintf_s(buffer, format, ap);
     FILE* fp = nullptr;
-    auto err = fopen_s(&fp, "log.log", "ab+");
+    fopen_s(&fp, "log.log", "ab+");
     fwrite(buffer, 1, char_cnt, fp);
     fwrite("\r\n", 1, 2, fp);
     fclose(fp);
@@ -212,7 +212,7 @@ bool HookFunctions(const HookPointStructWithName* hooks, uint32_t cnt)
         auto opt_data = hook->options&STUB_JMP_ADDR_AFTER_RETURN ?
             hook->dest_rva + (ptrdiff_t)mod :
             hook->ret_value;
-        if (!InitializeHookSrcObject(&src, addr, true) ||
+        if (!InitializeHookSrcObject(&src, (void*)addr, true) ||
             !InitializeStubObject(&stub, buff + i * 100, 100, opt_data, hook->options) ||
             !Hook32(&src, 0, &stub, hook->hook_routine, hook->reg_tags))
         {
@@ -230,7 +230,7 @@ std::wstring decode_string(const char* s, int cp)
     len = MultiByteToWideChar(cp, 0, s, -1, buff, len);
     std::wstring str(buff);
     delete[] buff;
-    return std::move(str);
+    return str;
 }
 
 std::wstring decode_string(const char* s, uint32_t slen, int cp)
@@ -240,7 +240,7 @@ std::wstring decode_string(const char* s, uint32_t slen, int cp)
     len = MultiByteToWideChar(cp, 0, s, slen, buff, len);
     std::wstring str(buff, len);
     delete[] buff;
-    return std::move(str);
+    return str;
 }
 
 uint32_t get_ep_rva_from_module_address(void* module_start) {
