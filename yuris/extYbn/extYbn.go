@@ -294,11 +294,11 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 	txtIdx := 0
 	for _, inst := range script.Insts {
 		if inst.Op == ops.msgOp {
-			ns := codec.Encode(txt[txtIdx], codePage, codec.Replace)
+			ns := codec.Encode(txt[txtIdx], codePage, codec.ReplaceHTML)
 			txtIdx++
 			resTail.Write(ns)
-			argStm.Seek(int64(argIdx*12)+8, 0)
-			binary.Write(argStm, binary.LittleEndian, len(ns))
+			argStm.Seek(int64(argIdx*12)+4, 0)
+			binary.Write(argStm, binary.LittleEndian, uint32(len(ns)))
 			binary.Write(argStm, binary.LittleEndian, resNewOffset)
 			resNewOffset += uint32(len(ns))
 		} else if inst.Op == ops.callOp {
@@ -307,15 +307,15 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 					if arg.Type == 3 &&
 						bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
 						bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
-						ns := codec.Encode(txt[txtIdx], codePage, codec.Replace)
+						ns := codec.Encode(txt[txtIdx], codePage, codec.ReplaceHTML)
 						txtIdx++
 						var resInfo YResInfo
 						resInfo.Type = arg.Res.Type
 						resInfo.Len = uint16(len(ns))
 						binary.Write(&resTail, binary.LittleEndian, &resInfo)
 						resTail.Write(ns)
-						argStm.Seek(int64((argIdx+1+i)*12)+8, 0)
-						binary.Write(argStm, binary.LittleEndian, len(ns)+binary.Size(resInfo))
+						argStm.Seek(int64((argIdx+1+i)*12)+4, 0)
+						binary.Write(argStm, binary.LittleEndian, uint32(len(ns)+binary.Size(resInfo)))
 						binary.Write(argStm, binary.LittleEndian, resNewOffset)
 						resNewOffset += uint32(len(ns) + binary.Size(resInfo))
 					}
