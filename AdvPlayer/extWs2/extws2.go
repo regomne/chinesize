@@ -360,10 +360,13 @@ func searchInstInfo(image []byte, pat string, off int) (fileOff int, err error) 
 		"8b 2c 85 ?? ?? ?? ?? 85 ed 0f 84 ?? ?? ?? ?? 38 5d 00",
 		// AdvHD 1.7
 		"0f b6 45 ?? 33 ff 89 4d ?? 8b 04 85 ?? ?? ?? ?? 89 45",
+		// AdvHD 1.9
+		"C7 45 ?? 00 00 00 00 8B 0C 85 ?? ?? ?? ?? 89 4D",
 	}
 	Offs := []int{
 		3,
 		12,
+		10,
 	}
 	for i := 0; i < len(Pats); i++ {
 		fileOff, err = findBytes(image, Pats[i])
@@ -466,7 +469,7 @@ func main() {
 		instInfo = getInstInfo(*exeName, *pattern, *patternOffset)
 	}
 	if instInfo == nil {
-		fmt.Println("Using default op table.")
+		fmt.Println("Using default op table. You can find the table by\nsearching exe with one of defaultInst.")
 		instInfo = &defaultInstInfo
 	}
 	gInstInfo = instInfo
