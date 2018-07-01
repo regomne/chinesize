@@ -22,19 +22,19 @@ struct TextInfo {
 map<uint32_t, TextInfo> g_TextInfo;
 map<wstring, wstring> g_MyFiles;
 
-#define READ_INST_RETURN_ADDR 0x4cb9db
-#define OPEN_FILE_ARG1_OFFSET 0xb30
-#define NAME_LINE_START "%LC"
+#define READ_INST_RETURN_ADDR 0x4c161f
+#define OPEN_FILE_ARG1_OFFSET 0xb04
+#define NAME_LINE_START "%LF"
 #define LINE_END_WITH_WAIT "%K%P"
 //v1.5
-//#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 8
-//#define SCRIPT_OBJ_SCRIPT_END_OFFSET 9
-//#define SCRIPT_OBJ_CUR_OFFSET 4
+#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 8
+#define SCRIPT_OBJ_SCRIPT_END_OFFSET 9
+#define SCRIPT_OBJ_CUR_OFFSET 4
 
 //v1.7
-#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 5
-#define SCRIPT_OBJ_SCRIPT_END_OFFSET 6
-#define SCRIPT_OBJ_CUR_OFFSET 4
+//#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 5
+//#define SCRIPT_OBJ_SCRIPT_END_OFFSET 6
+//#define SCRIPT_OBJ_CUR_OFFSET 4
 
 constexpr wchar_t* ChArcName = L"Ch.arc";
 
@@ -122,7 +122,7 @@ void get_script_info(uint32_t* script_obj, uint8_t** sc_start, uint8_t** sc_end,
     *cur_off = script_obj[SCRIPT_OBJ_CUR_OFFSET];
 }
 
-uint32_t HOOKFUNC MyReadInst(Registers* regs, uint32_t old_proc_func) {
+uint32_t HOOKFUNC MyReadInst_v15(Registers* regs, uint32_t old_proc_func) {
     auto a6 = *(int*)(regs->esp + 0x10);
     auto a5 = *(int*)(regs->esp + 0xc);
     auto a4 = *(int*)(regs->esp + 0x8);
@@ -247,7 +247,7 @@ void HOOKFUNC MyMbtowc(Registers* regs) {
     }
 }
 
-void HOOKFUNC MySelString(Registers* regs) {
+void HOOKFUNC MySelString_v15(Registers* regs) {
     uint8_t* scriptStart;
     uint8_t* scriptEnd;
     uint32_t _nouse_curOff;
@@ -316,7 +316,7 @@ void HOOKFUNC MySelString_v17(Registers* regs) {
     }
 }
 
-void HOOKFUNC MyChangeFont(Registers* regs) {
+void HOOKFUNC MyChangeFont_v15(Registers* regs) {
     static const wchar_t* font_name = L"MS UI Gothic";
     regs->ecx = (DWORD)font_name;
 }
