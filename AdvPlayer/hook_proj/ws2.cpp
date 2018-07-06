@@ -312,7 +312,7 @@ void HOOKFUNC MySelString_v17(Registers* regs) {
             else {
                 strcat_s(newString, line.c_str());
             }
-            *(char**)(regs->ecx) = newString;
+            regs->ecx = (uint32_t)newString;
         }
     }
 }
