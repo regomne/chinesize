@@ -22,9 +22,9 @@ struct TextInfo {
 map<uint32_t, TextInfo> g_TextInfo;
 map<wstring, wstring> g_MyFiles;
 
-#define READ_INST_RETURN_ADDR 0x4d5fd5
+#define READ_INST_RETURN_ADDR 0x4d56f5
 #define OPEN_FILE_ARG1_OFFSET 0xb30
-#define NAME_LINE_START "%LC"
+#define NAME_LINE_START "%LF"
 #define LINE_END_WITH_WAIT "%K%P"
 //v1.5
 //#define SCRIPT_OBJ_SCRIPT_BEGIN_OFFSET 8
