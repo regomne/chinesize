@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/regomne/eutil/codec"
@@ -17,8 +18,9 @@ import (
 )
 
 type keyOps struct {
-	msgOp  uint8
-	callOp uint8
+	msgOp   uint8
+	callOp  uint8
+	otherOp []uint8
 }
 
 type resourceEntry struct {
@@ -62,6 +64,15 @@ func logln(args ...interface{}) {
 	if gVerbose {
 		fmt.Println(args...)
 	}
+}
+
+func includes(a []uint8, v uint8) bool {
+	for _, i := range a {
+		if i == v {
+			return true
+		}
+	}
+	return false
 }
 
 func decryptYbn(stm []byte, key []byte) {
@@ -227,6 +238,15 @@ func extTxtFromYbn(script *ybnInfo, ops *keyOps, codePage int) (txt []string, er
 					}
 				}
 			}
+		} else if includes(ops.otherOp, inst.Op) {
+			for _, arg := range inst.Args {
+				if arg.Type == 3 &&
+					bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
+					bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
+					txt = append(txt, codec.Decode(arg.Res.Res, codePage))
+				}
+			}
+
 		}
 	}
 	return
@@ -321,6 +341,24 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 					}
 				}
 			}
+		} else if includes(ops.otherOp, inst.Op) {
+			for i, arg := range inst.Args {
+				if arg.Type == 3 &&
+					bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
+					bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
+					ns := codec.Encode(txt[txtIdx], codePage, codec.ReplaceHTML)
+					txtIdx++
+					var resInfo YResInfo
+					resInfo.Type = arg.Res.Type
+					resInfo.Len = uint16(len(ns))
+					binary.Write(&resTail, binary.LittleEndian, &resInfo)
+					resTail.Write(ns)
+					argStm.Seek(int64((argIdx+i)*12)+4, 0)
+					binary.Write(argStm, binary.LittleEndian, uint32(len(ns)+binary.Size(resInfo)))
+					binary.Write(argStm, binary.LittleEndian, resNewOffset)
+					resNewOffset += uint32(len(ns) + binary.Size(resInfo))
+				}
+			}
 		}
 		argIdx += len(inst.Args)
 	}
@@ -387,6 +425,7 @@ func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, c
 }
 
 func printUsage(exeName string) {
+	fmt.Println("YBN extractor v2.0")
 	fmt.Printf("Usage: %s -e -ybn <ybn> [-json <json>] [-txt <txt>] [options]\n", exeName)
 	fmt.Printf("Usage: %s -p -ybn <ybn> -txt <txt> -new-ybn <new_ybn> [options]\n", exeName)
 	flag.Usage()
@@ -407,6 +446,7 @@ About the opcode:
   extYbn -e -ybn yst0XXXX.ybn -output-opcode
 
   to output the opcodes, and then use them in all the .ybn files of this game.
+  You can also use the -op-other to use other ops to extract or pack text.
 `)
 }
 
@@ -419,6 +459,24 @@ func parseCp(s string) int {
 	default:
 		return codec.Unknown
 	}
+}
+
+func parseCmdlineOp(ops string) (oplist []uint8, suc bool) {
+	oplist = make([]uint8, 0)
+	suc = true
+	if ops == "" {
+		return
+	}
+	for _, o := range strings.Split(ops, ",") {
+		op64, err := strconv.ParseUint(o, 0, 8)
+		if err != nil {
+			fmt.Println("op text op error:", err)
+			suc = false
+			return
+		}
+		oplist = append(oplist, uint8(op64))
+	}
+	return
 }
 
 func main() {
@@ -435,6 +493,7 @@ func main() {
 	opCall := flag.Int("op-call", 0, "specify opcode of Call. default: auto guess")
 	codePage := flag.String("cp", "932", "specify code page")
 	outputOpCode := flag.Bool("output-opcode", false, "output the opcode guessed")
+	otherTextOp := flag.String("op-other", "", "other op to extract/pack txt(comma to split, i.e: 3,4,100")
 	verbose := flag.Bool("v", false, "verbose output")
 	flag.Parse()
 	if (!*isExtract && !*isPack) || (*isExtract && *isPack) ||
@@ -450,8 +509,13 @@ func main() {
 	key[2] = byte((*keyInt >> 16) & 0xff)
 	key[3] = byte((*keyInt >> 24) & 0xff)
 
-	ops := keyOps{uint8(*opMsg), uint8(*opCall)}
-	//ops := keyOps{108, 43}
+	ops := keyOps{uint8(*opMsg), uint8(*opCall), nil}
+	textOps, suc := parseCmdlineOp(*otherTextOp)
+	if !suc {
+		retCode = 1
+		return
+	}
+	ops.otherOp = textOps
 
 	gIsOutputOpcode = *outputOpCode
 	gVerbose = *verbose
