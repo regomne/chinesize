@@ -156,7 +156,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyPack.cpp" />
     <ClCompile Include="NakedMemory.cpp" />
-    <ClCompile Include="PicSupport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FileReader.h" />

@@ -36,9 +36,6 @@
     <ClCompile Include="ilhook.cpp">
       <Filter>Source Files\ilhook</Filter>
     </ClCompile>
-    <ClCompile Include="PicSupport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MyPack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -25,13 +25,14 @@ struct PatchStruct
     DWORD len;
 } g_Patches[] = {
     //DP("resident.dll", 0x21F5EB,"\x80","\x86") //cp
-    DP("resident.dll", 0x42B4B4,"\x81\x74","\xa1\xb7") //右括号
-    DP("resident.dll", 0x42B4C8,"\x81\x73","\xa1\xb6") //左括号
-	DP("resident.dll", 0x696A2,"\x74\x81","\xb7\xa1") //右括号，引用上面的括号所在的函数
-	DP("resident.dll", 0x514220,"\x73\x81","\xb6\xa1") //左括号
-	DP("resident.dll", 0x51422C,"\x74\x81","\xb7\xa1") //右括号
-    DP("resident.dll", 0x233427,"\x40\x81","\xa1\xa1") //空格，call GetGlyphOutlineA之前的某个cmp，可以调试来确定
-	DP("resident.dll", 0x1c38d5,"\xa8\x03","\xa4\x03") //_mbccpy_s所在的函数内
+    DP("resident.dll", 0x44A4C4,"\x81\x74","\xa1\xb7") //右括号
+    DP("resident.dll", 0x44A4D8,"\x81\x73","\xa1\xb6") //左括号
+	DP("resident.dll", 0x6b912,"\x74\x81","\xb7\xa1") //右括号，引用上面的括号所在的函数
+	DP("resident.dll", 0x5362A8,"\x73\x81","\xb6\xa1") //左括号
+	DP("resident.dll", 0x5362B8,"\x74\x81","\xb7\xa1") //右括号
+    DP("resident.dll", 0x24F387,"\x40\x81","\xa1\xa1") //空格，call GetGlyphOutlineA之前的某个cmp，可以调试来确定
+    DP("resident.dll", 0x24EB67,"\x40\x81","\xa1\xa1") //空格，call GetGlyphOutlineA之前的某个cmp，可以调试来确定
+	DP("resident.dll", 0x1DF075,"\xa8\x03","\xa4\x03") //_mbccpy_s所在的函数内
 };
 #undef DP
 
@@ -231,7 +232,7 @@ vector<string>* SplitTxt(NakedMemory& txt)
     while (true)
     {
         while (i < txt.GetSize() && buff[i] != '\r') i++;
-        ls->push_back(ReplaceAll(string((char*)buff + last, i - last), "\\n", "\n"));
+        ls->push_back(ReplaceAll(string((char*)buff + last, i - last), "#n", "\n"));
         if (i + 1 >= txt.GetSize()) break;
         i += 2;
         last = i;
@@ -331,7 +332,7 @@ uint32_t HOOKFUNC MyProcCmds(Registers* regs, void* old_proc, void* thisp, uint3
 
 char* ReadOneLineFromTxt()
 {
-    static char line[1000];
+    static char line[10000];
     if (g_lines)
     {
         while (g_line_idx < g_lines->size())
@@ -433,6 +434,19 @@ void HOOKFUNC MyAddString(Registers* regs)
                 regs->ecx = (uint32_t)news;
             }
         }
+        else if (cmd == 203)
+        {
+            if (str_idx == 0 && !IsHalf(old_str))
+            {
+                auto news = ReadOneLineFromTxt();
+                if (!news)
+                {
+                    LOGERROR("%s txt read error", g_cur_txt.c_str());
+                    return;
+                }
+                regs->ecx = (uint32_t)news;
+            }
+        }
     }
 }
 
@@ -470,7 +484,7 @@ void HOOKFUNC MyCFI(LPLOGFONTA lfi)
 	}
     //if (strcmp(lfi->lfFaceName, "\x82\x6C\x82\x72\x20\x83\x53\x83\x56\x83\x62\x83\x4E") == 0)
     //{
-        strcpy_s(lfi->lfFaceName, "Microsoft Yahei");
+        strcpy_s(lfi->lfFaceName, "SimHei");
     //}
 }
 typedef DWORD (WINAPI *GetGlyphOutlineARoutine)(
@@ -668,7 +682,7 @@ void* gen_exhibit_bmp(int w, int h, int bit, NakedMemory& mem, NakedMemory* pal)
     memcpy(next_info, mem.Get(), mem.GetSize());
     return ptr;
 }
-
+/*
 bool read_png_to_dib(const string& png_name, NakedMemory** rgb, NakedMemory** alpha, PngInfos* info)
 {
     MyFileReader reader;
@@ -795,6 +809,7 @@ void* HOOKFUNC MyDecodeGyuAlpha(void* old_proc, void* thisp)
     }
     return (void*)ThiscallFunction0(old_proc, thisp);
 }
+*/
 
 void HOOKFUNC MyCWE(const char* className, char** windowName) {
     if (strcmp(className, "\x89\xC6\x82\xCC\x94\xDE\x8F\x97.wndclass") == 0 && *windowName) {
@@ -817,10 +832,10 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         g_exhibit_alloc = (exhibit_alloc_routine)(mod + 0x2245C0);
         //g_exhibit_free = (exhibit_free_routine)(mod + 0x2234f0);
 
-		g_proc_cmd_return_offset = 0xFFCE1; //是MyProcCmds函数在liteLoad中的第一个引用的返回地址
+		g_proc_cmd_return_offset = 0x1115C1; //是MyProcCmds函数在liteLoad中的第一个引用的返回地址
         static const HookPointStruct points[] = {
 			//?liteLoad@RetouchSystem@@AAE_NPBDK@Z 函数头
-            { "resident.dll", 0xFF8A0, MyLoadRld, "fc12", true, 8 },
+            { "resident.dll", 0x111180, MyLoadRld, "fc12", true, 8 },
 
 			/*
 			?liteLoad@RetouchSystem@@AAE_NPBDK@Z 中：
@@ -834,7 +849,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 			100F738E 7C D0                                   jl      short loc_100F7360
 			的ProcCmd的函数头
 			*/
-            { "resident.dll", 0xB0960, MyProcCmds, "rfc123", true, 12 },
+            { "resident.dll", 0xC0780, MyProcCmds, "rfc123", true, 12 },
 
 			/*ProcCmd函数内后面一个call的函数内，
 			100ADC1D 51                                      push    ecx             ; lpString
@@ -845,7 +860,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 			100ADC2C 80 3A 00                                cmp     byte ptr [edx], 0
 			上面这段代码的开头
 			*/
-            { "resident.dll", 0xADC1D, MyAddString, "r", false, 0 },
+            { "resident.dll", 0xBDC6D, MyAddString, "r", false, 0 },
 
 			/*
 			?loadRld@RetouchSystem@@QAEPAEPBDK@Z 函数内（graph的右下角）调用进去的一个函数内有：

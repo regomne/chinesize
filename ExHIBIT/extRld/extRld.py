@@ -30,7 +30,7 @@ def parse_rld_header(stm):
   stm.seek(0x114)
   return (magic, unk1, unk2, inst_cnt, unk3, tag)
 
-def parse_rld(stm, name_table):
+def parse_rld(stm, name_table, cp):
   txt = []
   pure_txt = []
   magic, h_unk1, h_unk2, inst_cnt, h_unk3, h_tag = parse_rld_header(stm)
@@ -57,29 +57,33 @@ h_unk3:%d, h_tag:%s'%(magic, h_unk1, h_unk2, inst_cnt, h_unk3, h_tag))
       strs.append(stm.readstr())
 
     for s in strs:
-      txt.append('\t'+s.decode('932'))
+      txt.append('\t'+s.decode(cp))
       
     if op == 28:
       if ints[0] in name_table:
         pure_txt.append('$' + name_table[ints[0]])
       for s in strs:
         if s != b'*' and s != b'$noname$' and len(s) != 0 and s.count(b',') < 2:
-          pure_txt.append(s.decode('932'))
+          pure_txt.append(s.decode(cp))
     elif op == 21:
       for s in strs:
         if s != b'*' and s != b'$noname$' and len(s) != 0 and s.count(b',') < 2:
-          pure_txt.append(s.decode('932'))
+          pure_txt.append(s.decode(cp))
     elif op == 48:
-      pure_txt.append(strs[0].decode('932'))
+      pure_txt.append(strs[0].decode(cp))
     elif op == 191:
       s = strs[0]
       if not is_half(s):
-        pure_txt.append(s.decode('932'))
+        pure_txt.append(s.decode(cp))
+    elif op == 203:
+      s = strs[0]
+      if not is_half(s):
+        pure_txt.append(s.decode(cp))
   return txt, pure_txt
 
 def write_txt(name,txt):
   fs=open(name,'wb')
-  ntxt=[l.replace('\n','\\n') for l in txt]
+  ntxt=[l.replace('\n','#n') for l in txt]
   fs.write('\r\n'.join(ntxt).encode('u16'))
   fs.close()
 
@@ -87,11 +91,11 @@ def ext_rld(fname1, fname2, name_table):
   fs=open(fname1, 'rb')
   stm = bytefile.ByteFile(fs.read())
   fs.close()
-##  try:
-  txt, pure_txt = parse_rld(stm, name_table)
-##  except:
-##    print(fname1, 'format error')
-##    return
+  try:
+    txt, pure_txt = parse_rld(stm, name_table, '932')
+  except:
+    print(fname1, 'format error')
+    return
   if len(pure_txt) > 0:
     write_txt(fname2, pure_txt)
     
@@ -100,7 +104,7 @@ def ext_all_rld(path1, path2):
   fs=open(charfile, 'rb')
   stm = bytefile.ByteFile(fs.read())
   fs.close()
-  txt, pure_txt = parse_rld(stm, {})
+  txt, pure_txt = parse_rld(stm, {}, '932')
   name_table = parse_name_table(pure_txt)
   for f in os.listdir(path1):
     if not f.endswith('.rld'):
@@ -109,6 +113,6 @@ def ext_all_rld(path1, path2):
             os.path.join(path2,f.replace('.rld','.txt')),
             name_table)
 
-ext_all_rld(r'f:\Program Files\lovelovesisters\rld2',
-            r'f:\Program Files\lovelovesisters\txt_n')
+ext_all_rld(r'e:\Game\きゃんきゃんバニー プルミエール３\rld2',
+            r'e:\Game\きゃんきゃんバニー プルミエール３\txt')
 
