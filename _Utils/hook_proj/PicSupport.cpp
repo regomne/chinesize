@@ -1,4 +1,4 @@
-#include "PicSupport.h"
+ï»¿#include "PicSupport.h"
 #include <windows.h>
 #include <memory.h>
 #include <type_traits>
@@ -187,7 +187,7 @@ NakedMemory Dib24To32(int width, int height, NakedMemory& old)
     return std::move(newd);
 }
 
-//ĞŞÕıÃ¿ĞĞµÄ4×Ö½Ú¶ÔÆë
+//ä¿®æ­£æ¯è¡Œçš„4å­—èŠ‚å¯¹é½
 NakedMemory dib_row_fix(int width, int height, int bitc, NakedMemory& old)
 {
     auto ori_row_bytes = width * (bitc / 8);

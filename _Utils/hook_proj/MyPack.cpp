@@ -38,7 +38,7 @@ void MyPack::GetFileList(NakedMemory& mem) {
     auto bf = (uint8_t*)mem.Get();
     auto file_cnt = *(uint32_t*)bf;
     auto entries = (FileEntry*)(bf + 4);
-    for (int i = 0;i < file_cnt;i++) {
+    for (uint32_t i = 0;i < file_cnt;i++) {
         fileInfos_[entries[i].fname] = entries[i];
     }
 }
