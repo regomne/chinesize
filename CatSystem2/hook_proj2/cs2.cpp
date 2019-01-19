@@ -16,7 +16,7 @@ BOOL HOOKFUNC MyGetVolumeInformation(
         return ret;
     }
     if (lpVolumeSerialNumber) {
-        *lpVolumeSerialNumber = 0xa409cb90;
+        *lpVolumeSerialNumber = 0xb4033cd3;
     }
     return ret;
 }
