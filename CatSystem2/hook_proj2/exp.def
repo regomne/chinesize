@@ -3,3 +3,5 @@ EXPORTS
 Direct3DCreate9 = D3dCreate9
 GetOpenFileNameA = MyOFNA
 GetSaveFileNameA = MySFNA
+GetOpenFileNameW = MyOFNW
+GetSaveFileNameW = MySFNW

@@ -12,8 +12,8 @@ const char* g_fontName = "SimHei";
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-	DP(nullptr, 0x177463,"\x9f","\xfe") //quote
-	DP(nullptr, 0x177476,"\x7e","\xfe") //quote
+	DP(nullptr, 0x26fc93,"\x9f","\xfe") //quote
+	DP(nullptr, 0x26fca6,"\x7e","\xfe") //quote
 };
 #undef DP
 
@@ -26,8 +26,16 @@ __declspec(naked) void MyOFNA() {
 	__asm jmp GetOpenFileNameA
 }
 
+__declspec(naked) void MyOFNW() {
+	__asm jmp GetOpenFileNameW
+}
+
 __declspec(naked) void MySFNA() {
 	__asm jmp GetSaveFileNameA
+}
+
+__declspec(naked) void MySFNW() {
+	__asm jmp GetSaveFileNameW
 }
 
 bool IsHalf(const string& s)
@@ -59,6 +67,14 @@ void HOOKFUNC MySWT(char** str) {
 	}
 }
 
+void HOOKFUNC MyMBWC(DWORD* cp)
+{
+	if (*cp == 932)
+	{
+		*cp = 936;
+	}
+}
+
 BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ void* _Reserved)
 {
     if (_Reason == DLL_PROCESS_ATTACH)
@@ -83,7 +99,8 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 			{ "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
 			//{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
 			{"user32.dll","SetWindowTextA",MySWT, "\x02",false,0},
-			{"kernel32.dll","GetVolumeInformationA",MyGetVolumeInformation,"f12345678",true,32}
+			{"kernel32.dll","MultiByteToWideChar", MyMBWC, "\x01",false,0},
+			//{"kernel32.dll","GetVolumeInformationA",MyGetVolumeInformation,"f12345678",true,32}
 		};
         if (!HookFunctions(points2))
         {

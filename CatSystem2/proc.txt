@@ -1,0 +1,4 @@
+文本：解包scene.int，提取cst
+图片：解包image.int，提取hg3
+人名：修改config.int/nametable.csv，startup.xml和soundconf.xml中的貌似没用，显示时可能是用的图片
+其他：sscript.kcs，tips.fes等修改
