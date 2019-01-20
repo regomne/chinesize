@@ -84,7 +84,7 @@ local function read_ast_file(fname)
 end
 
 local function extast(ast_file_name, txt_file_name)
-  local ast = read_ast_file(arg[1])
+  local ast = read_ast_file(ast_file_name)
   if ast == nil then
     return
   end
