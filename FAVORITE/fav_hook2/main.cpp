@@ -44,11 +44,11 @@ void HOOKFUNC MyCFI(LPLOGFONTA lfi)
     //}
 }
 
-void HOOKFUNC MyCW(wchar_t** strp)
+void HOOKFUNC MyCW(char** strp)
 {
-    if (*strp && wcscmp(*strp, L"想いを捧げる乙女のメロディー") == 0)
+    if (*strp && strcmp(*strp, "\x82\xB3\x82\xAD\x82\xE7\x81\x41\x82\xE0\x82\xE4\x81\x42\x20\x2D\x61\x73\x20\x74\x68\x65\x20\x4E\x69\x67\x68\x74\x27\x73\x2C\x20\x52\x65\x69\x6E\x63\x61\x72\x6E\x61\x74\x69\x6F\x6E\x2D\x20\x91\xCC\x8C\xB1\x94\xC5") == 0)
     {
-        *strp = L"『有少女献鸣的爱之奏章』中文版 | 黙示游戏中文化兴趣小组 译制 | 交流群号：153454926";
+        *strp = "『樱、萌芽』中文体验版";
     }
 }
 
@@ -78,7 +78,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
             { "gdi32.dll", "CreateFontA", MyCreateFontA, "\x09", 0, 0 },
             { "gdi32.dll", "EnumFontFamiliesExA", MyEnumFontFamliesExA, "2", 0, 0 },
             { "kernel32.dll", "lstrcmpiA", MyLstrcmpiA, "12", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 8 },
-            { "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+            { "user32.dll", "CreateWindowExA", MyCW, "\x03", false, 0 },
         };
         if (!HookFunctions(points2))
         {

@@ -4,52 +4,48 @@ import bytefile
 import os
 
 fnt={
-    4:u'真紅',
-    0x19a:u'加奈',
-    0x3c5:u'加奈',
-    0x3d5:u'澪',
-    0x598:u'澪',
-    0x5a8:u'鏡',
-    0x6e8:u'つかさ',
-    0x87e:u'藍',
-    0x904:u'蓮',
-    0xa17:u'白',
-    0xb2a:u'鈴',
-    0xd29:u'あゆむ',
-    0xeec:u'時雨',
-    0xfc4:u'とおる',
-    0x114d:u'蓮也',
-    0x1260:u'青空',
-    0x13db:u'さやか',
-    0x14ee:u'静',
-    0x1641:u'苺',
-    0x1719:u'女１',
-    0x175f:u'担任教師',
-    0x17b5:u'女の子',
-    0x182e:u'ハク',
-    0x1906:u'レン',
-    0x19de:u'看護師',
-    0x1a5b:u'祖母',
-    0x1af8:u'お母さん',
-    0x1b71:u'お母さん',
-    0x1be8:u'かみさま',
-    0x1c95:u'男の人',
-    0x1d0e:u'レン',
-    0x1d79:u'ユウマ',
-    0x1eac:u'悠馬',
-    
+    0x00000004:"クロ",
+    0x000000DC:"ハル",
+    0x000001B4:"千和",
+    0x0000028C:"姫織",
+    0x00000362:"ましろ",
+    0x0000043A:"十夜",
+    0x00000512:"あさひ",
+    0x000005EA:"あず咲",
+    0x000006C2:"ナナ",
+    0x0000079A:"智仁",
+    0x00000872:"ソル",
+    0x000009C0:"ソル",
+    0x000009D0:"ナハト",
+    0x00000AB0:"女の子",
+    0x00000B86:"ハル",
+    0x00000C5E:"サブ１",
+    0x00000D3A:"渡部",
+    0x00000E10:"サブ３",
+    0x00000F2B:"サブ４",
+    0x00001046:"サブ５",
+    0x00001184:"サブ６",
+    0x00001287:"サブ７",
+    0x0000139A:"母",
+    0x00001413:"女の人",
+    0x0000148C:"幼女",
+    0x00001505:"母親",
+    0x0000157E:"猫",
+    0x000015F7:"蝶ネクタイをしたすまし顔の猫",
+    0x00001692:"おばあさん",
+    0x0000170B:"少年",
+    0x00001784:"大雅",
     }
 
-fs=open(ur'shinku.hcb','rb')
-stm=bytefile.ByteIO(fs.read())
+fs=open(r'Sakura.hcb','rb')
+stm=bytefile.ByteFile(fs.read())
 parser=hcbParser.HcbParser(stm)
 
-
-
 parser.SetFuncNameTable(fnt,'932')
-##txt=parser.Parse()
-##fs=open('world1.txt','wb')
-##fs.write(txt.decode('932').encode('U16'))
-##fs.close()
+#txt=parser.Parse()
+#fs=open('world1.txt','wb')
+#fs.write(txt.encode('u16'))
+#fs.close()
 os.chdir('txt')
-parser.ParseTxt([(4484,4504),(4655,4770)],5042)
+parser.ParseTxt([(3804,3836), (3984,4115)], 4449)
+#parser.ParseTxt([], 4449)
