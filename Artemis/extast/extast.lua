@@ -96,6 +96,7 @@ local function extast(ast_file_name, txt_file_name)
       print("can't open file:", txt_file_name)
       return
     end
+    fs:write('\xef\xbb\xbf')
     fs:write(join_str(ls, "\r\n"))
     fs:close()
   end
