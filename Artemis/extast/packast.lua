@@ -61,6 +61,22 @@ function pack_dialog_text(text)
   return obj
 end
 
+local ast_sel_idx = 1
+local function next_sel_node(ast)
+  while true do
+    local n = ast[ast_sel_idx]
+    if n == nil then
+      return nil
+    end
+    ast_sel_idx = ast_sel_idx + 1
+    for i,v in ipairs(n) do
+      if v[1] == 'select' and v.text ~= nil then
+        return n
+      end
+    end
+  end
+end
+
 local function pack_text_to_ast(ast, ls)
   local ls_idx = 1
   local function next_line()
@@ -83,8 +99,20 @@ local function pack_text_to_ast(ast, ls)
     if #ja == 1 then
       ja[1] = pack_dialog_text(next_line())
     else
+      local sel_ls = {}
       for i = 1, #v.select do
-        v.select[i] = next_line()
+        local l = next_line()
+        v.select[i] = l
+        table.insert(sel_ls, l)
+      end
+      local sel = next_sel_node(ast)
+      for i,v in ipairs(sel) do
+        if v[1] == 'select' and v.text ~= nil then
+          v.text = sel_ls[i]
+          if sel_ls == nil then
+            print('error in select text', inspect(sel))
+          end
+        end
       end
     end
   end
