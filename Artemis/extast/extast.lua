@@ -13,6 +13,22 @@ local function join_str(ls, sep)
   return s
 end
 
+local ast_sel_idx = 1
+local function next_sel_node(ast)
+  while true do
+    local n = ast[ast_sel_idx]
+    if n == nil then
+      return nil
+    end
+    ast_sel_idx = ast_sel_idx + 1
+    for i,v in ipairs(n) do
+      if v[1] == 'select' and v.text ~= nil then
+        return n
+      end
+    end
+  end
+end
+
 local function parse_dialog_text_tag(tag)
   local t = tag[1]
   if t == 'ruby' then
@@ -63,6 +79,16 @@ local function exttext(ast)
       table.insert(ls, get_dialog_text(ja[1]))
     else
       insert_select_text(ls, v.select)
+      local sel = next_sel_node(ast)
+      local sel_cnt = 0
+      for i,v in ipairs(sel) do
+        if v[1] == 'select' and v.text ~= nil then
+          sel_cnt = sel_cnt + 1
+        end
+      end
+      if sel_cnt ~= #v.select then
+        print('error in select text, count error', inspect(sel))
+      end
     end
   end
   return ls
@@ -96,6 +122,7 @@ local function extast(ast_file_name, txt_file_name)
       print("can't open file:", txt_file_name)
       return
     end
+    fs:write('\xef\xbb\xbf')
     fs:write(join_str(ls, "\r\n"))
     fs:close()
   end

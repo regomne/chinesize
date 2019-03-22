@@ -1,10 +1,18 @@
 #encoding=utf-8
-#py2.7
+#py3.2
 
 from struct import pack
 from pdb import set_trace as int3
 
 class HcbParser:
+    mnemonics=[
+        0,'InitStack','Call','CallSys','Ret','Ret1','Jmp','Jz',
+        'Push0','Push1','PushI32','PushI16','PushI8','PushFloat','PushStr','PushGlobal',
+        'PushStack','OP11','OP12','PushTop','PushTemp','PopGlobal','CpyStack','OP17',
+        'OP18','Neg','Add','Sub','Mul','Div','Mod','Test',
+        'CondAnd','CondOr','SetE','SetNE','SetG','SetLE','SetL','SetGE'
+    ]
+
     def __init__(self,hcb):
         self.hcb=hcb
         self.text=[]
@@ -15,15 +23,7 @@ class HcbParser:
         self.codepage='932'
         self.scan_flags=bytearray(len(hcb))
     def readstr(self):
-        return str(self.hcb.read(self.hcb.readu8()).rstrip('\0'))
-
-    mnemonics=[
-        0,'InitStack','Call','CallSys','Ret','Ret1','Jmp','Jz',
-        'Push0','Push1','PushI32','PushI16','PushI8','PushFloat','PushStr','PushGlobal',
-        'PushStack','OP11','OP12','PushTop','PushTemp','PopGlobal','CpyStack','OP17',
-        'OP18','Neg','Add','Sub','Mul','Div','Mod','Test',
-        'CondAnd','CondOr','SetE','SetNE','SetG','SetLE','SetL','SetGE'
-    ]
+        return self.hcb.read(self.hcb.readu8()).rstrip(b'\0').decode(self.codepage)
 
     inst_len=[
         0,2,4,2,0,0,4,4,
@@ -56,7 +56,7 @@ class HcbParser:
                 to_addr=self.hcb.readu32()
                 self.scanFunc(to_addr)
             elif inst==6:
-                to_addr=self.hcb/readu32()
+                to_addr=self.hcb.readu32()
                 self.scanFunc(to_addr)
                 return
     def scanFunc2(self):
@@ -66,7 +66,7 @@ class HcbParser:
         while cur<self.codeBlockLen:
             inst=self.hcb.readu8()
             if inst>0x27 or inst==0:
-                print '%x'%self.hcb.tell()
+                print('%x'%self.hcb.tell())
                 int3()
             if inst==1:
                 addr=self.hcb.tell()-1
@@ -83,7 +83,7 @@ class HcbParser:
                 self.hcb.seek(self.inst_len[inst],1)
             cur=self.hcb.tell()
             if cur>=j*0x50000:
-                print '%x/%x'%(cur,self.codeBlockLen)
+                print('%x/%x'%(cur,self.codeBlockLen))
                 j+=1
         self.func.append(self.codeBlockLen)
         self.func.sort()
@@ -103,10 +103,10 @@ class HcbParser:
             self.hcb.seek(1,1)
             self.sysfunc.append(self.readstr())
 
-        print 'Scanning Funcs...'
+        print('Scanning Funcs...')
         self.scanFunc2()
 
-        print 'Parsing the script...'
+        print('Parsing the script...')
         self.hcb.seek(4)
         cur=self.hcb.tell()
         func_it=0
@@ -115,7 +115,7 @@ class HcbParser:
             if cur==self.func[func_it]:
                 self.text.append('')
                 if cur in self.funcNameTable:
-                    self.text.append('Func %s(%08X)'%(self.funcNameTable[cur].encode(self.codepage),cur))
+                    self.text.append('Func %s(%08X)'%(self.funcNameTable[cur],cur))
                 else:
                     self.text.append('Func #%04d(%08X)'%(func_it,cur))
                 func_it+=1
@@ -128,7 +128,7 @@ class HcbParser:
             elif inst==2:
                 addr=self.hcb.readu32()
                 if addr in self.funcNameTable:
-                    curline+=self.mnemonics[inst]+' '+self.funcNameTable[addr].encode(self.codepage)
+                    curline+=self.mnemonics[inst]+' '+self.funcNameTable[addr]
                 else:
                     curline+=self.mnemonics[inst]+' '+str(self.func.index(addr))
             elif inst==0xe:
@@ -147,17 +147,15 @@ class HcbParser:
             self.text.append(curline)
             cur=self.hcb.tell()
             if cur>=j*0x50000:
-                print '%x/%x'%(cur,self.codeBlockLen)
+                print('%x/%x'%(cur,self.codeBlockLen))
                 j+=1
         return '\r\n'.join(self.text)
 
     def isFa(self,s):
-        f=False
         for c in s:
             if ord(c)>=0x80:
-                f=True
-                break
-        return f
+                return True
+        return False
 
     def ParseTxt(self,exBlocks,textStart):
         self.codeBlockLen=self.hcb.readu32()
@@ -170,16 +168,16 @@ class HcbParser:
             self.hcb.seek(1,1)
             self.sysfunc.append(self.readstr())
 
-        print 'Scanning Funcs...'
+        print('Scanning Funcs...')
         self.scanFunc2()
 
-        print 'Parsing the script...'
+        print('Parsing the script...')
         self.hcb.seek(4)
         idx=[]
         cur=self.hcb.tell()
         func_it=0
         j=0
-        print 'Parsing 0000...'
+        print('Parsing 0000...')
         while 1:
             if cur==self.func[func_it]:
                 for left,right in exBlocks:
@@ -200,10 +198,10 @@ class HcbParser:
                 self.hcb.seek(self.inst_len[inst],1)
             cur=self.hcb.tell()
         fs=open('0000.txt','wb')
-        fs.write('\r\n'.join(self.text).decode('932').encode('U16'))
+        fs.write('\r\n'.join(self.text).encode('U16'))
         fs.close()
         fs=open('0000.idx','wb')
-        fs.write(''.join(idx))
+        fs.write(b''.join(idx))
         fs.close()
 
         bopen=0
@@ -211,10 +209,10 @@ class HcbParser:
         idx=[]
         while cur<self.codeBlockLen:
             if cur==self.func[func_it]:
-                print 'Parsing %04d'%func_it
+                print('Parsing %04d'%func_it)
                 if bopen:
-                    tfile.write('\r\n'.join(txt).decode('932').encode('U16'))
-                    idxfile.write(''.join(idx))
+                    tfile.write('\r\n'.join(txt).encode('u16'))
+                    idxfile.write(b''.join(idx))
                     tfile.close()
                     idxfile.close()
                 txt=[]
@@ -230,12 +228,12 @@ class HcbParser:
             elif inst==2:
                 addr=self.hcb.readu32()
                 if addr in self.funcNameTable:
-                    txt.append((u'【'+self.funcNameTable[addr]+u'】').encode('932'))
+                    txt.append('【'+self.funcNameTable[addr]+'】')
                     idx.append(pack('I',cur+1))
             else:
                 self.hcb.seek(self.inst_len[inst],1)
             cur=self.hcb.tell()
-        tfile.write('\r\n'.join(txt).decode('932').encode('U16'))
-        idxfile.write(''.join(idx))
+        tfile.write('\r\n'.join(txt).encode('u16'))
+        idxfile.write(b''.join(idx))
         tfile.close()
         idxfile.close()
