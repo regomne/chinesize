@@ -3,8 +3,8 @@
 #include <ilhook.h>
 #include "fav.h"
 
-#define FILE_NAME_BEGIN 4449
-#define FILE_NAME_END 4452
+#define FILE_NAME_BEGIN 4860
+#define FILE_NAME_END 4892
 #define FILE_CNT (FILE_NAME_END-FILE_NAME_BEGIN+2)
 
 StringTable StrTables[FILE_CNT];
@@ -28,7 +28,8 @@ char* FindTextByOffset(DWORD off)
 	int i = 0;
 	for (; i < FILE_CNT; i++)
 	{
-		if (off >= StrTables[i].offsets[0] && off <= StrTables[i].offsets[StrTables[i].cnt - 1])
+		if (StrTables[i].offsets &&
+            off >= StrTables[i].offsets[0] && off <= StrTables[i].offsets[StrTables[i].cnt - 1])
 		{
 			break;
 		}
@@ -66,7 +67,7 @@ void HOOKFUNC MyProcessString(Registers* regs)
 void HOOKFUNC MyProcessString2(Registers* regs)
 {
 	auto str = (char**)regs->esp;
-	ScriptObject* obj = (ScriptObject*)(regs->ebx + 0x68DFA8);
+	ScriptObject* obj = (ScriptObject*)(regs->ebx + 0xf1b58);
 	my_process_string_internal(obj, str);
 }
 

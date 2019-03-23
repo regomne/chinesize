@@ -62,10 +62,15 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         //auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
         static const HookPointStruct points[] = {
             //{ nullptr, rva, before_start, "r", 0, 0 },
-            { nullptr, 0x44b0d, MyProcessString, "r", 0, 0 },
-            { nullptr, 0x44b24, MyProcessString, "r", 0, 0 },
-            { nullptr, 0x44bc6, MyProcessString, "r", 0, 0 },
-            { nullptr, 0x3cb51, MyProcessString2, "r", 0, 0 },
+
+            // 搜索__cfltcvt_init, 然后找到倒数第17个函数，里面有两个call
+            { nullptr, 0x40529, MyProcessString, "r", 0, 0 },
+            { nullptr, 0x40540, MyProcessString, "r", 0, 0 },
+            { nullptr, 0x405E2, MyProcessString, "r", 0, 0 },
+
+
+            // lstrlenA右下方的call
+            { nullptr, 0x3661E, MyProcessString2, "r", 0, 0 },
         };
 
         if (!HookFunctions(points))
