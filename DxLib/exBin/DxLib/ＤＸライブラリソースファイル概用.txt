@@ -1,0 +1,192 @@
+
+以下ソースの説明です( アルファベット順です )
+
+DxArchive_.cpp
+DxArchive_.h
+　　ＤＸＡファイル(アーカイブファイル)関係のプログラムが書かれています。
+
+DxASyncLoad.cpp
+DxASyncLoad.h
+　　非同期読み込み関係のプログラムが書かれています。
+
+DxBaseFunc.cpp
+DxBaseFunc.h
+　　Ｃの標準関数的なもののプログラムが書かれています。
+
+DxBaseImage.cpp
+DxBaseImage.h
+　　ハードウエアに依存しない画像データを扱うためのプログラムが書かれています。
+
+DxCompileConfig.h
+　　ＤＸライブラリをコンパイルする際に機能を削ったりするための #define が書かれています。
+
+DxDataType.h
+DxDataTypeWin.h
+　　データ型などの定義をするためのヘッダファイルです。
+
+DxDirectX.h
+　　DirectX 関連のインターフェースの定義が書かれています。(各インターフェースの定義と完全に一致していないとアウト)
+
+DxFile.cpp
+DxFile.h
+　　ファイル読み込みに関するプログラムが書かれています。
+
+DxFont.cpp
+DxFont.h
+　　フォントの描画に関するプログラムが書かれています。
+
+DxGateway.cpp
+　　スレッドセーフ用の関数を挟む為のプログラムが書かれています。(ユーザー側からＤＸライブラリの関数が呼ばれると必ずここに書かれている関数が実行されます)
+
+DxGraphics.cpp
+DxGraphics.h
+　　描画関係のプログラムが書かれています。
+
+DxGraphicsFilter.cpp
+DxGraphicsFilter.h
+　　GraphFilter 関数関係のプログラムが書かれています。
+
+DxHandle.cpp
+DxHandle.h
+　　ハンドル管理に関するプログラムが書かれています。
+
+DxInput.cpp
+DxInput.h
+　　DirectInput を使用しているプログラムが書かれています。
+
+DxInputString.cpp
+DxInputString.h
+　　キーボードによる文字列入力に関するプログラムが書かれています。
+
+DxKeyHook.c
+　　ALTキーや Windowsキーを無効にする為に必要なＤＬＬのソースファイルです。
+
+DxKeyHookBinary.cpp
+　　DxKeyHook.c をコンパイルして作成したＤＬＬのバイナリイメージが書かれたソースファイルです。
+
+DxLib.h
+　　ユーザーが使う関数と、ユーザーもＤＸライブラリ内部でも使う定義等が書かれているヘッダファイルです。
+
+DxLog.cpp
+DxLog.h
+　　Log.txt の出力や printfDx に関係するプログラムが書かれています。
+
+DxMask.cpp
+DxMask.h
+　　マスク処理に関するプログラムが書かれています。
+
+DxMath.cpp
+DxMath.h
+　　算術演算関連を行うプログラムが書かれています。
+
+DxMemImg.cpp
+DxMemImg.h
+DxMemImgDrawFunction0.cpp
+DxMemImgDrawFunction1.cpp
+DxMemImgDrawFunction2.cpp
+DxMemImgDrawFunction3.cpp
+　　ソフトウエアレンダリング関係のプログラムが書かれています。
+
+DxMemory.cpp
+DxMemory.h
+　　ＤＸライブラリ内で使用するメモリ確保関係のプログラムが書かれています。
+
+DxModel.cpp
+DxModel.h
+　　３Ｄモデリングデータを扱うためのプログラムが書かれています。
+
+DxModelFile.h
+　　*.mv1 形式で使用する構造体が書かれたヘッダファイルです。
+
+DxModelLoader0.cpp
+　　Ｘファイルの読み込みプログラムが書かれています。
+
+DxModelLoader1.cpp
+　　ＦＢＸファイルの読み込みプログラムが書かれています。
+
+DxModelLoader2.cpp
+　　ＭＱＯファイルの読み込みプログラムが書かれています。
+
+DxModelLoader3.cpp
+　　ＰＭＤファイルとＶＭＤファイルの読み込みプログラムが書かれています。
+
+DxModelLoader3.cpp
+DxModelLoader3.h
+　　ＰＭＤファイルとＶＭＤファイルの読み込みプログラムが書かれています。
+
+DxModelLoader4.cpp
+DxModelLoader4.h
+　　ＰＭＸファイルとＶＭＤファイルの読み込みプログラムが書かれています。
+
+DxModelLoaderVMD.cpp
+DxModelLoaderVMD.h
+　　ＰＭＸファイルとＰＭＤファイルのＶＭＤファイルの読み込み処理で共通するプログラムが書かれています。
+
+DxModelRead.cpp
+DxModelRead.h
+　　３Ｄモデルファイル読み込み処理で共通するプログラムが書かれています。
+
+DxMovie.cpp
+DxMovie.h
+　　動画ファイルを扱うプログラムが書かれています。
+
+DxNetwork.cpp
+DxNetwork.h
+　　WinSock による通信関係のプログラムが書かれています。
+
+DxRingBuffer.cpp
+DxRingBuffer.h
+　　リングバッファのプログラムが書かれています。
+
+DxSoftImage.cpp
+DxSoftImage.h
+　　ソフトウエアで扱う画像関係の処理が書かれています。
+
+DxSound.cpp
+DxSound.h
+　　主に DirectSound と MIDI を使用しているプログラムが書かれています。
+
+DxSoundConvert.cpp
+DxSoundConvert.h
+　　ＰＣＭ形式以外のサウンドデータをＰＣＭ形式に変換する処理に関するプログラムが書かれています。
+
+DxStatic.h
+　　ＤＸライブラリ内部でしか使わない定義が書かれているヘッダファイルです。
+
+DxSystem.cpp
+DxSystem.h
+　　DxLib_Init や DxLib_End などのプログラムが書かれています。
+
+DxThread.cpp
+DxThread.h
+　　スレッドに関係するプログラムが書かれています。
+
+DxUseCLib.cpp
+DxUseCLib.h
+　　DxUseCLib.lib のソースです。libpng や libjpeg 等の外部のライブラリを使用しているプログラムが書かれています。
+　　元々 DxGraphics.cpp や DxWin.cpp や DxSound.cpp にかかれていたものを抜き出したものなので構成が滅茶苦茶です。
+
+DxUseCLibOgg.cpp
+DxUseCLibOgg.h
+　　DxUseCLib.lib のソースその３です。
+　　Ogg 関連が長くなったので DxUseCLib.cpp から分離しました。
+
+DxUseCLibPhysics.cpp
+　　DxUseCLib.lib のソースその２です。
+　　Bullet Physics を使っているプログラムを纏めたものです。
+
+DxUseCStrmBaseFilter.cpp
+DxUseCStrmBaseFilter.h
+　　DirectShow のベースフィルターのソースです。
+
+
+
+Windowsフォルダ内のファイル
+　　主に Windows に依存する処理を抜き出したプログラムが書かれています。
+
+
+
+Shaderフォルダ内のファイル
+　　ＤＸライブラリで使用しているシェーダーコードです。
+
+

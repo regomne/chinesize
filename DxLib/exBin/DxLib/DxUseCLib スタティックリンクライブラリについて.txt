@@ -1,0 +1,92 @@
+DxUseCLib.lib について
+
+	　DxUseCLib.lib はＤＸライブラリ中の libpng や libjpeg などの外部ライブラリを
+	使用している部分を抜き出し、一つの lib ファイルとしてものです。
+	　このようにする利点はＤＸライブラリに手を加えてみようと思った方が、
+	外部ライブラリを用意しなくても DxLib.lib のコンパイルが出来るという事です。
+	　外部ライブラリを使用している部分を改造したい、又は DxCompileConfig.h の中の
+	使用したいオプションが DxUseCLib.lib の再コンパイルを必要とする場合は
+	ＤＸライブラリが使用している外部ライブラリを用意して DxUseClib.lib を
+	コンパイルする必要があります。
+
+
+DxUseCLib.lib のコンパイルについて
+
+	　DxUseCLib.lib は以下のファイルをコンパイルして静的リンクライブラリ
+	(スタティックリンクライブラリ) にしたものです。
+
+		DxUseCLib.cpp
+		DxUseCLibOgg.cpp
+		DxUseCLibPhysics.cpp
+		Windows\DxUseCLibOggD3D9.cpp
+		Windows\DxUseCLibOggD3D11.cpp
+		Windows\DxUseCLibOggWin.cpp
+		Windows\DxUseCStrmBaseFilter.cpp
+
+	　DxUseCLib.lib をコンパイルする場合は以下の外部ライブラリを用意して、
+	必要なヘッダファイルをインクルードできるようにする必要があります。
+
+	　以下は　2014/10/6 現在での情報です。
+
+
+
+	・Bullet Physics 2.75 ( ファイル名 bullet-2.75.zip )
+
+	　http://bulletphysics.org/wordpress/
+
+	　ＤＸライブラリでは Bullet Physics のクラス名などの先頭に D_ を付けて
+	コンパイルした libファイルを使用しています。これはモーションの再生でしか
+	Bullet Physics を使用しないＤＸライブラリとは別に、独自に Bullet Physics を
+	使用しようとした場合にクラス名などの衝突が発生しないようにするためです。
+	　リネームするために作成したコンソールアプリケーションは以下のファイルを
+	コンパイルすることで作成できます。
+
+		Tool\bullet_rename.cpp
+		Tool\FileLib.cpp
+
+	　尚、バージョン2.75 のみで正常に動作するやっつけプログラムなので、
+	他のバージョンでは使用できません。
+
+
+
+	・libpng 1.6.12 ( ファイル名 lpng1612.zip )
+
+	　http://www.libpng.org/pub/png/libpng.html
+
+
+
+	・zlib 1.2.8 ( ファイル名 zlib128.zip )
+
+	　http://www.zlib.net/
+
+
+
+	・libjpeg 9 ( ファイル名 jpegsr9.zip )
+
+	　http://www.ijg.org/
+
+	　パッケージのフォルダ内に初期状態では jconfig.h がありませんので、
+	以下のファイルを jconfig.h にリネームしてください。
+	( Visual C++ 用ですが、Borland C++ や gcc でも使用できます )
+
+	　jconfig.vc
+
+
+
+	・libtiff 4.0.3 ( ファイル名 tiff-4.0.3.zip )
+
+	　http://www.libtiff.org/
+
+
+
+	・Ogg, Ogg Vorbis, Ogg Theora
+
+	　SVN( Apache Subversion ) を使用して以下のリポジトリからダウンロードできます。
+
+	http://svn.xiph.org/trunk/ogg     使用リビジョン 19150
+	http://svn.xiph.org/trunk/vorbis  使用リビジョン 19171
+	http://svn.xiph.org/trunk/theora  使用リビジョン 19181
+
+
+
+　

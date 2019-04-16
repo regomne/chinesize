@@ -245,7 +245,10 @@ void list_arc(DXARC* arc, const std::wstring& output_file)
 
 int main(int argc, char* argv[])
 {
-    gflags::SetUsageMessage("usage: hehe");
+    gflags::SetUsageMessage(R"(
+    To list    files: exDxBin -l -dxarc <dxarc> {-key <key>} {-o <output_file>
+    To extract files: exDxBin -e -dxarc <dxarc> {-key <key>} -o <output_dir> {-include <regexp>} {-exclude <regexp>}
+)");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     //constexpr auto kBinKey = "_ppiixxeell_";
     if ((!FLAGS_e && !FLAGS_l) || (FLAGS_e && FLAGS_l) ||

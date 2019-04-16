@@ -7,11 +7,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 #add_subdirectory(third_party/beaengine third_party/beaengine)
 add_subdirectory(gflags-2.2.2 glags)
+add_subdirectory(DxLib DxLib)
 
-file(GLOB CPP_FILE *.cpp)
-file(GLOB H_FILE *.h)
-
-add_executable(${TARGET_NAME} ${CPP_FILE} ${H_FILE})
+add_executable(${TARGET_NAME} main.cpp)
 
 #set(LINKER_FLAGS "/DEF:${CMAKE_CURRENT_SOURCE_DIR}/exp.def")
 #list(JOIN LINKER_FLAGS " " CMAKE_SHARED_LINKER_FLAGS)
@@ -21,10 +19,7 @@ add_executable(${TARGET_NAME} ${CPP_FILE} ${H_FILE})
 
 target_link_libraries(${TARGET_NAME} PRIVATE
   gflags::gflags
-  "D:\\Program\\DxLibMake\\Debug\\DxLib_d.lib"
-)
-target_include_directories(${TARGET_NAME} PRIVATE
-  "D:\\Program\\DxLibMake"
+  DxLib
 )
 
 target_compile_definitions(${TARGET_NAME} PRIVATE UNICODE _UNICODE)
