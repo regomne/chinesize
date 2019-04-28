@@ -9,7 +9,7 @@ using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0x44ddd,(char*)"\x75\x81",(char*)"\xb8\xa1") //quote
+    DP(nullptr, 0x44ddd, "\x75\x81", "\xb8\xa1") //quote
 };
 #undef DP
 

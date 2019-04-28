@@ -8,8 +8,8 @@ struct PatchStruct
 {
     char* mod_name;
     uint32_t offset;
-    char* pattern;
-    char* hex;
+    const char* pattern;
+    const char* hex;
     uint32_t len;
 };
 
