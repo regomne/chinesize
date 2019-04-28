@@ -42,6 +42,11 @@ void HOOKFUNC MyCFI(LPLOGFONTA lfi)
     //}
 }
 
+void HOOKFUNC MyEFF(LPLOGFONTW lfi)
+{
+	lfi->lfCharSet = 0x86;
+}
+
 void HOOKFUNC MyCW(wchar_t** strp)
 {
     if (*strp && wcscmp(*strp, L"想いを捧げる乙女のメロディー") == 0)
@@ -134,6 +139,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
+            { "gdi32.dll", "EnumFontFamiliesExW", MyEFF, "2", false, 0 },
             //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
             //{ "kernel32.dll", "WideCharToMultiByte", MyWCTM, "w13", false, 0 },
             //{ "kernel32.dll", "MultiByteToWideChar", MyMBCS, "f123456", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 24 },

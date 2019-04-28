@@ -73,12 +73,15 @@ func main() {
 			if _, err := os.Stat(txtName); os.IsNotExist(err) {
 				return nil
 			}
+			fmt.Println("processing", txtName)
 			ls1, err := textFile.ReadWin32TxtToLines(fname)
 			if err != nil {
+				fmt.Println("error", err)
 				return err
 			}
 			ls2, err := textFile.ReadWin32TxtToLines(txtName)
 			if err != nil {
+				fmt.Println("error", err)
 				return err
 			}
 
@@ -89,9 +92,10 @@ func main() {
 			if _, err := os.Stat(outDirName); os.IsNotExist(err) {
 				os.MkdirAll(outDirName, os.ModeDir)
 			}
-			stm := codec.Encode(strings.Join(nls, "\r\n"), codec.UTF16LE, codec.Replace)
+			stm := codec.Encode(strings.Join(nls, "\r\n"), codec.UTF16, codec.Replace)
 			err = ioutil.WriteFile(outName, stm, 0644)
 			if err != nil {
+				fmt.Println("error", err)
 				return err
 			}
 		}
