@@ -9,9 +9,9 @@ using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0xF0C05,"\x74\x28","\x90\x90") // ".s" compare1
-    DP(nullptr, 0xF0D61,"\x0F\x84\xF2\x00\x00\x00","\x90\x90\x90\x90\x90\x90") // ".s" compare2
-    DP(nullptr, 0xF0BE1,"\x75\x4C","\x90\x90") // a real file flag in the same function with ".s"-compare1
+    DP(nullptr, 0xEC45D,"\x74\x28","\x90\x90") // ".s" compare1
+    DP(nullptr, 0xEC5B9,"\x0F\x84\xF2\x00\x00\x00","\x90\x90\x90\x90\x90\x90") // ".s" compare2
+    DP(nullptr, 0xEC439,"\x75\x4C","\x90\x90") // a real file flag in the same function with ".s"-compare1
 };
 #undef DP
 
@@ -84,11 +84,23 @@ int HOOKFUNC MyMBCS(
     LPWSTR                            lpWideCharStr,
     int                               cchWideChar
 ) {
+    if (CodePage == 0)
+    {
+        if ((cbMultiByte > 3 || cbMultiByte == -1 && strlen(lpMultiByteStr) > 3) && memcmp(lpMultiByteStr, "\xef\xbb\xbf", 3) == 0) {
+            CodePage == CP_UTF8;
+            lpMultiByteStr += 3;
+            if (cbMultiByte != -1) cbMultiByte -= 3;
+        } else {
+            CodePage = 932;
+        }
+    }
+    return old_func(CodePage, dwFlags, lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar);
+
     if (cbMultiByte == -1)
     {
         if (strstr(lpMultiByteStr, "\x89\xb9\x8a\x79") != nullptr)
         {
-            __asm {int 3}
+            printf("aaa");
         }
     }
     else
@@ -96,7 +108,7 @@ int HOOKFUNC MyMBCS(
         auto s2 = string(lpMultiByteStr, cbMultiByte);
         if (s2.find("\x89\xb9\x8a\x79") != string::npos)
         {
-            __asm {int 3}
+            printf("bbb");
         }
     }
     static bool entered = false;
@@ -138,11 +150,11 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         //}
 
         static const HookPointStructWithName points2[] = {
-            { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
-            { "gdi32.dll", "EnumFontFamiliesExW", MyEFF, "2", false, 0 },
-            //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
-            //{ "kernel32.dll", "WideCharToMultiByte", MyWCTM, "w13", false, 0 },
-            //{ "kernel32.dll", "MultiByteToWideChar", MyMBCS, "f123456", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 24 },
+            { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", 0, 0 },
+            { "gdi32.dll", "EnumFontFamiliesExW", MyEFF, "2", 0, 0 },
+            //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", 0, 0 },
+            //{ "kernel32.dll", "WideCharToMultiByte", MyWCTM, "w13", 0, 0 },
+            { "kernel32.dll", "MultiByteToWideChar", MyMBCS, "f123456", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 24 },
         };
         if (!HookFunctions(points2))
         {
