@@ -1,7 +1,8 @@
 #encoding=utf-8
 #py3.2
 
-from struct import pack
+import os
+from struct import pack,unpack
 from pdb import set_trace as int3
 
 class HcbParser:
@@ -22,6 +23,9 @@ class HcbParser:
         self.funcNameTable={}
         self.codepage='932'
         self.scan_flags=bytearray(len(hcb))
+
+        self.txtTable={}
+
     def readstr(self):
         return self.hcb.read(self.hcb.readu8()).rstrip(b'\0').decode(self.codepage)
 
@@ -33,7 +37,21 @@ class HcbParser:
         0,0,0,0,0,0,0,0
     ]
 
-    def scanFunc(self,address):
+    def preProcess(self):
+        self.codeBlockLen=self.hcb.readu32()
+        self.hcb.seek(self.codeBlockLen)
+        entry_point=self.hcb.readu32()
+        self.hcb.seek(6,1)
+        game_title=self.readstr()
+        sysfunc_count=self.hcb.readu16()
+        for i in range(sysfunc_count):
+            self.hcb.seek(1,1)
+            self.sysfunc.append(self.readstr())
+
+        print('Scanning Funcs...')
+        self.scanFunc2()
+
+    def scanFuncRecursive(self,address):
         self.hcb.seek(address)
         if self.scan_flags[self.hcb.tell()]==1: return
         while 1:
@@ -49,16 +67,17 @@ class HcbParser:
             elif inst==2:
                 to_addr=self.hcb.readu32()
                 self.func.append(to_addr)
-                self.scanFunc(to_addr)
+                self.scanFuncRecursive(to_addr)
             elif inst==4 or inst==5:
                 return
             elif inst==7:
                 to_addr=self.hcb.readu32()
-                self.scanFunc(to_addr)
+                self.scanFuncRecursive(to_addr)
             elif inst==6:
                 to_addr=self.hcb.readu32()
-                self.scanFunc(to_addr)
+                self.scanFuncRecursive(to_addr)
                 return
+
     def scanFunc2(self):
         self.hcb.seek(4)
         cur=self.hcb.tell()
@@ -93,18 +112,7 @@ class HcbParser:
         self.codepage=code
 
     def Parse(self):
-        self.codeBlockLen=self.hcb.readu32()
-        self.hcb.seek(self.codeBlockLen)
-        entry_point=self.hcb.readu32()
-        self.hcb.seek(6,1)
-        game_title=self.readstr()
-        sysfunc_count=self.hcb.readu16()
-        for i in range(sysfunc_count):
-            self.hcb.seek(1,1)
-            self.sysfunc.append(self.readstr())
-
-        print('Scanning Funcs...')
-        self.scanFunc2()
+        self.preProcess()
 
         print('Parsing the script...')
         self.hcb.seek(4)
@@ -158,18 +166,7 @@ class HcbParser:
         return False
 
     def ParseTxt(self,exBlocks,textStart):
-        self.codeBlockLen=self.hcb.readu32()
-        self.hcb.seek(self.codeBlockLen)
-        entry_point=self.hcb.readu32()
-        self.hcb.seek(6,1)
-        game_title=self.readstr()
-        sysfunc_count=self.hcb.readu16()
-        for i in range(sysfunc_count):
-            self.hcb.seek(1,1)
-            self.sysfunc.append(self.readstr())
-
-        print('Scanning Funcs...')
-        self.scanFunc2()
+        self.preProcess()
 
         print('Parsing the script...')
         self.hcb.seek(4)
@@ -237,3 +234,36 @@ class HcbParser:
         idxfile.write(b''.join(idx))
         tfile.close()
         idxfile.close()
+    
+    def readAText(self, idxName, txtName):
+        stm = open(idxName, 'rb').read()
+        idxCnt = int(len(stm)/4)
+        ls = open(txtName, 'rb').read().decode('u16').split('\r\n')
+        if (idxCnt!=len(ls) and idxCnt!=len(ls)-1) or\
+           (idxCnt==len(ls)-1 and ls[-1]!=''):
+           raise Exception("txt lines not match")
+        i = 0
+        while i < idxCnt:
+            idx, = unpack('I', stm[i*4:i*4+4])
+            if idx in self.txtTable:
+                raise Exception('duplicated idx:%x'%idx)
+            self.txtTable[idx] = ls[i]
+            i+=1
+    
+    def readTexts(self, txtFolder):
+        for f in os.listdir(txtFolder):
+            if f.endswith('.idx'):
+                txtName = os.path.join(txtFolder, f.replace('.idx','.txt'))
+                idxName = os.path.join(txtFolder, f)
+                try:
+                    self.readAText(idxName, txtName)
+                except Exception as e:
+                    print('file %s excep: %s'%(txtName, str(e)))
+                    return False
+        return True
+
+    def patchTxt(self, txtFolder):
+        if not self.readTexts(txtFolder):
+            return
+        self.preProcess()
+
