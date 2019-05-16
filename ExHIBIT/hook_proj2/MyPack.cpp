@@ -1,7 +1,7 @@
 #include "MyPack.h"
 #include "FileReader.h"
 #include <windows.h>
-//#include "pack_key.h"
+#include "pack_key.h"
 
 using namespace std;
 
@@ -21,7 +21,7 @@ bool MyPack::Init() {
 void MyPack::XorDec(void* dst, uint32_t len) {
     auto p = (uint8_t*)dst;
     for (uint32_t i = 0;i < len;i++) {
-        //p[i] ^= g_dat_key[i & 1023];
+        p[i] ^= g_dat_key[i & 1023];
     }
 }
 

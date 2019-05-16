@@ -9,7 +9,7 @@ using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0x44ddd,(char*)"\x75\x81",(char*)"\xb8\xa1") //quote
+    DP(nullptr, 0x44ddd, "\x75\x81", "\xb8\xa1") //quote
 };
 #undef DP
 
@@ -66,8 +66,8 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         //}
 
         static const HookPointStructWithName points2[] = {
-            { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
-            //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+            { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", 0, 0 },
+            //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", 0, 0 },
         };
         if (!HookFunctions(points2))
         {
