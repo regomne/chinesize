@@ -5,5 +5,5 @@ txtpath=$2
 for f in `ls "$astpath"`
 do
 	echo "processing $f"
-	./extast.lua "$astpath/$f" "$txtpath/${f%.*}.txt"
+	./extast_v2.lua "$astpath/$f" "$txtpath/${f%.*}.txt"
 done

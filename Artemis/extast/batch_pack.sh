@@ -7,5 +7,5 @@ for f in `ls $astpath/*.ast`
 do
 	echo "processing $f"
     astname=`basename $f`
-	./packast.lua "$f" "$txtpath/${astname%.*}.txt" "$new_astpath/$astname"
+	./packast_v2.lua "$f" "$txtpath/${astname%.*}.txt" "$new_astpath/$astname"
 done
