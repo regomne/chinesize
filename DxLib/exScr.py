@@ -9,7 +9,7 @@ def has_full(s):
 def ext_scr(ls):
   nl = []
   for l in ls:
-    if has_full(l) and ('"' not in l) and (not l.lstrip().startswith('//')):
+    if has_full(l) and ('"' not in l or 'ruby text' in l) and (not l.lstrip().startswith('//')):
       nl.append(l)
   return nl
 
