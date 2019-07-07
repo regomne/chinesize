@@ -26,7 +26,7 @@ def pack_file(oldfile, txtfile, newfile):
   ls = fs.read().decode('932').split('\r\n')
   fs.close()
   fs = open(txtfile, 'rb')
-  txt = fs.read().decode('utf-8').split('\r\n')
+  txt = fs.read().decode('932').split('\r\n')
   fs.close()
   nl = pack_scr(ls, txt)
   fs = open(newfile, 'wb')
@@ -35,7 +35,7 @@ def pack_file(oldfile, txtfile, newfile):
 
 
 path1 = 'ori_scripts'
-path2 = 'txt'
+path2 = 'txtnew'
 path3 = 'scripts'
 for f in os.listdir(path1):
   if not os.path.isfile(os.path.join(path2, f)):

@@ -1,12 +1,18 @@
 #encoding=utf-8
 import os
 
-OriTables = ['怒']
+OriTables = ['　', '＠', '「', '」', '！', '？']
 
 TxtEncode = 'utf-8'
 
-StartChar = b'\x88\x90'
+StartChar = b'\x88\x9f'
 
+OriDir = 'txt'
+
+NewDir = 'txtnew'
+
+HeaderFileName = 'chars.h'
+FontBinFileName = 'font.tbl'
 
 def add_chars(tbl, chars):
     for c in chars:
@@ -93,6 +99,15 @@ def serialize_tbl_to_h(tbl, fname):
     fs.close()
 
 
+def serialize_tbl_to_bin(tbl, fname):
+    bin_arr = [b'\0\0' for i in range(65536)]
+    for c, enc in tbl.items():
+        bin_arr[enc[0]+enc[1]*256] = c.encode("utf-16-le")
+    fs = open(fname, 'wb')
+    fs.write(b''.join(bin_arr))
+    fs.close()
+
+
 def replace_text(stm, tbl):
     ns = []
     for c in stm:
@@ -125,10 +140,12 @@ def replace_files(ori_dir, new_dir, extname, file_enc, tbl):
             fs.close()
 
 
-print('scanning chars...')
-chars = scan_chars(r'E:\Books\new', '.txt', TxtEncode)
-print('chars cnt: ', len(chars))
-print('making char table...')
-tbl = make_tbl(chars, StartChar, [])
-print('writing header file...')
-serialize_tbl_to_h(tbl, 'a.h')
+print('scanning texts...')
+chars = scan_chars(OriDir, '.txt', TxtEncode)
+print('generating map table...')
+tbl = make_tbl(chars, StartChar, OriTables)
+print('genarating header file...')
+serialize_tbl_to_bin(tbl, FontBinFileName)
+print('replacing files...')
+replace_files(OriDir, NewDir, '.txt', TxtEncode, tbl)
+print('complete.')

@@ -22,7 +22,7 @@ def ext_file(old, new):
   fs.write('\r\n'.join(nl).encode('utf-8'))
   fs.close()
 
-path1 = 'scripts'
+path1 = 'ori_scripts'
 path2 = 'txt'
 for f in os.listdir(path1):
   ext_file(os.path.join(path1,f),
