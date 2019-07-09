@@ -3,7 +3,7 @@ import os
 
 OriTables = ['　', '＠', '「', '」', '！', '？']
 
-TxtEncode = 'utf-8'
+TxtEncode = 'utf-8-sig'
 
 StartChar = b'\x88\x9f'
 
@@ -54,6 +54,11 @@ def sjis_table(start_char, excluded_chars=[]):
 
         b = bytes([b1, b2])
         if b not in extbl:
+            try:
+                b.decode('932')
+            except:
+                b2 += 1
+                continue
             yield b
         b2 += 1
 
