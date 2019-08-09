@@ -32,7 +32,7 @@ def packText(xmlname, txtname, withName):
   tree = ET.fromstring(txt.replace(' @l=', ' l__='))
   code=tree.find('code')
   fs=open(txtname,'rb')
-  ls=fs.read().decode('u16').split('\r\n')
+  ls=fs.read().decode('utf-8-sig').split('\r\n')
   fs.close()
   ti = 0
   for ch in code:
@@ -42,6 +42,8 @@ def packText(xmlname, txtname, withName):
         if v!='':
           ti+=1
       ch.set('text', ls[ti])
+      if 'add' in ch.attrib and ls[ti].startswith('　'):
+        ch.set('add','false')
       ti+=1
     elif ch.tag=='select':
       for menu in ch:
