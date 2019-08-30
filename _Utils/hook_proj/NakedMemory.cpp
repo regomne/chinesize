@@ -51,6 +51,11 @@ NakedMemory& NakedMemory::operator=(NakedMemory&& other) noexcept
     return *this;
 }
 
+NakedMemory::operator bool() const
+{
+    return buff_ != nullptr;
+}
+
 NakedMemory::~NakedMemory()
 {
     if (buff_)

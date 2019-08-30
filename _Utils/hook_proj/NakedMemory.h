@@ -25,6 +25,7 @@ public:
 
     NakedMemory& operator=(const NakedMemory& other);
     NakedMemory& operator=(NakedMemory&& other) noexcept;
+    operator bool() const;
 
 private:
     uint8_t* buff_;
