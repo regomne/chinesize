@@ -45,3 +45,5 @@ add_library(${TARGET_NAME} STATIC ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_PUBLIC_HDRS} 
 target_compile_definitions(${TARGET_NAME} PRIVATE ASMV ASMINF)
 
 target_include_directories(${TARGET_NAME} INTERFACE .)
+
+target_compile_options(${TARGET_NAME} PRIVATE /MT)
