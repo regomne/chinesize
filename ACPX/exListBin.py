@@ -41,7 +41,7 @@ def encode_entry(stm, off, size, pat, ext_idx, ls, cp):
   lsidx = 0
   pat_size = struct.calcsize(pat)
   while cur < off+size:
-    vals = struct.unpack(pat, stm[cur:cur+pat_size])
+    vals = list(struct.unpack(pat, stm[cur:cur+pat_size]))
     if lsidx+len(ext_idx)-1 >= len(ls):
       raise Exception('line not enough')
     for i in ext_idx:
@@ -90,12 +90,16 @@ def encode_list(stm, desc, ls):
       d = desc[str(idx)]
       lsidx += encode_entry(stm, cur, blocksize,
                             d['pat'], d['text'], ls[lsidx:], desc['encoding'])
+    cur += blocksize
+  if not has_str_tbl:
+    return stm
+
   if cur+blocksize != len(stm):
     raise Exception('strtbl not in the last of the file')
   line_cnt = len(read_str_tbl(stm[cur:]))
   if lsidx+line_cnt > len(ls):
     raise Exception('line not enough')
-  strtbl = pack_str_tbl(ls[lsidx:lsidx+line_cnt])
+  strtbl = pack_str_tbl(ls[lsidx:lsidx+line_cnt], desc['encoding'])
   stm[cur:] = strtbl
   stm[cur-4:cur] = struct.pack('I', len(strtbl))
   stm[4:8] = struct.pack('I', len(stm)-8)
@@ -133,11 +137,12 @@ def ext_list_bin(fname, desc_name, newname):
   fs.close()
 
 
-def pack_list_bin(fname, desc_name, txtname, newname):
+def pack_list_bin(fname, desc_name, txtname, newname, cp):
   fs = open(fname, 'rb')
-  stm = fs.read()
+  stm = bytearray(fs.read())
   fs.close()
   desc = normalize_desc(toml.load(desc_name))
+  desc["encoding"] = cp
   fs = open(txtname, 'rb')
   txts = fs.read().decode('utf-8-sig').split('\r\n')
   fs.close()
@@ -146,5 +151,8 @@ def pack_list_bin(fname, desc_name, txtname, newname):
   fs.write(nstm)
   fs.close()
 
-ext_list_bin('0db_scr.bin', 'scr.toml', 'scr.txt')
-pack_list_bin('0db_scr.bin','scr.toml','scr.txt','db_scr.bin')
+
+#ext_list_bin('0data\\db_scr.bin', 'data\\scr.toml', 'data\\db_scr.txt')
+ext_list_bin('0data\\db_game.bin', 'data\\game.toml', 'data\\db_game.txt')
+pack_list_bin('0data\\db_scr.bin', 'data\\scr.toml',
+              'data\\db_scr.txt', 'data\\db_scr.bin', '936')

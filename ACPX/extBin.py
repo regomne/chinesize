@@ -33,7 +33,9 @@ ScriptCmdLengthTbl=[
   0, 0, 0, 0, 0, 0, 0, 0, #4A
   0, 0, 0, 0, 0, 0, 0, 0, #52
   0, 0, 0, 0, 0, 0, 0, 0, #5A
-  0, 4, 0 #62
+  0, 0, 0, 0, 0, 4, 0, 0, #62
+  0, 0, 0, 0, 0, 0, 0, 0, #6A
+  0,                      #72
   ]
 
 def read_u32(stm,p):
@@ -63,7 +65,7 @@ def parse_code(code):
     step=-1
     if c<0x22:
       step=BasicCodeLengthTbl[c]
-    elif c<0x65:
+    elif c<=0x72:
       step=ScriptCmdLengthTbl[c-0x22]
     else:
       raise Exception('code error!')
@@ -92,17 +94,18 @@ def parse_code(code):
         print('not all push name: %x'%cur_off)
         stridx.append(('name',-1))
     elif c==0x2c: #MENU
-      if is_all_type(stack[-4:-1],'push'):
+      #if is_all_type(stack[-4:-1],'push'):
+      if stack[-3][0] == 'str':
         stridx.append(('menu',stack[-3][1]))
       else:
         print('not all push menu: %x'%cur_off)
         stridx.append(('menu',-1))
-    elif c==0x5c: #INFO
-      if stack[-3][0]!='str':
+    elif c==0x5f: #TITLE
+      if stack[-4][0]!='str':
         print('info error:'%cur_off)
         stridx.append(('info',-1))
       else:
-        stridx.append(('info',stack[-3][1]))
+        stridx.append(('info',stack[-4][1]))
     cur_off+=step
   return stridx
 
@@ -122,7 +125,7 @@ def gen_txt_from_stridx(stridx,strs):
         menu=strs[idx]
       else:
         menu='unk'
-      print('menu:',menu)
+      #print('menu:',menu)
       txt.append('>'+menu)
     elif tp=='info':
       if idx>=0:
@@ -237,10 +240,10 @@ def read_name_file(fname):
   fs.close()
   return ls
 
-NameTable=read_name_file('data\\scr.txt')
-extEscrAll('script_ori','script_txt2',ext_bin2)
+NameTable=read_name_file('data\\db_scr.txt')
+extEscrAll('0script','txt',ext_bin2)
 ##pack_bin('script_ori\\01_01.bin',
 ##         'script_txt\\01_01.txt',
 ##         'script\\01_01.bin',
 ##         '936')
-#ext_bin('script\\01_01.bin','script\\01.txt')
+#ext_bin2('0script\\z_test.bin','test.txt')
