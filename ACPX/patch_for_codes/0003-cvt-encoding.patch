@@ -1,0 +1,351 @@
+From 320a01e19f821f6363ef3d74c813f155c937ffd5 Mon Sep 17 00:00:00 2001
+From: regomne <fallingsunz@gmail.com>
+Date: Sat, 31 Aug 2019 12:01:50 +0800
+Subject: [PATCH 3/4] cvt encoding
+
+---
+ misc/text.c | 86 ++++++++++++++++++++++++++---------------------------
+ 1 file changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/misc/text.c b/misc/text.c
+index f102685..c04cba8 100644
+--- a/misc/text.c
++++ b/misc/text.c
+@@ -28,7 +28,7 @@ TAG tag;
+ uchar tag_buf[4096];
+ 
+ //===========================================================================
+-// 僼僅儞僩偺愝掕
++// フォントの設定
+ //===========================================================================
+ void init_default_font(int font_id, int weight)
+ {
+@@ -47,7 +47,7 @@ void init_default_font(int font_id, int weight)
+ 	}
+ }
+ //===========================================================================
+-// 僞僌偺庢摼
++// タグの取得
+ //===========================================================================
+ uchar* get_tag(uchar* text)
+ {
+@@ -100,7 +100,7 @@ uchar* get_tag(uchar* text)
+ 	return text;
+ }
+ //===========================================================================
+-// 悢抣偺庢摼
++// 数値の取得
+ //===========================================================================
+ int get_num(uchar* text, int value)
+ {
+@@ -117,7 +117,7 @@ int get_num(uchar* text, int value)
+ 	return value;
+ }
+ //===========================================================================
+-// 暥帤僐乕僪偺庢摼
++// 文字コードの取得
+ //===========================================================================
+ ushort get_chr(uchar** pp)
+ {
+@@ -136,7 +136,7 @@ ushort get_chr(uchar** pp)
+ 	return ch;
+ }
+ //===========================================================================
+-// 暥帤僐乕僪偺奿擺
++// 文字コードの格納
+ //===========================================================================
+ void set_chr(uchar** pp, ushort ch)
+ {
+@@ -150,7 +150,7 @@ void set_chr(uchar** pp, ushort ch)
+ 	}
+ }
+ //===========================================================================
+-// 幚懱嶲徠偺曄姺
++// 実体参照の変換
+ //===========================================================================
+ int entity_reference(uchar* text)
+ {
+@@ -186,7 +186,7 @@ int entity_reference(uchar* text)
+ 	return code;
+ }
+ //===========================================================================
+-// 僞僌晅偒僥僉僗僩偺昤夋
++// タグ付きテキストの描画
+ //===========================================================================
+ typedef struct{
+ 	uchar*		text;
+@@ -199,8 +199,8 @@ typedef struct{
+ 
+ extern int check_bracket(int ch)
+ {
+-	uchar* bracket_l = "乪乬乮乲乵乷乹乻乽亀亂";
+-	uchar* bracket_r = "乫乭乯乴乶乸乺乼乿亁亃";
++	uchar* bracket_l = "‘“（〔［｛〈《「『【";
++	uchar* bracket_r = "’”）〕］｝〉》」』】";
+ 	uchar* pch = strchr(bracket_l, ch);
+ 	if(pch != NULL){
+ 		pch = &bracket_r[pch - bracket_l];
+@@ -211,10 +211,10 @@ extern int check_bracket(int ch)
+ 
+ void hyphenation_text(MESSAGE* mes)
+ {
+-	static uchar* head_weak = " .:;?!丄丅丆丏丗丟丣並乚乫乭乯乴乶乸乺乼乿亁亃";
+-	static uchar* head = ".:;?!丄丅丆丏丗丟丣並乚乫乭乯乴乶乸乺乼乿亁亃"
+-						"偀偂偅偉偋傖傘傚偭傽傿僁僃僅僢儍儏儑儙儠儢乕丠両";
+-	static uchar* tail = "乪乬乮乲乵乷乹乻乽亀亂";
++	static uchar* head_weak = " .:;?!、。，．：；゛゜‐’”）〕］｝〉》」』】";
++	static uchar* head = ".:;?!、。，．：；゛゜‐’”）〕］｝〉》」』】"
++						"ぁぃぅぇぉゃゅょっァィゥェォッャュョヮヵヶー？！";
++	static uchar* tail = "‘“（〔［｛〈《「『【";
+ 	static int level = 0;
+ 
+ 	static LINEDAT bank[256];
+@@ -494,7 +494,7 @@ void hyphenation_text(MESSAGE* mes)
+ 	}
+ }
+ //===========================================================================
+-// 夋憸僼僅儞僩偺弶婜壔
++// 画像フォントの初期化
+ //===========================================================================
+ #define FONT_CACHE_SIZE		32
+ 
+@@ -513,7 +513,7 @@ void init_font_cache()
+ 	free_font_cache();
+ }
+ //===========================================================================
+-// 夋憸僼僅儞僩偺屻巒枛
++// 画像フォントの後始末
+ //===========================================================================
+ void free_font_cache()
+ {
+@@ -524,7 +524,7 @@ void free_font_cache()
+ 	font_cache_count = 0;
+ }
+ //===========================================================================
+-// 夋憸僼僅儞僩偺儘乕僪
++// 画像フォントのロード
+ //===========================================================================
+ FONT_CACHE* load_font_code(uchar face, uchar code)
+ {
+@@ -559,7 +559,7 @@ FONT_CACHE* load_font_code(uchar face, uchar code)
+ 	return &font_cache[0];
+ }
+ //===========================================================================
+-// 夋憸僼僅儞僩偺昤夋
++// 画像フォントの描画
+ //===========================================================================
+ void put_char(int page, int x, int y, uchar* ch, int size, int face)
+ {
+@@ -597,7 +597,7 @@ void put_char(int page, int x, int y, uchar* ch, int size, int face)
+ 	smooth(page, &rc0, font->page, &rc1, -1);
+ }
+ //===========================================================================
+-// 僼僅儞僩昤夋
++// フォント描画
+ //===========================================================================
+ void draw_char(MESSAGE* mes, int x, int y, int ch, bool ruby)
+ {
+@@ -621,9 +621,9 @@ void draw_char(MESSAGE* mes, int x, int y, int ch, bool ruby)
+ 		}
+ 		if(ruby_change & 0x01){
+ 			if(mes->ruby_type == FT_GOTHIC){
+-				strcpy(ruby_font.name, "俵俽 僑僔僢僋");
++				strcpy(ruby_font.name, "ＭＳ ゴシック");
+ 			}else if(mes->ruby_type == FT_MINCHO){
+-				strcpy(ruby_font.name, "俵俽 柧挬");
++				strcpy(ruby_font.name, "ＭＳ 明朝");
+ 			}else if(mes->ruby_type == FT_USER){
+ 				strcpy(ruby_font.name, user_font_name);
+ 			}
+@@ -652,9 +652,9 @@ void draw_char(MESSAGE* mes, int x, int y, int ch, bool ruby)
+ 		}
+ 		if(font_change & 0x01){
+ 			if(mes->font_type == FT_GOTHIC){
+-				strcpy(text_font.name, "俵俽 僑僔僢僋");
++				strcpy(text_font.name, "ＭＳ ゴシック");
+ 			}else if(mes->font_type == FT_MINCHO){
+-				strcpy(text_font.name, "俵俽 柧挬");
++				strcpy(text_font.name, "ＭＳ 明朝");
+ 			}else if(mes->font_type == FT_USER){
+ 				strcpy(text_font.name, user_font_name);
+ 			}
+@@ -730,7 +730,7 @@ void draw_char(MESSAGE* mes, int x, int y, int ch, bool ruby)
+ 	}
+ }
+ //===========================================================================
+-// ruby僞僌
++// rubyタグ
+ //===========================================================================
+ void process_ruby(MESSAGE* mes)
+ {
+@@ -755,9 +755,9 @@ void process_ruby(MESSAGE* mes)
+ 		if(!strcmp(tag.attrib[i], "text")){
+ 			strcpy(text, tag.value[i]);
+ 		}else if(!strcmp(tag.attrib[i], "type")){
+-			if(!strcmp(tag.value[i], "僑僔僢僋")){
++			if(!strcmp(tag.value[i], "ゴシック")){
+ 				mes->ruby_type = FT_GOTHIC;
+-			}else if(!strcmp(tag.value[i], "柧挬")){
++			}else if(!strcmp(tag.value[i], "明朝")){
+ 				mes->ruby_type = FT_MINCHO;
+ 			}else{
+ 				mes->ruby_type = default_font_id;
+@@ -827,7 +827,7 @@ void process_ruby(MESSAGE* mes)
+ 	mes->ruby_drop_col = ruby_drop_col;
+ }
+ //===========================================================================
+-// font僞僌
++// fontタグ
+ //===========================================================================
+ void process_font(MESSAGE* mes)
+ {
+@@ -842,9 +842,9 @@ void process_font(MESSAGE* mes)
+ 
+ 	for(i = 0; i < tag.count; i++){
+ 		if(!strcmp(tag.attrib[i], "type")){
+-			if(!strcmp(tag.value[i], "僑僔僢僋")){
++			if(!strcmp(tag.value[i], "ゴシック")){
+ 				mes->font_type = FT_GOTHIC;
+-			}else if(!strcmp(tag.value[i], "柧挬")){
++			}else if(!strcmp(tag.value[i], "明朝")){
+ 				mes->font_type = FT_MINCHO;
+ 			}else{
+ 				mes->font_type = default_font_id;
+@@ -889,7 +889,7 @@ void process_font(MESSAGE* mes)
+ 	mes->font_drop_col = font_drop_col;
+ }
+ //===========================================================================
+-// img僞僌
++// imgタグ
+ //===========================================================================
+ void process_img(MESSAGE* mes)
+ {
+@@ -1024,7 +1024,7 @@ void process_img(MESSAGE* mes)
+ 	}
+ }
+ //===========================================================================
+-// em僞僌
++// emタグ
+ //===========================================================================
+ void process_em(MESSAGE* mes)
+ {
+@@ -1041,7 +1041,7 @@ void process_em(MESSAGE* mes)
+ 	mes->flag = flag;
+ }
+ //===========================================================================
+-// key僞僌
++// keyタグ
+ //===========================================================================
+ void process_key(MESSAGE* mes)
+ {
+@@ -1061,7 +1061,7 @@ void process_key(MESSAGE* mes)
+ 	}
+ }
+ //===========================================================================
+-// 侾暥帤昤夋
++// １文字描画
+ //===========================================================================
+ void process_char(MESSAGE* mes)
+ {
+@@ -1107,7 +1107,7 @@ void process_char(MESSAGE* mes)
+ 		w = mes->font_size / 2;
+ 	}
+ 
+-//	if(ch != '丂' && ch != ' '){
++//	if(ch != '　' && ch != ' '){
+ 		x = mes->margin_left + mes->x;
+ 		if(mes->align == 1){
+ 			x += mes->space[mes->line_count] / 2;
+@@ -1133,7 +1133,7 @@ void process_char(MESSAGE* mes)
+ 	mes->x += w + mes->column_space;
+ }
+ //===========================================================================
+-// 暥帤楍夝愅
++// 文字列解析
+ //===========================================================================
+ void process_text(MESSAGE* mes)
+ {
+@@ -1276,7 +1276,7 @@ void process_text(MESSAGE* mes)
+ 	}
+ }
+ //===========================================================================
+-// 儌僕儏乕儖弶婜壔
++// モジュール初期化
+ //===========================================================================
+ extern void init_text_lib()
+ {
+@@ -1296,7 +1296,7 @@ extern void init_text_lib()
+ 	}
+ }
+ //===========================================================================
+-// 儌僕儏乕儖夝曻
++// モジュール解放
+ //===========================================================================
+ extern void free_text_lib()
+ {
+@@ -1312,7 +1312,7 @@ extern void free_text_lib()
+ 	}
+ }
+ //===========================================================================
+-// 僼僅儞僩僶僢僼傽偺儕僒僀僘
++// フォントバッファのリサイズ
+ //===========================================================================
+ extern void resize_text_buffer(int width, int height)
+ {
+@@ -1338,7 +1338,7 @@ extern void resize_text_buffer(int width, int height)
+ 	}
+ }
+ //===========================================================================
+-// 暥帤楍偺昤夋
++// 文字列の描画
+ //===========================================================================
+ extern int print(MESSAGE* pmes)
+ {
+@@ -1381,7 +1381,7 @@ extern int print(MESSAGE* pmes)
+ 	return text_info_count;
+ }
+ //===========================================================================
+-// 僼僅儞僩偺弶婜壔
++// フォントの初期化
+ //===========================================================================
+ extern void init_font(int size, uint col, uint edge, uint drop)
+ {
+@@ -1403,7 +1403,7 @@ extern void init_font(int size, uint col, uint edge, uint drop)
+ 	mess.bracket = -1;
+ }
+ //===========================================================================
+-// 暥帤楍偺昤夋
++// 文字列の描画
+ //===========================================================================
+ extern void draw_text(int page, int x, int y, uchar* text)
+ {
+@@ -1414,7 +1414,7 @@ extern void draw_text(int page, int x, int y, uchar* text)
+ 	print(&mess);
+ }
+ //===========================================================================
+-// 昤夋斖埻偺庢摼
++// 描画範囲の取得
+ //===========================================================================
+ extern void get_text_rect(RECT* prc)
+ {
+@@ -1428,7 +1428,7 @@ extern void get_text_rect(RECT* prc)
+ 	}
+ }
+ //===========================================================================
+-// 暥帤楍偺曄姺(幚懱嶲徠仺摿庩暥帤)
++// 文字列の変換(実体参照→特殊文字)
+ //===========================================================================
+ extern void decode_entities(uchar* dest, uchar* src)
+ {
+@@ -1462,7 +1462,7 @@ extern void decode_entities(uchar* dest, uchar* src)
+ 	*dest = '\0';
+ }
+ //===========================================================================
+-// 暥帤楍偺曄姺(摿庩暥帤仺幚懱嶲徠)
++// 文字列の変換(特殊文字→実体参照)
+ //===========================================================================
+ extern void encode_entities(uchar* dest, uchar* src)
+ {
+-- 
+2.17.0.windows.1
+

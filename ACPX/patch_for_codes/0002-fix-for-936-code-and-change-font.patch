@@ -1,0 +1,55 @@
+From 23e0647824d993a93c4a781a44430108e83b9fde Mon Sep 17 00:00:00 2001
+From: regomne <fallingsunz@gmail.com>
+Date: Sat, 31 Aug 2019 11:42:21 +0800
+Subject: [PATCH 2/4] fix for 936 code and change font
+
+---
+ lib/string.h | 3 ++-
+ misc/text.c  | 8 ++++++--
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/lib/string.h b/lib/string.h
+index eb76b95..18bbc9b 100644
+--- a/lib/string.h
++++ b/lib/string.h
+@@ -11,5 +11,6 @@
+ #define C_ALPHA				(C_LOWER|C_UPPER)
+ #define C_ALNUM				(C_ALPHA|C_DIGIT)
+ 
+-#define ISKANJI(x)			((((x)^0x20)-0xa1) <= 0x3b)
++//#define ISKANJI(x)			((((x)^0x20)-0xa1) <= 0x3b)
++#define ISKANJI(x)			(x>=0x81 && x<=0xfe)
+ 
+diff --git a/misc/text.c b/misc/text.c
+index ab0ab00..f102685 100644
+--- a/misc/text.c
++++ b/misc/text.c
+@@ -1,4 +1,4 @@
+-
++//#include "text.h"
+ FONTSTYLE text_font;
+ FONTSTYLE ruby_font;
+ uint font_change;
+@@ -35,7 +35,9 @@ void init_default_font(int font_id, int weight)
+ 	default_font_id = font_id;
+ 	default_font_weight = weight;
+ 
+-	ini_gets("Font", "Face", "", user_font_name, sizeof(user_font_name), NULL);
++	//ini_gets("Font", "Face", "", user_font_name, sizeof(user_font_name), NULL);
++	strcpy(user_font_name, "SimHei");
++	log_out("init font: %s", user_font_name);
+ 	if(user_font_name[0] != '\0'){
+ 		default_font_id = FT_USER;
+ 		default_font_weight = 400;
+@@ -609,6 +611,8 @@ void draw_char(MESSAGE* mes, int x, int y, int ch, bool ruby)
+ 
+ 	if(mes->cpage < 0){ return; }
+ 
++	mes->ruby_type = FT_USER;
++	mes->font_type = FT_USER;
+ 	if(ruby){
+ 		if(ruby_change & 0x02){
+ 			gclear(color_page, RC(2,0,2,1), mes->ruby_text_col0);
+-- 
+2.17.0.windows.1
+
