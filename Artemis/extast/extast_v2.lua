@@ -100,10 +100,10 @@ local function exttext(ast)
 
     local name = v.name
     if name ~= nil then
-      if name.ja == nil then
+      if name.ja == nil and name.name == nil then
         print('error in name.ja:', inspect(v))
       end
-      table.insert(ls, name.ja)
+      table.insert(ls, name.ja or name.name)
     end
     local ja = v.ja
     if ja == nil then
