@@ -16,7 +16,7 @@ add_library(${TARGET_NAME} STATIC
   ${WIN_H}
 )
 
-target_compile_options(${TARGET_NAME} PRIVATE /source-charset:utf-8)
+target_compile_options(${TARGET_NAME} PRIVATE /source-charset:utf-8 /MT)
 
 target_include_directories(${TARGET_NAME} INTERFACE
   .

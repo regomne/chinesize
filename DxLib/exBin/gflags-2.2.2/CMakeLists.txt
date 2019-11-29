@@ -480,6 +480,7 @@ foreach (TYPE IN ITEMS STATIC SHARED)
         if (HAVE_SHLWAPI_H)
           target_link_libraries (${target_name} shlwapi.lib)
         endif ()
+        target_compile_options(${target_name} PRIVATE /MT)
         list (APPEND TARGETS ${target_name})
         # add convenience make target for build of both shared and static libraries
         if (NOT GFLAGS_IS_SUBPROJECT)
