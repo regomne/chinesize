@@ -1,0 +1,14 @@
+#提取时使用的文本编码
+encoding='932'
+
+[1]  #需要提取的节索引
+pat="64sIII32s"  #该节的item定义，使用python的struct表示方法
+text=[0] #需要提取上述item中的文本的索引
+
+#[4]
+#pat="64sI"
+#text=[0]
+
+[5]
+pat="I64s32sII"
+text=[1]
