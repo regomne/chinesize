@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 def has_full(s):
@@ -28,15 +29,23 @@ def pack_file(oldfile, txtfile, newfile):
   fs = open(txtfile, 'rb')
   txt = fs.read().decode('932').split('\r\n')
   fs.close()
-  nl = pack_scr(ls, txt)
+  try:
+    nl = pack_scr(ls, txt)
+  except:
+    print('error packing:', newfile)
+    return
   fs = open(newfile, 'wb')
   fs.write('\r\n'.join(nl).encode('932'))
   fs.close()
 
 
-path1 = 'ori_scripts'
-path2 = 'txtnew'
-path3 = 'scripts'
+if len(sys.argv)<4:
+  print('usage: %s <ori_script> <txt> <new_script>'%sys.argv[0])
+  exit(0)
+
+path1 = sys.argv[1]
+path2 = sys.argv[2]
+path3 = sys.argv[3]
 for f in os.listdir(path1):
   if not os.path.isfile(os.path.join(path2, f)):
     continue

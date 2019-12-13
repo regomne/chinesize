@@ -1,9 +1,10 @@
 #encoding=utf-8
 import os
+import sys
 
 OriTables = ['　', '＠', '「', '」', '！', '？']
 
-TxtEncode = 'utf-8-sig'
+TxtEncode = 'utf-8'
 
 StartChar = b'\x88\x9f'
 
@@ -47,18 +48,15 @@ def sjis_table(start_char, excluded_chars=[]):
             b2 = 0x40
             b1 += 1
 
-        if b1 == 0xa0:
+        if b1 == 0x98:
+            b1 = 0x99
+        elif b1 == 0xa0:
             b1 = 0xe0
         elif b1 == 0xfd:
             raise Exception("not enough chars!")
 
         b = bytes([b1, b2])
         if b not in extbl:
-            try:
-                b.decode('932')
-            except:
-                b2 += 1
-                continue
             yield b
         b2 += 1
 
@@ -145,12 +143,18 @@ def replace_files(ori_dir, new_dir, extname, file_enc, tbl):
             fs.close()
 
 
+if len(sys.argv) < 3:
+    print('usage: %s <ori_dir> <new_dir>' % sys.argv[0])
+    exit(0)
+
+ori_dir = sys.argv[1]
+new_dir = sys.argv[2]
 print('scanning texts...')
-chars = scan_chars(OriDir, '.txt', TxtEncode)
+chars = scan_chars(ori_dir, '.txt', TxtEncode)
 print('generating map table...')
 tbl = make_tbl(chars, StartChar, OriTables)
 print('genarating header file...')
 serialize_tbl_to_bin(tbl, FontBinFileName)
 print('replacing files...')
-replace_files(OriDir, NewDir, '.txt', TxtEncode, tbl)
+replace_files(ori_dir, new_dir, '.txt', TxtEncode, tbl)
 print('complete.')
