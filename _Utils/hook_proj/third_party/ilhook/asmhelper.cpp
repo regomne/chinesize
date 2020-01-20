@@ -319,7 +319,7 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr)
 }
 
 
-bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWORD srcAddr)
+bool GeneratePushInsts(const char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWORD srcAddr)
 {
 	BYTE* p=addr;
 	BYTE* pend=p+*length;
@@ -330,7 +330,7 @@ bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr, DWO
 	*(WORD*)p=0xec8b; //mov ebp,esp
 	p+=2;
 
-	char* ps=seq+strlen(seq)-1;
+	auto* ps=seq+strlen(seq)-1;
 
 	while(ps>=seq)
 	{

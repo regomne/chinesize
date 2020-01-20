@@ -15,10 +15,10 @@ struct PatchStruct
 
 struct HookPointStruct
 {
-    char* module_name;
+    const char* module_name;
     uint32_t offset;
     void* hook_routine;
-    char* reg_tags;
+    const char* reg_tags;
     uint32_t options;
     union
     {
@@ -28,10 +28,10 @@ struct HookPointStruct
 };
 struct HookPointStructWithName
 {
-    char* module_name;
-    char* proc_name;
+    const char* module_name;
+    const char* proc_name;
     void* hook_routine;
-    char* reg_tags;
+    const char* reg_tags;
     uint32_t options;
     union
     {

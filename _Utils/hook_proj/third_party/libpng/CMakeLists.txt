@@ -11,3 +11,5 @@ target_link_libraries(${TARGET_NAME} PUBLIC zlib)
 target_compile_definitions(${TARGET_NAME} PRIVATE _CRT_SECURE_NO_DEPRECATE)
 
 target_compile_options(${TARGET_NAME} PRIVATE /MT)
+
+target_include_directories(${TARGET_NAME} PUBLIC .)

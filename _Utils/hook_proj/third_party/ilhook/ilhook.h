@@ -103,9 +103,9 @@ bool IsPatternMatch(void* buff,CodePattern* pat);
 
 bool PatchHookSrc(HookSrcObject* srcObj,void* destAddr);
 bool GenerateMovedCode(HookSrcObject* srcObj,BYTE* destAddr,int* length);
-bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,char* funcArgs);
+bool GenerateStub(HookSrcObject* srcObj,HookStubObject* stubObj,void* newFunc,const char* funcArgs);
 
-bool Hook32(HookSrcObject* srcObj,CodePattern* pre,HookStubObject* stubObj,void* newFunc,char* funcArgs);
+bool Hook32(HookSrcObject* srcObj,CodePattern* pre,HookStubObject* stubObj,void* newFunc,const char* funcArgs);
 bool UnHook32(HookSrcObject* srcObj);
 
 //in asmhelper.cpp
@@ -128,4 +128,4 @@ bool GetOpInfo(BYTE* addr,int* opLength,void** relativeDestAddr);
 *  r -- pointer to Registers struct
 *  s -- pointer of hook source address
 */
-bool GeneratePushInsts(char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr,DWORD srcAddr);
+bool GeneratePushInsts(const char* seq,BYTE* addr,int* length,DWORD** oriFuncAddr,DWORD srcAddr);

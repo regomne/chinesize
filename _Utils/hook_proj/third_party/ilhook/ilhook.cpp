@@ -2,7 +2,7 @@
 #include <windows.h>
 #include "ilhook.h"
 
-bool GenerateStub(HookSrcObject* srcObj, HookStubObject* stubObj, void* newFunc, char* funcArgs)
+bool GenerateStub(HookSrcObject* srcObj, HookStubObject* stubObj, void* newFunc, const char* funcArgs)
 {
     BYTE* oriFunc = 0;
     DWORD* newOriFuncPtr = 0;
@@ -305,7 +305,7 @@ bool InitializeStubObject(HookStubObject* obj, void* addr, int length, int retva
     return true;
 }
 
-bool Hook32(HookSrcObject* srcObj, CodePattern* pre, HookStubObject* stubObj, void* newFunc, char* funcArgs)
+bool Hook32(HookSrcObject* srcObj, CodePattern* pre, HookStubObject* stubObj, void* newFunc, const char* funcArgs)
 {
     if (pre && !IsPatternMatch(srcObj->addr, pre))
         return false;
