@@ -6,8 +6,8 @@ int FillBmpHdr(BYTE* lp,int width,int height,int bit);
 
 void Copy24To24(BYTE* dibDest,BYTE* dibSrc,int width,int height);
 void Copy32To24(BYTE* dibDest,BYTE* dibSrc,int width,int height);
-int Log(const wchar_t* str);
-int Log(const std::wstring& s);
+int LogWin(const wchar_t* str, ...);
+int LogWin(const std::wstring& s);
 HANDLE MakeFile(LPCTSTR path,BOOL isDir);
 wchar_t* ToWCS(char* s,int cp);
 HRESULT BasicFileOpen(void* filePath, BOOL isDir=FALSE,BOOL allowMulti=FALSE);

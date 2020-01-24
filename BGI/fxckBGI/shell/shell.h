@@ -4,8 +4,8 @@
 #include "fxckBGI.h"
 
 struct GameInfo{
-	WCHAR* gameName;
-	DWORD funcAddress;
+	const wchar_t* gameName;
+	void* funcAddress;
 };
 
 extern "C"

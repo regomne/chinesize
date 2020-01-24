@@ -6,6 +6,7 @@
 
 #define DECOMPTYPE_CDECL 1
 #define DECOMPTYPE_FASTCALL 2
+#define DECOMPTYPE_FASTCALL2 3
 
 extern DecoprFunc g_DecompressFile;
 extern int g_DecompType;

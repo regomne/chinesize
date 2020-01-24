@@ -34,7 +34,21 @@ BOOL CallDecompressFunction(LPVOID dest, DWORD* dstSize, LPVOID src, DWORD srcSi
             add esp,14h
             mov rslt, eax;
         }
-
+    }
+    else if (g_DecompType == DECOMPTYPE_FASTCALL2)
+    {
+        __asm
+        {
+            push 0;
+            push 0;
+            push srcSize;
+            push src;
+            mov edx, dstSize;
+            mov ecx, dest;
+            call g_DecompressFile;
+            add esp,10h
+            mov rslt, eax;
+        }
     }
     return rslt;
 }
@@ -147,7 +161,7 @@ DWORD WINAPI ExtArc(const wstring& fname)
     int startPos = hdr.FileCount*entryLen + sizeof(hdr);
 
     swprintf(logString, 128, L"共包含%d个文件", hdr.FileCount);
-    Log(logString);
+    LogWin(logString);
 
     SendDlgItemMessage(g_hwndMain, IDC_PROGRESS, PBM_SETRANGE32, 0, hdr.FileCount);
 
@@ -171,13 +185,13 @@ DWORD WINAPI ExtArc(const wstring& fname)
 
         if (!name)
         {
-            Log(L"文件名转换失败");
+            LogWin(L"文件名转换失败");
             delete[] lpOri;
             continue;
         }
         else
         {
-            Log(foldername + name + L" 解压中");
+            LogWin(foldername + name + L" 解压中");
         }
         ReadFile(hf, lpOri, itemSize, &temp, 0);
 
@@ -202,14 +216,14 @@ DWORD WINAPI ExtArc(const wstring& fname)
             {
                 delete[] lpNew;
                 delete[] lpOri;
-                Log(L"----调用解压函数失败");
+                LogWin(L"----调用解压函数失败");
                 continue;
             }
             if (rslt != 0)
             {
                 delete[] lpNew;
                 delete[] lpOri;
-                Log(L"----解压函数返回错误");
+                LogWin(L"----解压函数返回错误");
                 continue;
             }
 
@@ -226,7 +240,7 @@ DWORD WINAPI ExtArc(const wstring& fname)
             }
             catch (...)
             {
-                Log(L"----调用解压函数失败");
+                LogWin(L"----调用解压函数失败");
                 delete[] lpNew;
                 delete[] lpOri;
                 continue;
@@ -244,7 +258,7 @@ DWORD WINAPI ExtArc(const wstring& fname)
             }
             catch (...)
             {
-                Log(L"----调用解压函数失败");
+                LogWin(L"----调用解压函数失败");
                 delete[] lpNew;
                 delete[] lpOri;
                 continue;
@@ -261,7 +275,7 @@ DWORD WINAPI ExtArc(const wstring& fname)
             }
             catch (...)
             {
-                Log(L"----调用解压函数失败");
+                LogWin(L"----调用解压函数失败");
                 delete[] lpNew;
                 delete[] lpOri;
                 continue;
@@ -354,7 +368,7 @@ DWORD WINAPI ExtArc(const wstring& fname)
             0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
         if (newf == INVALID_HANDLE_VALUE)
         {
-            Log(L"----创建文件失败");
+            LogWin(L"----创建文件失败");
 
         }
         else
@@ -397,12 +411,10 @@ DWORD WINAPI ExtractThread(LPVOID param)
     EnableWindow(GetDlgItem(g_hwndMain, IDC_SELECTARC), FALSE);
 
     //劳资受不了了，还是用中文吧，尼妹
-    Log(L"开始解包...");
-    swprintf(logString, 128, L"共%d个文件", arcList->size());
-    Log(logString);
-    Log(L"-------------------------");
-    swprintf(logString, 128, L"使用解包函数地址：%X, 类型：%d", g_DecompressFile, g_DecompType);
-    Log(logString);
+    LogWin(L"开始解包...");
+    LogWin(L"共%d个文件", arcList->size());
+    LogWin(L"-------------------------");
+    LogWin(L"使用解包函数RVA：0x%X, 类型：%d", (uint32_t)g_DecompressFile-(uint32_t)GetModuleHandle(0), g_DecompType);
     for (int i = 0; (ULONG)i < arcList->size(); i++)
     {
         WaitForSingleObject(g_paused, INFINITE);
@@ -414,7 +426,7 @@ DWORD WINAPI ExtractThread(LPVOID param)
         swprintf(logString, 128, L"fxckBGI - working... %d/%d", i + 1, arcList->size());
         SetWindowText(g_hwndMain, logString);
 
-        Log((*arcList)[i] + L" 提取中");
+        LogWin((*arcList)[i] + L" 提取中");
 
         int rslt;
         try
@@ -423,12 +435,12 @@ DWORD WINAPI ExtractThread(LPVOID param)
         }
         catch (wstring s)
         {
-            Log(wstring(L"----") + s);
+            LogWin(wstring(L"----") + s);
             continue;
         }
         catch (...)
         {
-            Log(wstring(L"----未知异常"));
+            LogWin(wstring(L"----未知异常"));
             continue;
         }
         if (rslt == 1)
@@ -438,9 +450,9 @@ DWORD WINAPI ExtractThread(LPVOID param)
         }
     }
     if (!breaked)
-        Log(L"所有文件处理完毕");
+        LogWin(L"所有文件处理完毕");
     else
-        Log(L"操作被中止");
+        LogWin(L"操作被中止");
 
     EnableWindow(GetDlgItem(g_hwndMain, IDC_EXPORTLOG), TRUE);
     EnableWindow(GetDlgItem(g_hwndMain, IDC_SELECTARC), TRUE);

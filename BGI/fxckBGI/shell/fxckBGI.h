@@ -24,6 +24,6 @@ struct MyDataStruct
 	DecoprFunc funcAddr;
 };
 #define PIPE_NAME (L"\\\\.\\pipe\\fxckBGI%04X")
-#define PRODUCT_VERSION L"2.4"
+#define PRODUCT_VERSION L"2.5"
 
 //#define DBG

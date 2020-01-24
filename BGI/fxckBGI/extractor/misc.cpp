@@ -9,10 +9,6 @@
 
 #include <png.h>
 
-
-#pragma comment(lib,"libpng16.lib")
-#pragma comment(lib,"zlib.lib")
-
 int FillBmpHdr(BYTE* lp, int width, int height, int bit)
 {
     memset(lp, 0, 0x36);
@@ -89,16 +85,33 @@ void Copy32To24(BYTE* dibDest, BYTE* dibSrc, int width, int height)
     }
 }
 
-int Log(const wchar_t* str)
+int LogWinInternal(const wchar_t* str)
 {
     static HWND logWindow = GetDlgItem(g_hwndMain, IDC_LOGLIST);
     int index = SendMessage(logWindow, LB_ADDSTRING, 0, (LPARAM)str);
     SendMessage(logWindow, LB_SETTOPINDEX, index, 0);
     return 0;
 }
-int Log(const std::wstring& s)
+
+int LogWin(const wchar_t* format, ...)
 {
-    return Log(s.c_str());
+    wchar_t buffer[0x1000];
+    va_list ap;
+    va_start(ap, format);
+    auto char_cnt = vswprintf_s(buffer, format, ap);
+    //FILE* fp = nullptr;
+    //fopen_s(&fp, "log.log", "ab+");
+    //fwrite(buffer, 1, char_cnt * 2, fp);
+    //fwrite(L"\r\n", 1, 4, fp);
+    //fclose(fp);
+    LogWinInternal(buffer);
+    va_end(ap);
+    return 0;
+}
+
+int LogWin(const std::wstring& s)
+{
+    return LogWin(s.c_str());
 }
 HANDLE MakeFile(LPCTSTR path, BOOL isDir)
 {
@@ -517,21 +530,30 @@ int MemcmpWithMask(const void* m1, const void* m2, const void* mask, unsigned le
     return 0;
 }
 
-BYTE* SearchCode(BYTE* start, int length, int* type)
-{
-    static const BYTE chCode[] = { 0x8B, 0x43, 0x14, 0x8D, 0x73, 0x14, 0x3D, 0x00, 0x00, 0x00, 0x04 };
-    static const BYTE chMask[] = { 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0 };
+struct CharaCode {
+    const char* code;
+    const char* mask;
+    uint32_t len;
+};
+
+
+uint8_t* SearchLegacy(BYTE* start, int length, int* type) {
+    static CharaCode code = {
+        "\x8B\x43\x14\x8D\x73\x14\x3D\x00\x00\x00\x04",
+        "\x01\x00\x01\x01\x00\x01\x01\x01\x01\x01\x00",
+        11
+    };
 
     BYTE* p = start;
     *type = DECOMPTYPE_CDECL;
-    for (; p < start + length - sizeof(chCode); p++)
+    for (; p < start + length - code.len; p++)
     {
-        if (!MemcmpWithMask(p, chCode, chMask, sizeof(chCode)))
+        if (!MemcmpWithMask(p, code.code, code.mask, code.len))
         {
-            for (int i = 3; i<(200>p - start ? p - start : 200); i++)
+            for (int i = 3; i < (200 > p - start ? p - start : 200); i++)
             {
                 if (!memcmp(p - i, "\x8b\xf1", 2))
-                    *type = DECOMPTYPE_FASTCALL;
+                    * type = DECOMPTYPE_FASTCALL;
                 if (!memcmp(p - i, "\x90\x6a\xff", 3))
                     return p - i + 1;
                 if (!memcmp(p - i, "\x55\x8b\xec", 3))
@@ -542,6 +564,47 @@ BYTE* SearchCode(BYTE* start, int length, int* type)
         }
     }
     return 0;
+
+}
+
+uint8_t* SearchNew(BYTE* start, int length, int* type) {
+    static CharaCode code = {
+        "\x8B\x47\x14\x3D\x00\x00\x00\x04",
+        "\x01\x00\x01\x01\x01\x01\x01\x01",
+        8
+    };
+
+    BYTE* p = start;
+    *type = DECOMPTYPE_CDECL;
+    for (; p < start + length - code.len; p++)
+    {
+        if (!MemcmpWithMask(p, code.code, code.mask, code.len))
+        {
+            for (int i = 3; i < (200 > p - start ? p - start : 200); i++)
+            {
+                if (!memcmp(p - i, "\x8b\xf1", 2) || !memcmp(p-i, "\x89\x4d", 2))
+                    * type = DECOMPTYPE_FASTCALL2;
+                if (!memcmp(p - i, "\x90\x6a\xff", 3))
+                    return p - i + 1;
+                if (!memcmp(p - i, "\x55\x8b\xec", 3))
+                    return p - i;
+                if (!memcmp(p - i, "\x90\x90\x83\xec", 4))
+                    return p - i + 2;
+                if (!memcmp(p - i, "\xcc\xcc", 2))
+                    return p - i + 2;
+            }
+        }
+    }
+    return 0;
+
+}
+
+
+
+BYTE* SearchCode(BYTE* start, int length, int* type)
+{
+    auto legacy = SearchLegacy(start, length, type);
+    return legacy ? legacy : SearchNew(start, length, type);
 }
 
 BYTE* WINAPI SearchDecompressFunc()

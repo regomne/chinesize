@@ -3,15 +3,15 @@
 #include <shlobj.h>
 #include <objbase.h>      // For COM headers
 #include <shobjidl.h>     // for IFileDialogEvents and IFileDialogControlEvents
+#include <vector>
+#include <string>
+#include <mutex>
+#include <ilhook.h>
 #include "..\shell\fxckBGI.h"
 #include "extractor.h"
 #include "resource.h"
 #include "misc.h"
-#include <ilhook.h>
-#include <vector>
-#include <string>
-
-//#pragma comment(linker,"/entry:MyDllMain")
+#include "funcHelper.h"
 
 using namespace std;
 int InjectToProcess(HANDLE process, HANDLE thread, wchar_t* dllPath, DecoprFunc func);
@@ -27,13 +27,13 @@ HANDLE g_paused;
 HANDLE g_needStop;
 wstring g_extPath;
 
-BYTE g_stolenBytesSWT[8];
-BYTE g_stolenBytesMB[8];
-DWORD g_setWindowTextAddr;
-DWORD g_messageBoxAddr;
-BOOL g_ready = FALSE;
+std::mutex g_ready_mutex;
+bool g_ready;
 
 Options g_options;
+
+typedef int (WINAPI* MbWRoutine)(HWND, const wchar_t*, const wchar_t*, int);
+MbWRoutine g_old_mb;
 
 DWORD WINAPI waitReady(LPVOID param)
 {
@@ -106,7 +106,7 @@ BOOL CALLBACK MainWndProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
         case IDC_STOP:
             SetEvent(g_paused);
             SetEvent(g_needStop);
-            Log(L"≤Ÿ◊˜±ª÷’÷π");
+            LogWin(L"Êìç‰ΩúË¢´ÁªàÊ≠¢");
             break;
         case IDC_SELECTARC:
             if (!CheckReady(hwndDlg))
@@ -172,7 +172,7 @@ BOOL CALLBACK MainWndProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
                 CoTaskMemFree(path);
                 if (logFile == INVALID_HANDLE_VALUE)
                 {
-                    MessageBox(hwndDlg, L"Œﬁ∑®¥¥Ω®Œƒº˛£°", 0, 0);
+                    MessageBox(hwndDlg, L"Êó†Ê≥ïÂàõÂª∫Êñá‰ª∂ÔºÅ", 0, 0);
                     break;
                 }
 
@@ -216,40 +216,40 @@ BOOL CALLBACK MainWndProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
         break;
     case WM_DROPFILES:
     {
-                         if (!CheckReady(hwndDlg))
-                             break;
-                         HDROP drop = (HDROP)wParam;
-                         int fileCount = DragQueryFile(drop, -1, 0, 0);
-                         arcList = new vector<wstring>();
-                         for (int i = 0; i < fileCount; i++)
-                         {
-                             wchar_t* fname;
-                             int namelen = DragQueryFile(drop, i, 0, 0);
-                             if (namelen != 0)
-                             {
-                                 fname = new wchar_t[namelen + 1];
-                                 if (DragQueryFile(drop, i, fname, namelen + 1))
-                                 {
-                                     arcList->push_back(fname);
-                                     //Log(fname);
-                                 }
-                                 delete[] fname;
-                             }
-                         }
-                         if (arcList->size() == 0)
-                         {
-                             delete arcList;
-                             MessageBox(hwndDlg, L"no files input", 0, 0);
-                         }
-                         else
-                         {
-                             g_workingThread = CreateThread(0, 0, ExtractThread, arcList, 0, 0);
-                             if (g_workingThread == 0)
-                             {
-                                 delete arcList;
-                                 MessageBox(hwndDlg, L"Can't start working thread", 0, 0);
-                             }
-                         }
+        if (!CheckReady(hwndDlg))
+            break;
+        HDROP drop = (HDROP)wParam;
+        int fileCount = DragQueryFile(drop, -1, 0, 0);
+        arcList = new vector<wstring>();
+        for (int i = 0; i < fileCount; i++)
+        {
+            wchar_t* fname;
+            int namelen = DragQueryFile(drop, i, 0, 0);
+            if (namelen != 0)
+            {
+                fname = new wchar_t[namelen + 1];
+                if (DragQueryFile(drop, i, fname, namelen + 1))
+                {
+                    arcList->push_back(fname);
+                    //LogWin(fname);
+                }
+                delete[] fname;
+            }
+        }
+        if (arcList->size() == 0)
+        {
+            delete arcList;
+            MessageBox(hwndDlg, L"no files input", 0, 0);
+        }
+        else
+        {
+            g_workingThread = CreateThread(0, 0, ExtractThread, arcList, 0, 0);
+            if (g_workingThread == 0)
+            {
+                delete arcList;
+                MessageBox(hwndDlg, L"Can't start working thread", 0, 0);
+            }
+        }
     }
         break;
     case WM_INITDIALOG:
@@ -323,7 +323,11 @@ DWORD WINAPI StartWindow()
 {
     g_DecompressFile = (DecoprFunc)SearchDecompressFunc();
     if (!g_DecompressFile)
-        MessageBox(0, L"This may not be a BGI exe.", 0, 0);
+    {
+        if (g_old_mb) {
+            g_old_mb(0, L"This may not be a BGI exe.", 0, 0);
+        }
+    }
     else
     {
         CreateThread(0, 0, (LPTHREAD_START_ROUTINE)MainWnd, 0, 0, 0);
@@ -331,51 +335,6 @@ DWORD WINAPI StartWindow()
     return 0;
 }
 
-__declspec(naked) int SetWindowOnce()
-{
-    __asm
-    {
-        cmp g_ready, 0
-            jnz _lbl
-            pushad
-            //        call SearchDecompressFunc
-            //        mov g_DecompressFile,eax
-            call StartWindow
-            popad
-
-            mov g_ready, 1
-        _lbl:
-        lea ecx, g_stolenBytesSWT
-            mov eax, [ecx]
-            mov edx, g_setWindowTextAddr
-            mov[edx], eax
-            mov al, [ecx + 4]
-            mov[edx + 4], al
-            jmp g_setWindowTextAddr
-    }
-}
-
-__declspec(naked) int MessageBoxOnce()
-{
-    __asm
-    {
-        cmp g_ready, 0
-            jnz _lbl
-            pushad
-            call StartWindow
-            popad
-
-            mov g_ready, 1
-        _lbl:
-        lea ecx, g_stolenBytesMB
-            mov eax, [ecx]
-            mov edx, g_messageBoxAddr
-            mov[edx], eax
-            mov al, [ecx + 4]
-            mov[edx + 4], al
-            jmp g_messageBoxAddr
-    }
-}
 typedef BOOL(WINAPI *CreateProcessInternalWRoutine)(
     HANDLE token,
     _In_opt_     LPCTSTR lpApplicationName,
@@ -391,7 +350,7 @@ typedef BOOL(WINAPI *CreateProcessInternalWRoutine)(
     PHANDLE pnewtoken
     );
 
-BOOL MyCreateProcessInternalW(
+BOOL HOOKFUNC MyCreateProcessInternalW(
     CreateProcessInternalWRoutine func,
     HANDLE token,
     _In_opt_     LPCTSTR lpApplicationName,
@@ -435,18 +394,28 @@ BOOL MyCreateProcessInternalW(
     return ret;
 }
 
-char CheckFileName[100];
-void MyGetFileAttributesA(LPSTR name)
+char CheckFileNameA[100];
+wchar_t CheckFileNameW[100];
+void HOOKFUNC MyGetFileAttributesA(char* name)
 {
-    int len0 = strlen(CheckFileName);
+    int len0 = strlen(CheckFileNameA);
     int len1 = strlen(name);
     if (len1 < len0 || len0 == 0)
         return;
-    if (!_stricmp(name + (len1 - len0), CheckFileName))
+    if (!_stricmp(name + (len1 - len0), CheckFileNameA))
+        name[len1 - len0] += 1;
+}
+void HOOKFUNC MyGetFileAttributesW(wchar_t* name)
+{
+    int len0 = wcslen(CheckFileNameW);
+    int len1 = wcslen(name);
+    if (len1 < len0 || len0 == 0)
+        return;
+    if (!wcsicmp(name + (len1 - len0), CheckFileNameW))
         name[len1 - len0] += 1;
 }
 
-int MyGetSystemDefaultLangID()
+int HOOKFUNC MyGetSystemDefaultLangID()
 {
     return 0x411;
 }
@@ -487,7 +456,8 @@ void GetZeroBytesFile()
                 CloseHandle(hfile);
                 if (fileSize <= 16)
                 {
-                    WideCharToMultiByte(CP_ACP, 0, wfd.cFileName, -1, CheckFileName, 100, 0, 0);
+                    WideCharToMultiByte(CP_ACP, 0, wfd.cFileName, -1, CheckFileNameA, 100, 0, 0);
+                    wcscpy_s(CheckFileNameW, wfd.cFileName);
                     break;
                 }
             }
@@ -497,76 +467,38 @@ void GetZeroBytesFile()
     }
 }
 
-int WINAPI DllMain(_In_  HINSTANCE hinstDLL,
-    _In_  DWORD fdwReason,
-    _In_  LPVOID lpvReserved
-    )
-{
-    if (fdwReason == DLL_PROCESS_ATTACH)
-    {
-        g_hProcessHeap = GetProcessHeap();
-        //g_extPath=new wstring(L"");
+void HOOKFUNC ToStartWindow() {
+    std::lock_guard<std::mutex> _lck(g_ready_mutex);
+    if (!g_ready) {
+        StartWindow();
+        g_ready = true;
+    }
+}
 
-        HMODULE hm = LoadLibrary(L"user32.dll");
-        BYTE* stAddr = (BYTE*)GetProcAddress(hm, "SetWindowTextA");
-        g_setWindowTextAddr = (DWORD)stAddr;
-        DWORD oldProtect;
-        if (!VirtualProtect(stAddr, 5, PAGE_EXECUTE_READWRITE, &oldProtect))
-        {
-            MessageBox(0, L"hook failed", 0, 0);
-            return FALSE;
+void HOOKFUNC MyMbW(MbWRoutine func){
+    g_old_mb = func;
+    ToStartWindow();
+}
+
+BOOL WINAPI DllMain(
+    HINSTANCE hinstDLL,
+    DWORD fdwReason,
+    LPVOID lpvReserved) {
+    if (fdwReason == DLL_PROCESS_ATTACH) {
+        HookPointStructWithName hooks[] = {
+            {"user32.dll", "SetWindowTextA", ToStartWindow, "", 0, 0},
+            {"user32.dll", "MessageBoxA", ToStartWindow, "", 0, 0},
+            {"user32.dll", "SetWindowTextW", ToStartWindow, "", 0, 0},
+            {"user32.dll", "MessageBoxW", MyMbW, "f", 0, 0},
+            {"kernel32.dll", "CreateProcessInternalW", MyCreateProcessInternalW, "f123456789ABC", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 48},
+            {"kernel32.dll", "GetFileAttributesA", MyGetFileAttributesA, "1", 0, 0},
+            {"kernel32.dll", "GetFileAttributesW", MyGetFileAttributesW, "1", 0, 0},
+            {"kernel32.dll", "GetSystemDefaultLangID", MyGetSystemDefaultLangID, "", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 0},
+        };
+        if (!HookFunctions(hooks)) {
+            MessageBox(nullptr, L"Hook failed!", nullptr, 0);
         }
-        *(DWORD*)g_stolenBytesSWT = *(DWORD*)stAddr;
-        g_stolenBytesSWT[4] = stAddr[4];
-        *stAddr = 0xe9;
-        *(DWORD*)(stAddr + 1) = (DWORD)SetWindowOnce - (DWORD)stAddr - 5;
-
-        stAddr = (BYTE*)GetProcAddress(hm, "MessageBoxA");
-        g_messageBoxAddr = (DWORD)stAddr;
-        if (!VirtualProtect(stAddr, 5, PAGE_EXECUTE_READWRITE, &oldProtect))
-        {
-            MessageBox(0, L"hook2 failed", 0, 0);
-            return FALSE;
-        }
-        *(DWORD*)g_stolenBytesMB = *(DWORD*)stAddr;
-        g_stolenBytesMB[4] = stAddr[4];
-        *stAddr = 0xe9;
-        *(DWORD*)(stAddr + 1) = (DWORD)MessageBoxOnce - (DWORD)stAddr - 5;
-
-        BYTE* buff = (BYTE*)VirtualAlloc(0, 1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-        HookSrcObject src;
-        HookStubObject stub;
-        hm = LoadLibrary(L"kernel32.dll");
-        auto func = GetProcAddress(hm, "CreateProcessInternalW");
-        if (!InitializeHookSrcObject(&src, func) ||
-            !InitializeStubObject(&stub, buff, 100, 48, STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX) ||
-            !Hook32(&src, 0, &stub, MyCreateProcessInternalW, "f123456789ABC"))
-        {
-            MessageBox(0, L"Can't hook CreateProcessInternalW", 0, 0);
-            return FALSE;
-        }
-
-        func = GetProcAddress(hm, "GetFileAttributesA");
-        if (!InitializeHookSrcObject(&src, func) ||
-            !InitializeStubObject(&stub, buff + 100, 100) ||
-            !Hook32(&src, 0, &stub, MyGetFileAttributesA, "1"))
-        {
-            MessageBox(0, L"Can't hook GetFileAttributesA", 0, 0);
-            return FALSE;
-        }
-
-        func = GetProcAddress(hm, "GetSystemDefaultLangID");
-        if (!InitializeHookSrcObject(&src, func) ||
-            !InitializeStubObject(&stub, buff + 200, 100, 0, STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX) ||
-            !Hook32(&src, 0, &stub, MyGetSystemDefaultLangID, ""))
-        {
-            MessageBox(0, L"Can't hook GetFileAttributesA", 0, 0);
-            return FALSE;
-        }
-
         GetZeroBytesFile();
-
-        //		CreateThread(0,0,MainWnd,0,0,0);
     }
     return TRUE;
 }
