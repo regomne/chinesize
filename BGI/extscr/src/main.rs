@@ -66,7 +66,7 @@ fn pack_text(stm: &[u8], text: Vec<Vec<u8>>) -> Result<Box<[u8]>, &'static str> 
         .position(|l| l.len() != 0)
         .unwrap_or(text.len());
     if ext.len() != text.len() - empty_cnt {
-        //println!("need:{}, given:{}", ext.len(), text.len());
+        println!("need:{}, given:{}", ext.len(), text.len());
         return Err("lines not match!");
     }
     let mut out: Vec<_> = stm.iter().cloned().collect();
@@ -80,12 +80,22 @@ fn pack_text(stm: &[u8], text: Vec<Vec<u8>>) -> Result<Box<[u8]>, &'static str> 
     Ok(out.into_boxed_slice())
 }
 
-fn process_ext_file(in_name: &str, out_name: &str) -> Result<(), String> {
+fn process_ext_file(in_name: &str, out_name: &str, opt: &PackOption) -> Result<(), String> {
     let stm = fs::read(in_name).map_err(|e| e.description().to_string())?;
     let txt = ext_text(&stm[..]).map_err(|e| e.to_string())?;
     let mut out = File::create(out_name).map_err(|e| e.description().to_string())?;
+    let encode_routine: fn(&[u8]) -> String = match opt.scr_enc {
+        TextEnc::Sjis => |l| SHIFT_JIS.decode(l).0.into_owned(),
+        TextEnc::Gbk => |l| GBK.decode(l).0.into_owned(),
+        TextEnc::Utf8 => |l| String::from_utf8(l.to_vec()).unwrap_or(String::new()),
+        _ => return Err(String::from("not a valid scr encoding")),
+    };
+    out.write(&[0xef, 0xbb, 0xbf])
+        .map_err(|_| String::from("IO error"))?;
     txt.into_iter().for_each(|(l, _)| {
-        out.write(l).unwrap_or_default();
+        let s = encode_routine(l);
+        let s = s.replace("\n", "\\n");
+        out.write(s.as_bytes()).unwrap_or_default();
         out.write(&[0x0d, 0x0a]).unwrap_or_default();
     });
     Ok(())
@@ -181,15 +191,17 @@ fn process_pack_file(
     let stm = fs::read(in_name).map_err(|e| e.description().to_string())?;
     let txt =
         read_text_file_with_encoding(text_name, &opt.txt_enc).map_err(|e| format!("{}", e))?;
-    let enc_line_func: fn(&str) -> Vec<u8> = match opt.scr_enc {
-        TextEnc::Sjis => |l: &str| SHIFT_JIS.encode(l).0.into_owned(),
-        TextEnc::Gbk => |l: &str| GBK.encode(l).0.into_owned(),
+    let enc_line_func: fn(String) -> Vec<u8> = match opt.scr_enc {
+        TextEnc::Sjis => |l| SHIFT_JIS.encode(&l).0.into_owned(),
+        TextEnc::Gbk => |l| GBK.encode(&l).0.into_owned(),
+        TextEnc::Utf8 => |l| l.as_bytes().to_vec(),
         _ => return Err("encoding error".to_string()),
     };
     let x: Vec<Vec<u8>> = txt
         .replace("\r\n", "\n")
         .replace("\r", "\n")
         .split("\n")
+        .map(|l| l.replace("\\n", "\n"))
         .map(enc_line_func)
         .collect();
 
@@ -240,11 +252,13 @@ fn main() {
     let input = args.value_of("input").unwrap();
     let output = args.value_of("output").unwrap();
     if args.is_present("extract") {
-        match process_ext_file(input, output) {
+        let txt_enc = TextEnc::parse_from(args.value_of("text_enc").unwrap()).unwrap();
+        let scr_enc = TextEnc::parse_from(args.value_of("scr_enc").unwrap()).unwrap();
+        match process_ext_file(input, output, &PackOption { txt_enc, scr_enc }) {
             Err(e) => println!("failed:{}", e),
             _ => {}
         }
-    } else {
+    } else if args.is_present("pack") {
         let text_name = args.value_of("text").unwrap();
         let txt_enc = TextEnc::parse_from(args.value_of("text_enc").unwrap()).unwrap();
         let scr_enc = TextEnc::parse_from(args.value_of("scr_enc").unwrap()).unwrap();
@@ -252,5 +266,7 @@ fn main() {
             Err(e) => println!("failed:{}", e),
             _ => {}
         }
+    } else {
+        println!("-e or -p must be specified!");
     }
 }

@@ -39,7 +39,7 @@ void PngRead(png_struct* png, png_byte* buff, png_size_t len)
     stream->cur += len;
 }
 
-bool ReadPngToBmp(NakedMemory& src, int* width, int* height, int* bit_count, NakedMemory& dib)
+bool ReadPngToBmp(NakedMemory& src, int* width, int* height, int* bit_count, NakedMemory& dib, int opt)
 {
     png_struct* png_ptr;
     png_info* info_ptr;
@@ -88,7 +88,15 @@ bool ReadPngToBmp(NakedMemory& src, int* width, int* height, int* bit_count, Nak
 
     png_set_bgr(png_ptr);
 
-    auto bmp_row_bytes = round_4(*width * (*bit_count / 8));
+    int bmp_row_bytes;
+    if (opt & PngOptionRowNonAlign )
+    {
+        bmp_row_bytes = *width * (*bit_count / 8);
+    }
+    else
+    {
+        bmp_row_bytes = round_4(*width * (*bit_count / 8));
+    }
     auto rowbytes = png_get_rowbytes(png_ptr, info_ptr);
     if (rowbytes > bmp_row_bytes)
     {
@@ -99,11 +107,22 @@ bool ReadPngToBmp(NakedMemory& src, int* width, int* height, int* bit_count, Nak
     NakedMemory dibdata(*height * bmp_row_bytes);
     
     auto rowPointers = new uint8_t*[*height];
-    auto p = (uint8_t*)dibdata.Get() + (*height - 1) * bmp_row_bytes;
+    uint8_t* p;
+    int diff;
+    if (opt & PngOptionNonReverse)
+    {
+        p = (uint8_t*)dibdata.Get();
+        diff = bmp_row_bytes;
+    }
+    else
+    {
+        p = (uint8_t*)dibdata.Get() + (*height - 1) * bmp_row_bytes;
+        diff = -bmp_row_bytes;
+    }
     for (int i = 0;i < *height;i++)
     {
         rowPointers[i] = p;
-        p -= bmp_row_bytes;
+        p += diff;
     }
 
     png_read_image(png_ptr, rowPointers);
@@ -210,7 +229,28 @@ NakedMemory dib_row_fix(int width, int height, int bitc, NakedMemory& old)
         pn += row_bytes;
         po += ori_row_bytes;
     }
-    return std::move(mem);
+    return mem;
+}
+
+NakedMemory dib_row_fix_non_align(int width, int height, int bitc, NakedMemory& old)
+{
+    auto new_row_bytes = width * (bitc / 8);
+    if (new_row_bytes % 4 == 0)
+    {
+        return std::move(old);
+    }
+    int old_row_bytes = round_4(new_row_bytes);
+    NakedMemory mem(new_row_bytes * height);
+    
+    auto pn = (uint8_t*)mem.Get();
+    auto po = (uint8_t*)old.Get();
+    for (int i = 0;i < height;i++)
+    {
+        memcpy(pn, po, new_row_bytes);
+        pn += new_row_bytes;
+        po += old_row_bytes;
+    }
+    return mem;
 }
 
 NakedMemory build_bmp_file(int width, int height, int bitc, NakedMemory& pallete, NakedMemory& dib)
