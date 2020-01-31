@@ -22,7 +22,7 @@ fn ext_text(stm: &[u8]) -> Result<Vec<(&[u8], usize)>, &'static str> {
     if !stm.starts_with("BurikoCompiledScriptVer1.00\0".as_bytes()) {
         return Err("not a valid script");
     }
-    let mut code_end_off = stm[..stm.len() & (!3)]
+    let code_end_off = stm[..stm.len() & (!3)]
         .windows(4)
         .rposition(|x| x == &[3, 0, 0, 0])
         .ok_or("seems not having texts")?;
@@ -37,9 +37,6 @@ fn ext_text(stm: &[u8]) -> Result<Vec<(&[u8], usize)>, &'static str> {
         if read_u32_checked(&stm[i..]) == 3 {
             let off = read_u32_checked(&stm[i + 4..]) + hdr_size;
             if off < stm.len() {
-                if off < code_end_off {
-                    code_end_off = off;
-                }
                 let s = get_str(stm, off);
                 if is_need_include(s) {
                     ret.push((s, i + 4));
