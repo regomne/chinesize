@@ -1,0 +1,3 @@
+LIBRARY
+EXPORTS
+Direct3DCreate9 = D3dCreate9

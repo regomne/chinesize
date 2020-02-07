@@ -1,0 +1,14 @@
+[package]
+name = "hook"
+version = "0.1.0"
+authors = ["regomne <fallingsunz@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type=["cdylib"]
+
+[dependencies]
+winapi = { version = "0.3", features = ["everything"] }
+ilhook = "0.2"
+thiserror = "1"
+encoding_rs = "0"
