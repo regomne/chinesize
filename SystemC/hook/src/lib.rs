@@ -6,6 +6,7 @@ mod hook_helper;
 use encoding_rs::{GBK, SHIFT_JIS};
 use hook_helper::*;
 //use std::os::windows::ffi::OsStringExt;
+use std::iter;
 use std::slice;
 use winapi::shared::d3d9;
 use winapi::shared::minwindef::{DWORD, HINSTANCE, LPVOID};
@@ -69,6 +70,14 @@ unsafe extern "cdecl" fn on_cfi(regs: *mut Registers, _: usize) {
     let ptr = (*font).lfFaceName.as_mut_ptr();
     ptr.copy_from("SimHei\0".as_ptr() as *const i8, 7);
 }
+unsafe extern "cdecl" fn on_setwindowtext(regs: *mut Registers, _: usize) {
+    let s = "『神明的尾巴_十二支神们的报恩』中文版";
+    let s: Vec<u16> = s.encode_utf16().chain(iter::once(0)).collect();
+    let s = s.into_boxed_slice();
+    let text_ptr = ((*regs).esp as usize + 8) as usize as *mut usize;
+    *text_ptr = s.as_ptr() as usize;
+    std::mem::forget(s);
+}
 
 #[no_mangle]
 extern "stdcall" fn DllMain(_: HINSTANCE, reason: DWORD, _: LPVOID) -> i32 {
@@ -85,6 +94,11 @@ extern "stdcall" fn DllMain(_: HINSTANCE, reason: DWORD, _: LPVOID) -> i32 {
                     "gdi32.dll",
                     "CreateFontIndirectA",
                     HookType::JmpBack(on_cfi),
+                ),
+                HookStruct::new_func_name(
+                    "user32.dll",
+                    "SetWindowTextW",
+                    HookType::JmpBack(on_setwindowtext),
                 ),
             ];
             match hook_functions(h1) {

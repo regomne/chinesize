@@ -1,4 +1,5 @@
 import struct
+import sys
 
 def pack_ptr(ls):
   ptr=[b'PTR ', len(ls).to_bytes(4,'little'), b'\0'*8]
@@ -26,6 +27,7 @@ def pack_file(txtname, ptrname, txdname):
   fs.write(txd)
   fs.close()
 
-pack_file(r'e:\Game\kamishippo\txt\ACT_A_JA.txt',
-r'e:\Game\kamishippo\patchxcn\ACT_A_JA.PTR',
-r'e:\Game\kamishippo\patchxcn\ACT_A_JA.TXD')
+path_txt=sys.argv[1]
+path_ptr=sys.argv[2]
+path_txd=sys.argv[3]
+pack_file(path_txt, path_ptr, path_txd)
