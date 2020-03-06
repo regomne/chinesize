@@ -53,20 +53,50 @@ void HOOKFUNC MyCW(wchar_t** strp)
     }
 }
 
+void HOOKFUNC MyMBW(int cp)
+{
+    if (cp == CP_UTF8)
+    {
+        LOGERROR("cp:");
+    }
+}
+
+void HOOKFUNC MyWTB(int cp, wchar_t* s)
+{
+    if (cp == 932 && wcscmp(s, L"忠臣时代") == 0)
+    {
+        __asm {
+            __emit 0xcc;
+        }
+        //LOGERROR(L"cp:%d, s: %ws", cp, s);
+    }
+}
+
 void HOOKFUNC MySWT(wchar_t** title)
 {
     *title = L"『你喜欢的是哪个我呢？』中文版";
 }
 
-BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ void* _Reserved)
+void HOOKFUNC on_patch_wcstombs(Registers* regs)
 {
-    if (_Reason == DLL_PROCESS_ATTACH)
+    regs->esi = CP_UTF8;
+}
+
+BOOL WINAPI DllMain(_In_ void* dll_module, _In_ unsigned long reason, _In_opt_ void*)
+{
+    if (reason == DLL_PROCESS_ATTACH)
     {
         //PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
         //auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
         static const HookPointStruct points[] = {
+            // fxckBGI获取的解压函数地址，call该函数的xref中的一个
+            // jmp的地址是下一条，意即直接跳过此次call
+            // 注意bgi.cpp中有一个函数地址的硬编码，是此解压函数的地址
             { nullptr, 0x6f4fd, on_load_rsc, "r", STUB_JMP_ADDR_AFTER_RETURN, 0x6f502 },
-            //{ nullptr, 0x2F60, my_read_pic, "rf", STUB_JMP_EAX_AFTER_RETURN, 0 },
+
+            // 用于解决人名在显示之前将utf8重新转换为sjis的问题
+            // hook地址是一次call WideCharToMultiByte的位置，其上面有cmp 0xfde9/mov 0x3a4相关的指令
+            { nullptr, 0x9edb7, on_patch_wcstombs, "r", 0, 0 },
         };
 
         if (!HookFunctions(points))
@@ -78,7 +108,8 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontW", MyCFI, "\x09\x0e", 0, 0 },
             { "user32.dll", "SetWindowTextW", MySWT, "\x02", 0, 0 },
-            //{ "kernel32.dll", "MultiByteToWideChar", MyCFI, "1", 0, 0 },
+            //{ "kernel32.dll", "MultiByteToWideChar", MyMBW, "1", 0, 0 },
+            //{ "kernel32.dll", "WideCharToMultiByte", MyWTB, "13", 0, 0 },
 
             //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", 0, 0 },
         };
