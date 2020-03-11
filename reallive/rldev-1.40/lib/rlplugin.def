@@ -1,6 +1,0 @@
-LIBRARY
-EXPORTS
-  reallive_dll_func_load
-  reallive_dll_func_init
-  reallive_dll_func_call
-  reallive_dll_func_free

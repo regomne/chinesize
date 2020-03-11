@@ -1,3 +1,0 @@
-DEFINE VERSION = 1.40
-
-(* A kludge to keep version numbers synchronised. *)

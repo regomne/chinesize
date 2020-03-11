@@ -113,6 +113,6 @@ def ext_all_rld(path1, path2):
             os.path.join(path2,f.replace('.rld','.txt')),
             name_table)
 
-ext_all_rld(r'e:\Game\きゃんきゃんバニー プルミエール３\rld2',
-            r'e:\Game\きゃんきゃんバニー プルミエール３\txt')
+ext_all_rld(r'e:\BaiduDownload\SexOpenWorld\rld2',
+            r'e:\BaiduDownload\SexOpenWorld\txt')
 

@@ -51,6 +51,14 @@ void HOOKFUNC MyCW(wchar_t** strp)
     }
 }
 
+void HOOKFUNC MyGGO(wchar_t* ch)
+{
+    if (*ch == 0x50d5)
+    {
+        *ch = 0x6211;
+    }
+}
+
 BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ void* _Reserved)
 {
     if (_Reason == DLL_PROCESS_ATTACH)
@@ -72,6 +80,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", 0, 0 },
+            { "gdi32.dll", "GetGlyphOutlineW", MyGGO, "\x02", 0, 0 },
             //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", 0, 0 },
         };
         if (!HookFunctions(points2))
