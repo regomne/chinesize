@@ -20,33 +20,49 @@ import (
 	"github.com/regomne/bstream"
 )
 
-func getDibFromImage(img image.Image) (dib []byte, err error) {
+func getDibFromImage(img image.Image, depthBytes int) (dib []byte, err error) {
 	bounds := img.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
-	dibSize := width * 4 * height
+	dibSize := width * depthBytes * height
 	if dibSize < 1024 {
 		dibSize = 1024
 	}
 	dib = make([]byte, dibSize)
-	stride := width * 4
+	stride := width * depthBytes
 
-	for y := 0; y < height; y++ {
-		line := dib[y*stride:]
-		for x := 0; x < width; x++ {
-			c := img.At(x, height-y-1)
-			nc := color.NRGBAModel.Convert(c)
-			r, g, b, a := nc.RGBA()
-			line[x*4] = byte(b >> 8)
-			line[x*4+1] = byte(g >> 8)
-			line[x*4+2] = byte(r >> 8)
-			line[x*4+3] = byte(a >> 8)
+	if depthBytes == 4 {
+		for y := 0; y < height; y++ {
+			line := dib[y*stride:]
+			for x := 0; x < width; x++ {
+				c := img.At(x, height-y-1)
+				nc := color.NRGBAModel.Convert(c)
+				r, g, b, a := nc.RGBA()
+				line[x*4] = byte(b >> 8)
+				line[x*4+1] = byte(g >> 8)
+				line[x*4+2] = byte(r >> 8)
+				line[x*4+3] = byte(a >> 8)
+			}
 		}
+	} else if depthBytes == 3 {
+		for y := 0; y < height; y++ {
+			line := dib[y*stride:]
+			for x := 0; x < width; x++ {
+				c := img.At(x, height-y-1)
+				nc := color.NRGBAModel.Convert(c)
+				r, g, b, _ := nc.RGBA()
+				line[x*3] = byte(b >> 8)
+				line[x*3+1] = byte(g >> 8)
+				line[x*3+2] = byte(r >> 8)
+			}
+		}
+	} else {
+		err = fmt.Errorf("only support depth bytes 4 or 3, given %d", depthBytes)
 	}
 	return
 }
 
-func diffImage(dib []byte, width, height uint32) []byte {
-	stride := width * 4
+func diffImage(dib []byte, width, height, depthBytes uint32) []byte {
+	stride := width * depthBytes
 	for y := height - 1; y >= 1; y-- {
 		line := dib[y*stride:]
 		prev := dib[(y-1)*stride:]
@@ -55,8 +71,8 @@ func diffImage(dib []byte, width, height uint32) []byte {
 		}
 	}
 
-	for x := stride; x >= 4; x-- {
-		dib[x] -= dib[x-4]
+	for x := stride; x >= depthBytes; x-- {
+		dib[x] -= dib[x-depthBytes]
 	}
 	return dib
 }
@@ -76,15 +92,15 @@ func queryTable(val uint32) (v1, v2, v3, v4 byte) {
 	return
 }
 
-func rgbaCvt(dib []byte, width, height uint32) (out []byte) {
+func rgbaCvt(dib []byte, width, height, depthBytes uint32) (out []byte) {
 	out = make([]byte, len(dib))
-	secLen := width * height * 4 / 4
+	secLen := width * height * depthBytes / 4
 	sec1 := out
 	sec2 := out[secLen:]
 	sec3 := out[secLen*2:]
 	sec4 := out[secLen*3:]
 	p := dib
-	for i := 0; i < int(width*height); i++ {
+	for i := 0; i < int(secLen); i++ {
 		val := packVal(p[0]) | (packVal(p[1]) << 8) | (packVal(p[2]) << 16) | (packVal(p[3]) << 24)
 		v1, v2, v3, v4 := queryTable(val)
 		sec1[i] = v1
@@ -152,13 +168,13 @@ func readImageToBuff(stdInfo *SecStdinfo, imgInfo *SecImg, fname string) (
 		return
 	}
 
-	dib, err := getDibFromImage(img)
+	dib, err := getDibFromImage(img, int(stdInfo.BitDepth/8))
 	if err != nil {
 		return
 	}
 
-	dib = diffImage(dib, stdInfo.Width, stdInfo.Height)
-	dib = rgbaCvt(dib, stdInfo.Width, stdInfo.Height)
+	dib = diffImage(dib, stdInfo.Width, stdInfo.Height, stdInfo.BitDepth/8)
+	dib = rgbaCvt(dib, stdInfo.Width, stdInfo.Height, stdInfo.BitDepth/8)
 	content, ctrl := doRLE(dib)
 	newImgInfo.DataUncLen = uint32(len(content))
 	newImgInfo.CtrlUncLen = uint32(len(ctrl))
@@ -311,6 +327,5 @@ func packImagesToHG3(imagePath string, destName string) bool {
 		fmt.Println("writing block error:", err)
 		return false
 	}
-	fmt.Println("Complete.")
 	return true
 }
