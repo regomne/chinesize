@@ -9,9 +9,38 @@ using namespace std;
 
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
-    DP(nullptr, 0xEC45D,"\x74\x28","\x90\x90") // ".s" compare1
-    DP(nullptr, 0xEC5B9,"\x0F\x84\xF2\x00\x00\x00","\x90\x90\x90\x90\x90\x90") // ".s" compare2
-    DP(nullptr, 0xEC439,"\x75\x4C","\x90\x90") // a real file flag in the same function with ".s"-compare1
+    /*
+    .text:004F06F6 80 3D 1C 94 70 00 00                    cmp     byte_70941C, 0
+    .text:004F06FD 75 4C                                   jnz     short loc_4F074B
+    .text:004F06FF
+    .text:004F06FF                         loc_4F06FF:                             ; CODE XREF: sub_4F05C4+130↑j
+    .text:004F06FF 8D 55 EC                                lea     edx, [ebp+var_14]
+    .text:004F0702 8B C7                                   mov     eax, edi
+    .text:004F0704 E8 FB 62 F2 FF                          call    sub_416A04
+    .text:004F0709 8B 45 EC                                mov     eax, [ebp+var_14]
+    .text:004F070C 8D 55 F4                                lea     edx, [ebp+var_C]
+    .text:004F070F E8 74 45 F2 FF                          call    sub_414C88
+    .text:004F0714 8B 45 F4                                mov     eax, [ebp+var_C]
+    .text:004F0717 BA A8 07 4F 00                          mov     edx, offset aS_1 ; ".s"
+    .text:004F071C E8 DF 75 F1 FF                          call    sub_407D00
+    .text:004F0721 74 28                                   jz      short loc_4F074B
+    */
+    DP(nullptr, 0xf0721,"\x74\x28","\x90\x90") // ".s" compare1
+    DP(nullptr, 0xf06fd,"\x75\x4C","\x90\x90") // a real file flag in the same function with ".s"-compare1
+
+    /*
+    .text:004F085B 8D 55 E8                                lea     edx, [ebp+var_18]
+    .text:004F085E 8B C3                                   mov     eax, ebx
+    .text:004F0860 E8 9F 61 F2 FF                          call    sub_416A04
+    .text:004F0865 8B 45 E8                                mov     eax, [ebp+var_18]
+    .text:004F0868 8D 55 EC                                lea     edx, [ebp+var_14]
+    .text:004F086B E8 18 44 F2 FF                          call    sub_414C88
+    .text:004F0870 8B 45 EC                                mov     eax, [ebp+var_14]
+    .text:004F0873 BA B4 09 4F 00                          mov     edx, offset aS_2 ; ".s"
+    .text:004F0878 E8 83 74 F1 FF                          call    sub_407D00
+    .text:004F087D 0F 84 F2 00 00 00                       jz      loc_4F0975
+    */
+    DP(nullptr, 0xf087d,"\x0F\x84\xF2\x00\x00\x00","\x90\x90\x90\x90\x90\x90") // ".s" compare2
 };
 #undef DP
 
@@ -154,7 +183,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
             { "gdi32.dll", "EnumFontFamiliesExW", MyEFF, "2", 0, 0 },
             //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", 0, 0 },
             //{ "kernel32.dll", "WideCharToMultiByte", MyWCTM, "w13", 0, 0 },
-            { "kernel32.dll", "MultiByteToWideChar", MyMBCS, "f123456", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 24 },
+            //{ "kernel32.dll", "MultiByteToWideChar", MyMBCS, "f123456", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 24 },
         };
         if (!HookFunctions(points2))
         {
