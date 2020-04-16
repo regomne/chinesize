@@ -75,16 +75,17 @@ func includes(a []uint8, v uint8) bool {
 	return false
 }
 
-func decryptYbn(stm []byte, key []byte) {
+func decryptYbn(stm []byte, key []byte, start uint32, length uint32) {
 	if len(key) != 4 {
 		panic("key length error")
 	}
-	for i := 0x20; i < len(stm); i++ {
-		stm[i] ^= key[i&3]
+	for i := start; i < start+length; i++ {
+		stm[i] ^= key[(i-start)&3]
 	}
 }
 
-func parseYbn(stm io.ReadSeeker) (script ybnInfo, err error) {
+func parseYbn(oriStm []byte, key []byte) (script ybnInfo, err error) {
+	stm := bytes.NewReader(oriStm)
 	binary.Read(stm, binary.LittleEndian, &script.Header)
 	logln("header:", script.Header)
 	header := &script.Header
@@ -102,15 +103,32 @@ func parseYbn(stm io.ReadSeeker) (script ybnInfo, err error) {
 	if header.Resv != 0 {
 		fmt.Println("reserved is not 0, maybe can't extract all the info")
 	}
+	var decryptedStm io.ReadSeeker
+	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
+		logf("decrypting, key is:%02x %02x %02x %02x\n", key[0], key[1], key[2], key[3])
+		decryptYbn(oriStm, key, uint32(binary.Size(header)), header.CodeSize)
+		decryptYbn(oriStm, key, uint32(binary.Size(header))+header.CodeSize, header.ArgSize)
+		decryptYbn(oriStm, key, uint32(binary.Size(header))+header.CodeSize+header.ArgSize, header.ResourceSize)
+		decryptYbn(oriStm, key, uint32(binary.Size(header))+header.CodeSize+header.ArgSize+header.ResourceSize, header.OffSize)
+		decryptedStm = bytes.NewReader(oriStm)
+	} else {
+		decryptedStm = bytes.NewReader(oriStm)
+	}
+
+	logln("write decrypted file...")
+	s := []string{*inYbnName, ".decrypt"}
+	err1 := ioutil.WriteFile(strings.Join(s, ""), oriStm, 0644)
+	fmt.Println(err1)
+
 	logln("reading sections...")
-	stm.Seek(int64(binary.Size(header)), 0)
+	decryptedStm.Seek(int64(binary.Size(header)), 0)
 	script.Insts = make([]instInfo, header.InstCnt)
 	rawInsts := make([]YInst, header.InstCnt)
-	binary.Read(stm, binary.LittleEndian, &rawInsts)
+	binary.Read(decryptedStm, binary.LittleEndian, &rawInsts)
 	var tArg YArg
 	rargs := make([]YArg, header.ArgSize/uint32(binary.Size(tArg)))
-	binary.Read(stm, binary.LittleEndian, &rargs)
-	resStartOff, _ := stm.Seek(0, 1)
+	binary.Read(decryptedStm, binary.LittleEndian, &rargs)
+	resStartOff, _ := decryptedStm.Seek(0, 1)
 	rargIdx := 0
 	logln("parsing instructions...")
 	for i, rinst := range rawInsts {
@@ -131,25 +149,25 @@ func parseYbn(stm io.ReadSeeker) (script ybnInfo, err error) {
 				inst.Args[j].ResInfo = rarg.ResSize
 				inst.Args[j].ResOffset = rarg.ResOffset
 			} else {
-				stm.Seek(resStartOff+int64(rarg.ResOffset), 0)
+				decryptedStm.Seek(resStartOff+int64(rarg.ResOffset), 0)
 				res := &inst.Args[j].Res
 				if rarg.Type == 3 {
 					var resInfo YResInfo
-					binary.Read(stm, binary.LittleEndian, &resInfo)
+					binary.Read(decryptedStm, binary.LittleEndian, &resInfo)
 					res.Type = resInfo.Type
 					res.Res = make([]byte, resInfo.Len)
-					stm.Read(res.Res)
+					decryptedStm.Read(res.Res)
 				} else {
 					res.ResRaw = make([]byte, rarg.ResSize)
-					stm.Read(res.ResRaw)
+					decryptedStm.Read(res.ResRaw)
 				}
 			}
 		}
 	}
 	offTblOffset := uint32(binary.Size(header)) + header.CodeSize + header.ArgSize + header.ResourceSize
-	stm.Seek(int64(offTblOffset), 0)
+	decryptedStm.Seek(int64(offTblOffset), 0)
 	script.Offs = make([]uint32, header.InstCnt)
-	binary.Read(stm, binary.LittleEndian, &script.Offs)
+	binary.Read(decryptedStm, binary.LittleEndian, &script.Offs)
 	return
 }
 
@@ -259,13 +277,12 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 		fmt.Println(err)
 		return false
 	}
-	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
-		logf("decrypting, key is:%02x %02x %02x %02x\n", key[0], key[1], key[2], key[3])
-		decryptYbn(oriStm, key)
-	}
+	// if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
+	// 	logf("decrypting, key is:%02x %02x %02x %02x\n", key[0], key[1], key[2], key[3])
+	// 	decryptYbn(oriStm, key)
+	// }
 	logln("parsing ybn...")
-	reader := bytes.NewReader(oriStm)
-	script, err := parseYbn(reader)
+	script, err := parseYbn(oriStm, key)
 	if err != nil {
 		fmt.Println("parse error:", err)
 		return false
