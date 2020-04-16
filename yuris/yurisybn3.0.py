@@ -1,6 +1,7 @@
 import os
 import sys
 import struct
+import re
 
 class MyStr(str):
 	"Operate String as a File."
@@ -214,14 +215,21 @@ def CODE2YSTB():
 			elif Res[0]=='<':
 				Res=TXT[int(Res[1:5])]
 			else:
-				while '<' in Res and '>' in Res:
-					LQuote=Res.index('<')
-					RQuote=Res.index('>')
-					Res=Res[:LQuote]+TXT[int(Res[LQuote+1:RQuote])]+Res[RQuote+1:]
+				LQuote=0
+				while True:
+					LQuote=Res.find('<',LQuote)
+					doubleQueta = Res.find('"', LQuote)
+					RQuote=Res.find('>',LQuote)
+					if LQuote==-1: break
+					if (doubleQueta==-1 or RQuote<doubleQueta) and RQuote!=-1:
+						Res=Res[:LQuote]+TXT[int(Res[LQuote+1:RQuote])]+Res[RQuote+1:]
+					LQuote+=1
 				ResLen=0
 				ResStr=[]
-				for Res in Res.split(','):
-					ResType, Str = [n.strip() for n in Res.split(':')]
+				for Res1 in re.findall("(?:[^ ]*?:)(?:\"(?: |[^\"])*?\"|.*?)(?:,|$)", Res):
+					if Res1[-1]==',':
+						Res1 = Res1[0:-1]
+					ResType, Str = [n.strip() for n in re.split(':', Res1, 1)]
 					if Str and Str[0] in '0123456789ABCDEF':
 						HIGH=Str[::2]
 						LOW=Str[1::2]
