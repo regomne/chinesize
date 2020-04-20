@@ -25,7 +25,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE
 
 target_compile_definitions(${TARGET_NAME} PRIVATE UNICODE _UNICODE)
 
-target_compile_options(${TARGET_NAME} PRIVATE /source-charset:utf-8)
+target_compile_options(${TARGET_NAME} PRIVATE /source-charset:utf-8 /MT)
 
 set_target_properties(BeaEngine PROPERTIES FOLDER "third_party")
 set_target_properties(ilhook PROPERTIES FOLDER "third_party")

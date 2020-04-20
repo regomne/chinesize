@@ -96,11 +96,11 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         //}
 
         static const HookPointStructWithName points2[] = {
-			{ "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
+			//{ "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", false, 0 },
 			//{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
-			{"user32.dll","SetWindowTextA",MySWT, "\x02",false,0},
+			//{"user32.dll","SetWindowTextA",MySWT, "\x02",false,0},
 			{"kernel32.dll","MultiByteToWideChar", MyMBWC, "\x01",false,0},
-			//{"kernel32.dll","GetVolumeInformationA",MyGetVolumeInformation,"f12345678",true,32}
+			{"kernel32.dll","GetVolumeInformationW",MyGetVolumeInformation,"f12345678",STUB_DIRECTLYRETURN|STUB_OVERRIDEEAX,32}
 		};
         if (!HookFunctions(points2))
         {
