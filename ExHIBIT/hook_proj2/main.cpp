@@ -11,17 +11,17 @@ using namespace std;
 #define DP(name,addr,pat,hex) {name,addr,pat,hex,sizeof(hex)-1},
 PatchStruct g_Patches[] = {
     //DP("resident.dll", 0x21F5EB,"\x80","\x86") //cp
-    DP("resident.dll", 0x4534D4, "\x81\x74","\xa1\xb7") //右括号
-    DP("resident.dll", 0x4534E8,"\x81\x73","\xa1\xb6") //左括号
-    //DP("resident.dll", 0x6b912,"\x74\x81","\xb7\xa1") //右括号，引用上面的括号所在的函数
-    DP("resident.dll", 0x540DC0, "\x81\x73","\xa1\xb6") //右括号
-    DP("resident.dll", 0x540DD0, "\x81\x74","\xa1\xb7") //左括号
-    DP("resident.dll", 0x540D30,"\x73\x81","\xb6\xa1") //左括号
-    DP("resident.dll", 0x540D40,"\x74\x81","\xb7\xa1") //右括号
+    DP("resident.dll", 0x363360, "\x81\x74","\xa1\xb7") //右括号
+    DP("resident.dll", 0x363374,"\x81\x73","\xa1\xb6") //左括号
+    DP("resident.dll", 0x6a556,"\x74\x81","\xb7\xa1") //右括号，引用上面的括号所在的函数
+    //DP("resident.dll", 0x540DC0, "\x81\x73","\xa1\xb6") //右括号
+    //DP("resident.dll", 0x540DD0, "\x81\x74","\xa1\xb7") //左括号
+    //DP("resident.dll", 0x540D30,"\x73\x81","\xb6\xa1") //左括号
+    //DP("resident.dll", 0x540D40,"\x74\x81","\xb7\xa1") //右括号
     //DP("resident.dll", 0x2533F7,"\x40\x81","\xa1\xa1") //空格，call GetGlyphOutlineA之前的某个cmp，可以调试来确定
     //DP("resident.dll", 0x253C17,"\x40\x81","\xa1\xa1") //空格，call GetGlyphOutlineA之前的某个cmp，可以调试来确定
-    DP("resident.dll", 0x1E4A05,"\xa8\x03","\xa4\x03") //_mbccpy_s所在的函数内
-    DP("resident.dll", 0x540CCC,"\xa4\x03","\xa8\x03")
+    //DP("resident.dll", 0x1E4A05,"\xa8\x03","\xa4\x03") //_mbccpy_s所在的函数内
+    //DP("resident.dll", 0x540CCC,"\xa4\x03","\xa8\x03")
 };
 #undef DP
 
@@ -48,6 +48,14 @@ void HOOKFUNC MyCW(wchar_t** strp)
     }
 }
 
+void HOOKFUNC MyCA(char** strp)
+{
+    if (*strp && strcmp(*strp, "\x94\xA0\x92\xEB\x83\x8D\x83\x57\x83\x62\x83\x4E\x81\x60\x8C\xE8\x8E\x71\x82\xC6\x82\xA2\x82\xBF\x82\xE1\x82\xE7\x82\xD4\x82\x72\x82\x6C\x90\xB6\x8A\x88\x81\x60") == 0)
+    {
+        *strp = "箱庭逻辑 -瑚子FD-";
+    }
+}
+
 void HOOKFUNC MySetMbcp(uint32_t* cp) {
     *cp = 936;
 }
@@ -64,10 +72,10 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
         auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
 
-        g_proc_cmd_return_offset = 0x1163C1; //是MyProcCmds函数在liteLoad中的第一个引用的返回地址
+        g_proc_cmd_return_offset = 0x11C981; //是MyProcCmds函数在liteLoad中的第一个引用的返回地址
         static const HookPointStruct points[] = {
             //?liteLoad@RetouchSystem@@AAE_NPBDK@Z 函数头
-            { "resident.dll", 0x115F80, MyLoadRld, "fc12", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 8 },
+            { "resident.dll", 0x11C540, MyLoadRld, "fc12", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 8 },
 
             /*
             ?liteLoad@RetouchSystem@@AAE_NPBDK@Z 中：
@@ -81,7 +89,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
             100F738E 7C D0                                   jl      short loc_100F7360
             的ProcCmd的函数头
             */
-            { "resident.dll", 0xC5240, MyProcCmds, "rfc123", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 12 },
+            { "resident.dll", 0xDA0D0, MyProcCmds, "rfc123", STUB_DIRECTLYRETURN | STUB_OVERRIDEEAX, 12 },
 
             /*ProcCmd函数内后面一个call的函数内，
             100ADC1D 51                                      push    ecx             ; lpString
@@ -92,7 +100,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
             100ADC2C 80 3A 00                                cmp     byte ptr [edx], 0
             上面这段代码的开头
             */
-            { "resident.dll", 0xC272D, MyAddString, "r", 0, 0 },
+            { "resident.dll", 0xD790D, MyAddString, "r", 0, 0 },
 
             /*
             ?loadRld@RetouchSystem@@QAEPAEPBDK@Z 函数内（graph的右下角）调用进去的一个函数内有：
@@ -120,7 +128,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
 
         static const HookPointStructWithName points2[] = {
             { "gdi32.dll", "CreateFontIndirectA", MyCFI, "1", 0, 0 },
-            //{ "user32.dll", "CreateWindowExW", MyCW, "\x03", false, 0 },
+            { "user32.dll", "CreateWindowExA", MyCA, "\x03", false, 0 },
             { "msvcr80.dll", "_setmbcp", MySetMbcp, "\x01", 0, 0 },
         };
         if (!HookFunctions(points2))

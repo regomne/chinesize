@@ -5,6 +5,8 @@
 #include "FuncHelper.h"
 #include "bgi.h"
 #include "enc.h"
+#include "license.h"
+#include "resource.h"
 
 using namespace std;
 
@@ -86,7 +88,7 @@ BOOL WINAPI DllMain(_In_ void* dll_module, _In_ unsigned long reason, _In_opt_ v
 {
     if (reason == DLL_PROCESS_ATTACH)
     {
-        //PatchMemory(g_Patches, ARRAYSIZE(g_Patches));
+        on_oep();
         //auto rva = get_ep_rva_from_module_address(GetModuleHandle(nullptr));
         static const HookPointStruct points[] = {
             // fxckBGI获取的解压函数地址，call该函数的xref中的一个

@@ -355,6 +355,10 @@ func searchInstInfo(image []byte, pat string, off int) (fileOff int, err error) 
 		}
 		return
 	}
+	// Steps:
+	// 1 find pattern: 01 05 04 04 04, get addr A
+	// 2 xref the addr of A, get B
+	// 3 xref B, get the InstInfo addr
 	Pats := []string{
 		// AdvHD 1.5
 		"8b 2c 85 ?? ?? ?? ?? 85 ed 0f 84 ?? ?? ?? ?? 38 5d 00",

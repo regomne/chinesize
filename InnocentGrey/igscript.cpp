@@ -21,10 +21,10 @@
 #include <cstdlib>
 #include <string>
 #include <cstring>
-#include <io.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <windows.h>
+//#include <sys/io.h>
+//#include <sys/stat.h>
+//#include <fcntl.h>
+//#include <windows.h>
 
 using namespace std;
 
@@ -638,6 +638,20 @@ void RebuildPointer(char *oldscr, char *newscr){
   outfile.close();
 }
 
+size_t get_file_size_checked(const char* fn)
+{
+	auto fs = fopen(fn, "rb");
+	if(fs==nullptr)
+	{
+		printf("open file error\n");
+		exit(0);
+	}
+	fseek(fs, 0, SEEK_END);
+	auto size = ftell(fs);
+	fclose(fs);
+	return size;
+}
+
 char* Crypt(char *fn, bool encrypt){//encrypt or decrypt
 
   ifstream infile(fn, ios::binary);
@@ -652,17 +666,18 @@ char* Crypt(char *fn, bool encrypt){//encrypt or decrypt
     strcat(tfn, ".x");
   }
   
-  struct _stat buf;
-  _stat(fn, &buf);
-  u8 *buff = new u8[buf.st_size];
+  //struct _stat buf;
+  //_stat(fn, &buf);
+  u32 file_size = get_file_size_checked(fn);
+  u8 *buff = new u8[file_size];
   
-  infile.read((char *)buff, buf.st_size);
+  infile.read((char *)buff, file_size);
   ofstream outfile(tfn, ios::binary);
   
-  for (s32 i=0;i<buf.st_size;i++){
+  for (s32 i=0;i<file_size;i++){
     buff[i] ^= 0xFF;
   }
-  outfile.write((const char*)buff, buf.st_size);
+  outfile.write((const char*)buff, file_size);
   
   infile.close();
   outfile.close();

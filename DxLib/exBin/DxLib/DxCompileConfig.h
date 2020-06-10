@@ -67,7 +67,7 @@
 #define DX_NON_NORMAL_DRAW_SHADER
 
 // グラフィックス処理がいらない方は次のコメントを外してください
-#define DX_NON_GRAPHICS
+//#define DX_NON_GRAPHICS
 
 // ソフトウエア２Ｄ描画がいらない方は次のコメントを外してください
 #define DX_NON_2DDRAW
@@ -148,7 +148,7 @@
 #define DX_NON_SOFTIMAGE
 
 // フォント描画機能を無効にする場合は次のコメントを外して下さい
-#define DX_NON_FONT
+//#define DX_NON_FONT
 
 // サウンド再生機能( ソフトウエアサウンド、MIDI含む )を無効にする場合は次のコメントを外して下さい
 #define DX_NON_SOUND

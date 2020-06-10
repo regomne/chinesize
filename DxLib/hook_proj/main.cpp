@@ -177,7 +177,7 @@ BOOL WINAPI DllMain(_In_ void* _DllHandle, _In_ unsigned long _Reason, _In_opt_ 
         }
 
         static const HookPointStructWithName points2[] = {
-            { "gdi32.dll", "CreateFontW", MyCF, "\x0e", 0, 0 },
+            //{ "gdi32.dll", "CreateFontW", MyCF, "\x0e", 0, 0 },
             { "user32.dll", "CreateWindowExW", MyCW, "2\x03", 0, 0 },
         };
         if (!HookFunctions(points2))

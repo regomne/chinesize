@@ -1,7 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 
-IsPacking=True
+IsPacking = True
 FileExt='.srcxml'
 WithName = False
 
@@ -14,7 +14,9 @@ def extText(fname, withName):
   ns = []
   for ch in code:
     if ch.tag=='msg':
-      if withName:
+      if 'name' in ch.attrib and ch.attrib['name']!='':
+        ns.append(ch.attrib['name'])
+      elif withName:
         v = ch.attrib['voices']
         if v!='':
           ns.append(v)
@@ -37,7 +39,10 @@ def packText(xmlname, txtname, withName):
   ti = 0
   for ch in code:
     if ch.tag=='msg':
-      if withName:
+      if 'name' in ch.attrib and ch.attrib['name']!='':
+        ch.set('name', ls[ti])
+        ti+=1
+      elif withName:
         v = ch.attrib['voices']
         if v!='':
           ti+=1
@@ -54,9 +59,9 @@ def packText(xmlname, txtname, withName):
   return out.replace(b' l__=', b' @l=')
 
 
-path1=r'e:\BaiduDownload\末世孤雄\I Walk Among Zombies Vol. 2\script2'
-path2=r'e:\BaiduDownload\末世孤雄\I Walk Among Zombies Vol. 2\txt'
-path3=r'e:\BaiduDownload\末世孤雄\I Walk Among Zombies Vol. 2\script3'
+path1=r'e:\Game\Steady2Steady\script'
+path2=r'e:\Game\Steady2Steady\txt'
+path3=r'e:\Game\Steady2Steady\script2'
 
 if not IsPacking:
   for f in os.listdir(path1):
@@ -75,5 +80,6 @@ else:
       continue
     ns=packText(os.path.join(path1,f),txtname,WithName)
     fs=open(os.path.join(path3, f),'wb')
+    fs.write(b'<?xml version="1.0" encoding="utf-8"?>\r\n')
     fs.write(ns)
     fs.close()
