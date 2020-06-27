@@ -237,6 +237,12 @@ def pack_text(stm, ls):
         if str_type == TYPE_MESSAGE:
             off = put_message_to_resource(ori_code[ori_pos:], code, l)
             rel_table[rel_off+4:rel_off+8] = off.to_bytes(4, 'little')
+        elif str_type == TYPE_SEL:
+            off = put_sel_to_resource(ori_code[ori_pos:], code, l)
+            rel_table[rel_off+4:rel_off+8] = off.to_bytes(4, 'little')
+        elif str_type == TYPE_STRING:
+            off = put_string_to_resource(code, l)
+            rel_table[rel_off+4:rel_off+8] = off.to_bytes(4, 'little')
     new_stm = bytearray(stm[:8])
     new_stm.extend(rel_table)
     new_stm += insts_size.to_bytes(4, 'little')
@@ -270,7 +276,7 @@ def put_sel_to_resource(ori_res, res, l):
     if sel_cnt != len(sels):
         raise Exception('sel count not fit')
     for sel in sels:
-        res += len(sel).to_bytes(2, 'little')
+        res += (len(sel)+3).to_bytes(2, 'little')
         res += sel
         res.append(0)
     res.append(0)
