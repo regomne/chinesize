@@ -17,9 +17,15 @@ type PnaHeader struct {
 	ImgCnt uint32
 }
 
-type PnaEntry struct {
-	Unk  [9]uint32
-	Size uint32
+type PnaLayerInfo struct {
+	Unk1       uint32
+	FrameIndex uint32
+	OffsetX    int32
+	OffsetY    int32
+	Width      uint32
+	Height     uint32
+	Unk2       [3]uint32
+	RawSize    uint32
 }
 
 const HdrFileName = "_hdr.bin"
@@ -38,7 +44,7 @@ func extPna(fname string, outFolder string) (retErr error) {
 		retErr = fmt.Errorf("magic not fit")
 		return
 	}
-	entries := make([]PnaEntry, hdr.ImgCnt)
+	entries := make([]PnaLayerInfo, hdr.ImgCnt)
 	retErr = binary.Read(fs, binary.LittleEndian, &entries)
 	if retErr != nil {
 		return
@@ -53,8 +59,8 @@ func extPna(fname string, outFolder string) (retErr error) {
 	hdrFile.Close()
 
 	for idx, entry := range entries {
-		if entry.Size != 0 {
-			bf := make([]byte, entry.Size)
+		if entry.RawSize != 0 {
+			bf := make([]byte, entry.RawSize)
 			_, retErr = fs.Read(bf)
 			if retErr != nil {
 				return
@@ -82,7 +88,7 @@ func packPna(inFolder string, fname string) (retErr error) {
 		retErr = fmt.Errorf("magic not fit")
 		return
 	}
-	entries := make([]PnaEntry, hdr.ImgCnt)
+	entries := make([]PnaLayerInfo, hdr.ImgCnt)
 	retErr = binary.Read(hdrFile, binary.LittleEndian, &entries)
 	if retErr != nil {
 		return
@@ -94,15 +100,15 @@ func packPna(inFolder string, fname string) (retErr error) {
 		return
 	}
 	defer fs.Close()
-	fs.Seek(int64(binary.Size(hdr)+binary.Size(PnaEntry{})*int(hdr.ImgCnt)), 0)
+	fs.Seek(int64(binary.Size(hdr)+binary.Size(PnaLayerInfo{})*int(hdr.ImgCnt)), 0)
 	for idx, entry := range entries {
-		if entry.Size != 0 {
+		if entry.RawSize != 0 {
 			pngName := fmt.Sprintf("%03d.png", idx)
 			png, err := ioutil.ReadFile(path.Join(inFolder, pngName))
 			if err != nil {
 				return fmt.Errorf("can't read %s: %v", pngName, err)
 			}
-			entries[idx].Size = uint32(len(png))
+			entries[idx].RawSize = uint32(len(png))
 			_, err = fs.Write(png)
 			if err != nil {
 				return fmt.Errorf("writing error when %s: %v", pngName, err)
