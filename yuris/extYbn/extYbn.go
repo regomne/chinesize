@@ -75,13 +75,24 @@ func includes(a []uint8, v uint8) bool {
 	return false
 }
 
-func decryptYbn(stm []byte, key []byte, start uint32, length uint32) {
+func decryptBlock(stm []byte, key []byte) {
 	if len(key) != 4 {
 		panic("key length error")
 	}
-	for i := start; i < start+length; i++ {
-		stm[i] ^= key[(i-start)&3]
+	for i := 0; i < len(stm); i++ {
+		stm[i] ^= key[i&3]
 	}
+}
+
+func decryptYbn(stm []byte, key []byte, header *YbnHeader) {
+	p := uint32(binary.Size(*header))
+	decryptBlock(stm[p:p+header.CodeSize], key)
+	p += header.CodeSize
+	decryptBlock(stm[p:p+header.ArgSize], key)
+	p += header.ArgSize
+	decryptBlock(stm[p:p+header.ResourceSize], key)
+	p += header.ResourceSize
+	decryptBlock(stm[p:p+header.OffSize], key)
 }
 
 func parseYbn(oriStm []byte, key []byte) (script ybnInfo, err error) {
@@ -106,19 +117,16 @@ func parseYbn(oriStm []byte, key []byte) (script ybnInfo, err error) {
 	var decryptedStm io.ReadSeeker
 	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
 		logf("decrypting, key is:%02x %02x %02x %02x\n", key[0], key[1], key[2], key[3])
-		decryptYbn(oriStm, key, uint32(binary.Size(header)), header.CodeSize)
-		decryptYbn(oriStm, key, uint32(binary.Size(header))+header.CodeSize, header.ArgSize)
-		decryptYbn(oriStm, key, uint32(binary.Size(header))+header.CodeSize+header.ArgSize, header.ResourceSize)
-		decryptYbn(oriStm, key, uint32(binary.Size(header))+header.CodeSize+header.ArgSize+header.ResourceSize, header.OffSize)
+		decryptYbn(oriStm, key, header)
 		decryptedStm = bytes.NewReader(oriStm)
 	} else {
 		decryptedStm = bytes.NewReader(oriStm)
 	}
 
-	logln("write decrypted file...")
-	s := []string{*inYbnName, ".decrypt"}
-	err1 := ioutil.WriteFile(strings.Join(s, ""), oriStm, 0644)
-	fmt.Println(err1)
+	//logln("write decrypted file...")
+	//s := []string{*inYbnName, ".decrypt"}
+	//err1 := ioutil.WriteFile(strings.Join(s, ""), oriStm, 0644)
+	//fmt.Println(err1)
 
 	logln("reading sections...")
 	decryptedStm.Seek(int64(binary.Size(header)), 0)
@@ -171,6 +179,37 @@ func parseYbn(oriStm []byte, key []byte) (script ybnInfo, err error) {
 	return
 }
 
+func isLongEnglishSentence(s []byte) bool {
+	spaceCount := 0
+	for _, c := range s {
+		if c >= 0x80 {
+			return false
+		} else if c == ' ' {
+			spaceCount++
+		}
+	}
+	if spaceCount > 5 {
+		return true
+	}
+	return false
+}
+
+func isEnglishMsg(arg argInfo) bool {
+	if arg.Value == 0 && arg.Type == 3 {
+		return isLongEnglishSentence(arg.Res.Res)
+	}
+	return false
+}
+
+func isJapOrChnMsg(arg argInfo) bool {
+	if arg.Value == 0 && arg.Type == 0 {
+		if len(arg.Res.ResRaw) != 0 && arg.Res.ResRaw[0] > 0x80 {
+			return true
+		}
+	}
+	return false
+}
+
 func guessYbnOp(script *ybnInfo, ops *keyOps) bool {
 	msgStat := [256]int{0}
 	callStat := [256]int{0}
@@ -183,13 +222,10 @@ func guessYbnOp(script *ybnInfo, ops *keyOps) bool {
 			return true
 		}
 		if ops.msgOp == 0 && len(inst.Args) == 1 &&
-			inst.Args[0].Type == 0 && inst.Args[0].Value == 0 {
-			res := &inst.Args[0].Res
-			if len(res.ResRaw) != 0 && res.ResRaw[0] > 0x80 {
-				msgStat[inst.Op]++
-				if msgStat[inst.Op] > 10 {
-					ops.msgOp = inst.Op
-				}
+			(isJapOrChnMsg(inst.Args[0]) || isEnglishMsg(inst.Args[0])) {
+			msgStat[inst.Op]++
+			if msgStat[inst.Op] > 10 {
+				ops.msgOp = inst.Op
 			}
 		}
 		if ops.callOp == 0 && len(inst.Args) >= 1 &&
@@ -241,7 +277,15 @@ func extTxtFromYbn(script *ybnInfo, ops *keyOps, codePage int) (txt []string, er
 				err = fmt.Errorf("the message op:0x%x has not only 1 argument", ops.msgOp)
 				return
 			}
-			txt = append(txt, codec.Decode(inst.Args[0].Res.ResRaw, codePage))
+			rawStr := []byte{}
+			if inst.Args[0].Type == 3 {
+				// for English games, it seems the msg op uses type-3 resource
+				rawStr = inst.Args[0].Res.Res
+			} else {
+				// and for Japnese games, it usually uses raw resource
+				rawStr = inst.Args[0].Res.ResRaw
+			}
+			txt = append(txt, codec.Decode(rawStr, codePage))
 		} else if inst.Op == ops.callOp {
 			if len(inst.Args) < 1 {
 				err = fmt.Errorf("call op:0x%x argument less than 1", ops.callOp)
@@ -277,10 +321,6 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 		fmt.Println(err)
 		return false
 	}
-	// if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
-	// 	logf("decrypting, key is:%02x %02x %02x %02x\n", key[0], key[1], key[2], key[3])
-	// 	decryptYbn(oriStm, key)
-	// }
 	logln("parsing ybn...")
 	script, err := parseYbn(oriStm, key)
 	if err != nil {
@@ -289,8 +329,8 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 	}
 	logln("guessing opcode if not provided...")
 	if !guessYbnOp(&script, ops) {
-		fmt.Println("Can't guess the opcode")
-		return false
+		fmt.Printf("Guess opcodes failed, msg op:0x%x, call op:0x%x", ops.msgOp, ops.callOp)
+		//return false
 	}
 	if outScriptName != "" {
 		logln("writing json...")
@@ -320,7 +360,21 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 	return true
 }
 
-func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePage int) (newStm []byte, err error) {
+func packLineToResource(arg argInfo, line string, cp int) []byte {
+	ns := codec.Encode(line, cp, codec.ReplaceHTML)
+	if arg.Type == 3 {
+		var bf bytes.Buffer
+		var resInfo YResInfo
+		resInfo.Type = arg.Res.Type
+		resInfo.Len = uint16(len(ns))
+		binary.Write(&bf, binary.LittleEndian, &resInfo)
+		bf.Write(ns)
+		return bf.Bytes()
+	}
+	return ns
+}
+
+func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePage int, key []byte) (newStm []byte, err error) {
 	argOffStart := uint32(binary.Size(script.Header)) + script.Header.CodeSize
 	argStm := memio.NewWithBytes(stm[argOffStart : argOffStart+script.Header.ArgSize])
 
@@ -331,7 +385,7 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 	txtIdx := 0
 	for _, inst := range script.Insts {
 		if inst.Op == ops.msgOp {
-			ns := codec.Encode(txt[txtIdx], codePage, codec.ReplaceHTML)
+			ns := packLineToResource(inst.Args[0], txt[txtIdx], codePage)
 			txtIdx++
 			resTail.Write(ns)
 			argStm.Seek(int64(argIdx*12)+4, 0)
@@ -344,17 +398,13 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 					if arg.Type == 3 &&
 						bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
 						bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
-						ns := codec.Encode(txt[txtIdx], codePage, codec.ReplaceHTML)
+						ns := packLineToResource(arg, txt[txtIdx], codePage)
 						txtIdx++
-						var resInfo YResInfo
-						resInfo.Type = arg.Res.Type
-						resInfo.Len = uint16(len(ns))
-						binary.Write(&resTail, binary.LittleEndian, &resInfo)
 						resTail.Write(ns)
 						argStm.Seek(int64((argIdx+1+i)*12)+4, 0)
-						binary.Write(argStm, binary.LittleEndian, uint32(len(ns)+binary.Size(resInfo)))
+						binary.Write(argStm, binary.LittleEndian, uint32(len(ns)))
 						binary.Write(argStm, binary.LittleEndian, resNewOffset)
-						resNewOffset += uint32(len(ns) + binary.Size(resInfo))
+						resNewOffset += uint32(len(ns))
 					}
 				}
 			}
@@ -363,17 +413,13 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 				if arg.Type == 3 &&
 					bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
 					bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
-					ns := codec.Encode(txt[txtIdx], codePage, codec.ReplaceHTML)
+					ns := packLineToResource(arg, txt[txtIdx], codePage)
 					txtIdx++
-					var resInfo YResInfo
-					resInfo.Type = arg.Res.Type
-					resInfo.Len = uint16(len(ns))
-					binary.Write(&resTail, binary.LittleEndian, &resInfo)
 					resTail.Write(ns)
 					argStm.Seek(int64((argIdx+i)*12)+4, 0)
-					binary.Write(argStm, binary.LittleEndian, uint32(len(ns)+binary.Size(resInfo)))
+					binary.Write(argStm, binary.LittleEndian, uint32(len(ns)))
 					binary.Write(argStm, binary.LittleEndian, resNewOffset)
-					resNewOffset += uint32(len(ns) + binary.Size(resInfo))
+					resNewOffset += uint32(len(ns))
 				}
 			}
 		}
@@ -392,7 +438,13 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 	newYbn.Write(resTail.Bytes())
 	offStart := resStart + script.Header.ResourceSize
 	newYbn.Write(stm[offStart : offStart+script.Header.OffSize])
-	return newYbn.Bytes(), nil
+
+	outputStm := newYbn.Bytes()
+	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
+		decryptYbn(outputStm, key, &newHdr)
+	}
+
+	return outputStm, nil
 }
 
 func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, codePage int) bool {
@@ -402,13 +454,8 @@ func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, c
 		fmt.Println(err)
 		return false
 	}
-	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
-		logf("decrypting, key is:%02x %02x %02x %02x\n", key[0], key[1], key[2], key[3])
-		decryptYbn(oriStm, key)
-	}
 	logln("parsing ybn...")
-	reader := bytes.NewReader(oriStm)
-	script, err := parseYbn(reader)
+	script, err := parseYbn(oriStm, key)
 	if err != nil {
 		fmt.Println("parse error:", err)
 		return false
@@ -426,14 +473,10 @@ func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, c
 	}
 	logf("reading text finished, %d lines\n", len(ls))
 	logln("packing text to ybn...")
-	newStm, err := packTxtToYbn(&script, oriStm, ls, ops, codePage)
+	newStm, err := packTxtToYbn(&script, oriStm, ls, ops, codePage, key)
 	if err != nil {
 		fmt.Println(err)
 		return false
-	}
-	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
-		logln("encrypting ybn...")
-		decryptYbn(newStm, key)
 	}
 	logln("writing ybn:", outYbnName)
 	ioutil.WriteFile(outYbnName, newStm, os.ModePerm)
@@ -442,16 +485,17 @@ func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, c
 }
 
 func printUsage(exeName string) {
-	fmt.Println("YBN extractor v2.0")
+	fmt.Println("YBN extractor v3.0")
 	fmt.Printf("Usage: %s -e -ybn <ybn> [-json <json>] [-txt <txt>] [options]\n", exeName)
 	fmt.Printf("Usage: %s -p -ybn <ybn> -txt <txt> -new-ybn <new_ybn> [options]\n", exeName)
 	flag.Usage()
 
 	fmt.Printf(`
 About the key:
-  I don't know any way to guess the key except analyzing the bin. Most of the
-  game use the default key, but if not, I have no idea about it.
-  You may try: 0x6cfddadb.
+  I don't know any way to guess the key except analyzing the bin. Most games
+  use the default key, but if not, I have no idea about it.
+  The program may CRASH OR PANIC if not given a correct key.
+  You may try: 0x6cfddadb or 0x30731B78.
 
 About the opcode:
   This program can guess the opcode-msg and opcode-call which is needed, but
@@ -511,7 +555,7 @@ func main() {
 	codePage := flag.String("cp", "932", "specify code page")
 	outputOpCode := flag.Bool("output-opcode", false, "output the opcode guessed")
 	otherTextOp := flag.String("op-other", "", "other op to extract/pack txt(comma to split, i.e: 3,4,100")
-	verbose := flag.Bool("v", false, "verbose output")
+	verbose := flag.Bool("v", false, "verbose output, and decode some string when outputs in json")
 	flag.Parse()
 	if (!*isExtract && !*isPack) || (*isExtract && *isPack) ||
 		*inYbnName == "" ||
