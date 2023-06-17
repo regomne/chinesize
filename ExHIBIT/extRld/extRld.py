@@ -21,8 +21,8 @@ def parse_name_table(ls):
       names[int(mo.group(1))] = mo.group(2)
   return names
 
-def is_half(s):
-  return len(s.decode('932'))==len(s)
+def is_half(s, cp):
+  return len(s.decode(cp))==len(s)
 
 def parse_rld_header(stm):
   magic, unk1, unk2, inst_cnt, unk3 = struct.unpack('<4sIIII', stm.read(20))
@@ -73,11 +73,11 @@ h_unk3:%d, h_tag:%s'%(magic, h_unk1, h_unk2, inst_cnt, h_unk3, h_tag))
       pure_txt.append(strs[0].decode(cp))
     elif op == 191:
       s = strs[0]
-      if not is_half(s):
+      if not is_half(s, cp):
         pure_txt.append(s.decode(cp))
     elif op == 203:
       s = strs[0]
-      if not is_half(s):
+      if not is_half(s, cp):
         pure_txt.append(s.decode(cp))
   return txt, pure_txt
 
@@ -87,12 +87,12 @@ def write_txt(name,txt):
   fs.write('\r\n'.join(ntxt).encode('u16'))
   fs.close()
 
-def ext_rld(fname1, fname2, name_table):
+def ext_rld(fname1, fname2, name_table, cp):
   fs=open(fname1, 'rb')
   stm = bytefile.ByteFile(fs.read())
   fs.close()
   try:
-    txt, pure_txt = parse_rld(stm, name_table, '932')
+    txt, pure_txt = parse_rld(stm, name_table, cp)
   except:
     print(fname1, 'format error')
     return
@@ -100,19 +100,21 @@ def ext_rld(fname1, fname2, name_table):
     write_txt(fname2, pure_txt)
     
 def ext_all_rld(path1, path2):
+  cp='936'
   charfile = os.path.join(path1, 'defChara.rld')
   fs=open(charfile, 'rb')
   stm = bytefile.ByteFile(fs.read())
   fs.close()
-  txt, pure_txt = parse_rld(stm, {}, '932')
+  txt, pure_txt = parse_rld(stm, {}, cp)
   name_table = parse_name_table(pure_txt)
   for f in os.listdir(path1):
     if not f.endswith('.rld'):
       continue
     ext_rld(os.path.join(path1,f),
             os.path.join(path2,f.replace('.rld','.txt')),
-            name_table)
+            name_table,
+            cp)
 
-ext_all_rld(r'e:\BaiduDownload\SexOpenWorld\rld2',
-            r'e:\BaiduDownload\SexOpenWorld\txt')
+ext_all_rld('/Users/regomne/Downloads/rld_test/rld_new',
+            '/Users/regomne/Downloads/rld_test/txt_test')
 
