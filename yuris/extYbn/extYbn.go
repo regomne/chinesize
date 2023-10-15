@@ -492,9 +492,8 @@ func printUsage(exeName string) {
 
 	fmt.Printf(`
 About the key:
-  I don't know any way to guess the key except analyzing the bin. Most games
-  use the default key, but if not, I have no idea about it.
-  The program may CRASH OR PANIC if not given a correct key.
+  ExtYbn could try to guess the key from a ybn file, but may fail.
+  The program may CRASH OR PANIC if failed to guess or not given a correct key.
   You may try: 0x6cfddadb or 0x30731B78.
 
 About the opcode:
@@ -549,7 +548,8 @@ func main() {
 	jsonName := flag.String("json", "", "output script file name")
 	txtName := flag.String("txt", "", "output/input txt file name")
 	outYbnName := flag.String("new-ybn", "", "output ybn file name")
-	keyInt := flag.Int64("key", 0x96ac6fd3, "decode key of ybn")
+	keyInt := flag.Int64("key", 0, "decode key of ybn")
+	guessKey := flag.Bool("guess-key", true, "try to guess the decode key")
 	opMsg := flag.Int("op-msg", 0, "specify opcode of Msg. defaut: auto guess")
 	opCall := flag.Int("op-call", 0, "specify opcode of Call. default: auto guess")
 	codePage := flag.String("cp", "932", "specify code page")
