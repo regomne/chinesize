@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -52,6 +51,7 @@ type ybnInfo struct {
 }
 
 var gIsOutputOpcode bool
+var gIsOutputGuessedKey bool
 var gVerbose bool
 
 func logf(fmts string, args ...interface{}) {
@@ -75,6 +75,10 @@ func includes(a []uint8, v uint8) bool {
 	return false
 }
 
+func keyArrToInt(k []byte) int64 {
+	return (int64(k[3]) << 24) | (int64(k[2]) << 16) | (int64(k[1]) << 8) | int64(k[0])
+}
+
 func decryptBlock(stm []byte, key []byte) {
 	if len(key) != 4 {
 		panic("key length error")
@@ -95,12 +99,12 @@ func decryptYbn(stm []byte, key []byte, header *YbnHeader) {
 	decryptBlock(stm[p:p+header.OffSize], key)
 }
 
-func parseYbn(oriStm []byte, key []byte) (script ybnInfo, err error) {
+func parseYbn(oriStm []byte, key []byte, guessKey bool) (script ybnInfo, err error) {
 	stm := bytes.NewReader(oriStm)
 	binary.Read(stm, binary.LittleEndian, &script.Header)
 	logln("header:", script.Header)
 	header := &script.Header
-	if bytes.Compare(header.Magic[:], []byte("YSTB")) != 0 ||
+	if !bytes.Equal(header.Magic[:], []byte("YSTB")) ||
 		header.CodeSize != header.InstCnt*4 {
 		err = fmt.Errorf("not a ybn file or file format error")
 		return
@@ -114,9 +118,21 @@ func parseYbn(oriStm []byte, key []byte) (script ybnInfo, err error) {
 	if header.Resv != 0 {
 		fmt.Println("reserved is not 0, maybe can't extract all the info")
 	}
+	if guessKey {
+		logln("guessing key...")
+		idx := binary.Size(header) + int(header.CodeSize) - 4
+		key[0] = oriStm[idx]
+		key[1] = oriStm[idx+1]
+		key[2] = oriStm[idx+2]
+		key[3] = oriStm[idx+3]
+		decryptBlock(key[:], []byte{12, 0, 0, 0})
+		if gIsOutputGuessedKey {
+			fmt.Printf("guessed-key\n0x%08x\n", keyArrToInt(key[:]))
+		}
+	}
 	var decryptedStm io.ReadSeeker
-	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
-		logf("decrypting, key is:%02x %02x %02x %02x\n", key[0], key[1], key[2], key[3])
+	if !bytes.Equal(key, []byte("\x00\x00\x00\x00")) {
+		logf("decrypting, key is: 0x%08x\n", keyArrToInt(key[:]))
 		decryptYbn(oriStm, key, header)
 		decryptedStm = bytes.NewReader(oriStm)
 	} else {
@@ -188,10 +204,7 @@ func isLongEnglishSentence(s []byte) bool {
 			spaceCount++
 		}
 	}
-	if spaceCount > 5 {
-		return true
-	}
-	return false
+	return spaceCount > 5
 }
 
 func isEnglishMsg(arg argInfo) bool {
@@ -294,8 +307,8 @@ func extTxtFromYbn(script *ybnInfo, ops *keyOps, codePage int) (txt []string, er
 			if isFunctionToExtract(inst.Args[0].Res.Res) {
 				for _, arg := range inst.Args[1:] {
 					if arg.Type == 3 &&
-						bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
-						bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
+						!bytes.Equal(arg.Res.Res, []byte(`""`)) &&
+						!bytes.Equal(arg.Res.Res, []byte(`''`)) {
 						txt = append(txt, codec.Decode(arg.Res.Res, codePage))
 					}
 				}
@@ -303,8 +316,8 @@ func extTxtFromYbn(script *ybnInfo, ops *keyOps, codePage int) (txt []string, er
 		} else if includes(ops.otherOp, inst.Op) {
 			for _, arg := range inst.Args {
 				if arg.Type == 3 &&
-					bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
-					bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
+					!bytes.Equal(arg.Res.Res, []byte(`""`)) &&
+					!bytes.Equal(arg.Res.Res, []byte(`''`)) {
 					txt = append(txt, codec.Decode(arg.Res.Res, codePage))
 				}
 			}
@@ -314,15 +327,15 @@ func extTxtFromYbn(script *ybnInfo, ops *keyOps, codePage int) (txt []string, er
 	return
 }
 
-func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *keyOps, codePage int) bool {
+func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, guessKey bool, ops *keyOps, codePage int) bool {
 	logln("reading file:", ybnName)
-	oriStm, err := ioutil.ReadFile(ybnName)
+	oriStm, err := os.ReadFile(ybnName)
 	if err != nil {
 		fmt.Println(err)
 		return false
 	}
 	logln("parsing ybn...")
-	script, err := parseYbn(oriStm, key)
+	script, err := parseYbn(oriStm, key, guessKey)
 	if err != nil {
 		fmt.Println("parse error:", err)
 		return false
@@ -343,7 +356,7 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 			fmt.Println("error when marshalling json:", err)
 			return false
 		}
-		ioutil.WriteFile(outScriptName, out, os.ModePerm)
+		os.WriteFile(outScriptName, out, os.ModePerm)
 	}
 	if outTxtName != "" {
 		logln("extracting text from script...")
@@ -354,7 +367,7 @@ func parseYbnFile(ybnName, outScriptName, outTxtName string, key []byte, ops *ke
 		}
 		logln("encoding text and writing...")
 		out := codec.Encode(strings.Join(txt, "\r\n"), codec.UTF8Sig, codec.Replace)
-		ioutil.WriteFile(outTxtName, out, os.ModePerm)
+		os.WriteFile(outTxtName, out, os.ModePerm)
 	}
 	logln("complete.")
 	return true
@@ -396,8 +409,8 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 			if isFunctionToExtract(inst.Args[0].Res.Res) {
 				for i, arg := range inst.Args[1:] {
 					if arg.Type == 3 &&
-						bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
-						bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
+						!bytes.Equal(arg.Res.Res, []byte(`""`)) &&
+						!bytes.Equal(arg.Res.Res, []byte(`''`)) {
 						ns := packLineToResource(arg, txt[txtIdx], codePage)
 						txtIdx++
 						resTail.Write(ns)
@@ -411,8 +424,8 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 		} else if includes(ops.otherOp, inst.Op) {
 			for i, arg := range inst.Args {
 				if arg.Type == 3 &&
-					bytes.Compare(arg.Res.Res, []byte(`""`)) != 0 &&
-					bytes.Compare(arg.Res.Res, []byte(`''`)) != 0 {
+					!bytes.Equal(arg.Res.Res, []byte(`""`)) &&
+					!bytes.Equal(arg.Res.Res, []byte(`''`)) {
 					ns := packLineToResource(arg, txt[txtIdx], codePage)
 					txtIdx++
 					resTail.Write(ns)
@@ -440,22 +453,22 @@ func packTxtToYbn(script *ybnInfo, stm []byte, txt []string, ops *keyOps, codePa
 	newYbn.Write(stm[offStart : offStart+script.Header.OffSize])
 
 	outputStm := newYbn.Bytes()
-	if bytes.Compare(key, []byte("\x00\x00\x00\x00")) != 0 {
+	if !bytes.Equal(key, []byte("\x00\x00\x00\x00")) {
 		decryptYbn(outputStm, key, &newHdr)
 	}
 
 	return outputStm, nil
 }
 
-func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, codePage int) bool {
+func packYbnFile(ybnName, txtName, outYbnName string, key []byte, guessKey bool, ops *keyOps, codePage int) bool {
 	logln("reading file:", ybnName)
-	oriStm, err := ioutil.ReadFile(ybnName)
+	oriStm, err := os.ReadFile(ybnName)
 	if err != nil {
 		fmt.Println(err)
 		return false
 	}
 	logln("parsing ybn...")
-	script, err := parseYbn(oriStm, key)
+	script, err := parseYbn(oriStm, key, guessKey)
 	if err != nil {
 		fmt.Println("parse error:", err)
 		return false
@@ -479,7 +492,7 @@ func packYbnFile(ybnName, txtName, outYbnName string, key []byte, ops *keyOps, c
 		return false
 	}
 	logln("writing ybn:", outYbnName)
-	ioutil.WriteFile(outYbnName, newStm, os.ModePerm)
+	os.WriteFile(outYbnName, newStm, os.ModePerm)
 	logln("complete.")
 	return true
 }
@@ -493,12 +506,16 @@ func printUsage(exeName string) {
 	fmt.Printf(`
 About the key:
   ExtYbn could try to guess the key from a ybn file, but may fail.
-  The program may CRASH OR PANIC if failed to guess or not given a correct key.
+  You can output the guessed key by:
+
+  extYbn -e -ybn yst0XXXX.ybn -output-guessed-key
+
+  ExtYbn may CRASH OR PANIC if failed to guess or not given a correct key.
   You may try: 0x6cfddadb or 0x30731B78.
 
 About the opcode:
-  This program can guess the opcode-msg and opcode-call which is needed, but
-  you need to give it a .ybn which has some msg texts to do it. Generally, you
+  ExtYbn can guess the opcode-msg and opcode-call which is needed, but you
+  need to give it a .ybn which has some msg texts to do it. Generally, you
   can give it yst0XXXX.ybn where the XXXX is the maximum number among all the
   ybn file names.
   You can use:
@@ -548,12 +565,13 @@ func main() {
 	jsonName := flag.String("json", "", "output script file name")
 	txtName := flag.String("txt", "", "output/input txt file name")
 	outYbnName := flag.String("new-ybn", "", "output ybn file name")
-	keyInt := flag.Int64("key", 0, "decode key of ybn")
-	guessKey := flag.Bool("guess-key", true, "try to guess the decode key")
+	keyInt := flag.Int64("key", -1, "encryption key of ybn")
+	guessKey := flag.Bool("guess-key", true, "try to guess the encryption key")
 	opMsg := flag.Int("op-msg", 0, "specify opcode of Msg. defaut: auto guess")
 	opCall := flag.Int("op-call", 0, "specify opcode of Call. default: auto guess")
 	codePage := flag.String("cp", "932", "specify code page")
 	outputOpCode := flag.Bool("output-opcode", false, "output the opcode guessed")
+	outputGuessedKey := flag.Bool("output-guessed-key", false, "output the key guessed")
 	otherTextOp := flag.String("op-other", "", "other op to extract/pack txt(comma to split, i.e: 3,4,100")
 	verbose := flag.Bool("v", false, "verbose output, and decode some string when outputs in json")
 	flag.Parse()
@@ -561,6 +579,11 @@ func main() {
 		*inYbnName == "" ||
 		(*isPack && (*outYbnName == "" || *txtName == "")) {
 		printUsage(os.Args[0])
+		return
+	}
+
+	if *keyInt != -1 && *guessKey {
+		fmt.Println("guess-key and key can't be both set")
 		return
 	}
 
@@ -579,13 +602,14 @@ func main() {
 	ops.otherOp = textOps
 
 	gIsOutputOpcode = *outputOpCode
+	gIsOutputGuessedKey = *outputGuessedKey
 	gVerbose = *verbose
 
 	var ret bool
 	if *isExtract {
-		ret = parseYbnFile(*inYbnName, *jsonName, *txtName, key[:], &ops, parseCp(*codePage))
+		ret = parseYbnFile(*inYbnName, *jsonName, *txtName, key[:], *guessKey, &ops, parseCp(*codePage))
 	} else {
-		ret = packYbnFile(*inYbnName, *txtName, *outYbnName, key[:], &ops, parseCp(*codePage))
+		ret = packYbnFile(*inYbnName, *txtName, *outYbnName, key[:], *guessKey, &ops, parseCp(*codePage))
 	}
 	if !ret {
 		retCode = 1
